@@ -4,6 +4,7 @@ require 'page'
 require 'app_config'
 require 'sinatra'
 require 'json'
+require 'digest/sha1'
 
 before do
     if !$r
@@ -12,7 +13,7 @@ before do
         H = HTMLGen.new
     end
     $user = nil
-    check_auth(request.cookies[:auth])
+    auth_user(request.cookies['auth'])
 end
 
 get '/' do
@@ -46,10 +47,26 @@ get '/login' do
 end
 
 get '/api/login' do
-    if params[:username] == 'antirez' and params[:password] == 'ANTIREZ'
-        return {:status => "ok", :token => "foobar"}.to_json
+    auth = check_user_credentials(params[:username],params[:password])
+    if auth 
+        return {:status => "ok", :auth => auth}.to_json
     else
-        return {:status => "err", :error => "no such user/pass"}.to_json
+        return {
+            :status => "err",
+            :error => "No match for the specified username / password pair."
+        }.to_json
+    end
+end
+
+get '/api/create_account' do
+    auth = create_user(params[:username],params[:password])
+    if auth 
+        return {:status => "ok", :auth => auth}.to_json
+    else
+        return {
+            :status => "err",
+            :error => "Username is busy. Please select a different one."
+        }.to_json
     end
 end
 
@@ -90,7 +107,7 @@ end
 # just with: if $user ...
 #
 # Return value: none, the function works by side effect.
-def check_auth(auth)
+def auth_user(auth)
     return if !auth
     id = $r.get("auth:#{auth}")
     return if !id
@@ -107,21 +124,48 @@ end
 
 # Create a new user with the specified username/password
 #
-# Return value: true if the user was correctly creaed.
-#               false if the username already exists.
+# Return value: the auth token if the user was correctly creaed.
+#               nil if the username already exists.
 def create_user(username,password)
-    return false if $r.exists("useranme.to.id:#{username.downcase}")
+    return nil if $r.exists("username.to.id:#{username.downcase}")
     id = $r.incr("users.count")
     auth_token = get_rand
     $r.hmset("user:#{id}",
         "username",username,
-        "password",password,
+        "password",hash_password(password),
         "ctime",Time.now.to_i,
         "karma",10,
         "about","",
         "email","",
         "auth",auth_token)
-    $r.set("useranme.to.id:#{username.downcase}",id)
-    $r.set("auth:#{auth_token}",auth_token)
-    return true
+    $r.set("username.to.id:#{username.downcase}",id)
+    $r.set("auth:#{auth_token}",id)
+    return auth_token
+end
+
+# Turn the password into an hashed one, using
+# SHA1(salt|password).
+def hash_password(password)
+    Digest::SHA1.hexdigest(PasswordSalt+password)
+end
+
+# Return the user from the ID.
+def get_user_by_id(id)
+    $r.hgetall("user:#{id}")
+end
+
+# Return the user from the username.
+def get_user_by_username(username)
+    id = $r.get("username.to.id:#{username.downcase}")
+    return nil if !id
+    get_user_by_id(id)
+end
+
+# Check if the username/password pair identifies an user.
+# If so the auth token is returned, otherwise nil is returned.
+def check_user_credentials(username,password)
+    hp = hash_password(password)
+    user = get_user_by_username(username)
+    return nil if !user
+    (user['password'] == hp) ? user['auth'] : nil
 end

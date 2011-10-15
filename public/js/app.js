@@ -2,17 +2,19 @@ function login() {
     var data = {
         username: $("input[name=username]").val(),
         password: $("input[name=password]").val(),
-        register: $("input[name=register]").val()
     };
     $.ajax({
         type: "GET",
-        url: "/api/login",
+        url: ($("input[name=register]").attr("checked")) ?
+            "/api/create_account" : "/api/login",
         data: data,
         success: function(reply) {
-            r = jQuery.parseJSON(reply);
+            var r = jQuery.parseJSON(reply);
             if (r.status == "ok") {
-                // Set the cookie
-                alert("Ok!");
+                document.cookie =
+                    'auth='+r.auth+
+                    '; expires=Thu, 1 Aug 2030 20:00:00 UTC; path=/';
+                window.location.href = "/";
             } else {
                 $("#errormsg").html(r.error)
             }

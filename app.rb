@@ -28,10 +28,10 @@ get '/login' do
                 H.inputtext(:name => "password")+H.br+
                 H.checkbox(:name => "register", :value => "1")+
                 "create account"+H.br+
-                H.button(:name => "do_login", :value => "Login")+H.br+
-                H.div(:id => "errormsg"){}
+                H.button(:name => "do_login", :value => "Login")
             }
         }+
+        H.div(:id => "errormsg"){}+
         H.script(:type=>"text/javascript") {'
             $(document).ready(function() {
                 $("input[name=do_login]").click(login);

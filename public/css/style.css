@@ -57,3 +57,10 @@ login label {
     font-size:12px;
     font-weight:bold;
 }
+
+div #errormsg {
+    width:400px;
+    color:#ff9999;
+    font-weight:bold;
+    margin-top: 15px;
+}

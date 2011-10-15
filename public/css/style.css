@@ -12,6 +12,7 @@ a {
 
 header {
     display:block;
+    position:relative;
     padding: 15px 0px 0px 15px;
     background-color:#eee;
     border-bottom: 1px #ccc solid;
@@ -45,6 +46,13 @@ nav {
 
 nav a {
     margin-left: 20px;
+}
+
+rnav {
+    position: absolute;
+    top: 5px;
+    right: 10px;
+    font-weight:bold;
 }
 
 login {

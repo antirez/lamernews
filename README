@@ -30,6 +30,7 @@ A Redis hash named "user:<user id>" with the following fields:
     karma -> User karma, earned visiting the site and posting good stuff
     about -> Some optional info about the user
     email -> Optional, used to show gravatars
+    auth -> authentication token
 
 Additionally the user has an additional key:
 
@@ -45,7 +46,7 @@ is received.
 This token is in the form of a SHA1-sized hex number.
 The representation is a simple Redis key in the form:
 
-    token:<lowercase_token> -> User ID
+    auth:<lowercase_token> -> User ID
 
 News
 ---

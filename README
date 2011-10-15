@@ -1,0 +1,105 @@
+About
+===
+
+Lamer news is an implementation of a Reddit / Hacker News style news web site
+written usign Ruby, Sinatra, Redis and JQuery.
+
+The goal is to have a system that is very simple to understand and modify and
+that is able to handle a very high load using a small virtual server, ensuring
+at the same time a very small latency user experience.
+
+This project was created in order to run http://lamernews.com but is free for
+everybody to use, fork, and have fun with.
+
+We believe it is also a good programming example for Redis as a sole DB of a
+non trivial, real world, web application.
+
+Data Layout
+===
+
+Users
+---
+
+Every user is represented by the following fields:
+
+A Redis hash named "user:<user id>" with the following fields:
+
+    username -> The username
+    password -> Hashed password, SHA1(salt|password) note: | means concatenation
+    ctime -> Registration time (unix time)
+    karma -> User karma, earned visiting the site and posting good stuff
+    about -> Some optional info about the user
+    email -> Optional, used to show gravatars
+
+Additionally the user has an additional key:
+
+    username.to.id:<lowercase_username> -> User ID
+
+This is used to lookup users by name.
+
+Authentication
+---
+
+Users receive an authentication token after a valid pair of username/password
+is received.
+This token is in the form of a SHA1-sized hex number.
+The representation is a simple Redis key in the form:
+
+    token:<lowercase_token> -> User ID
+
+News
+---
+
+News are represented as an hash with key name "news:<news id>".
+The hash has the following fields:
+
+    title -> News title
+    url -> News url
+    ctime -> News creation time. Unix time.
+    score -> News score. See source to check how this is computed.
+    rank -> News score adjusted by age: RANK = SCORE / AGE^ALPHA
+
+Also recently posted urls have a key named "url:<actual full url>" with TTL 48
+hours and set to the news ID of a recently posted news having this url.
+
+So if another user will try to post a given content again within 48 hours the
+system will simply redirect it to the previous news.
+
+News votes
+---
+
+Every news has a sorted set with user upvotes and downvotes. The keys are named
+respectively "news.up:<news id>" and "news.down:<news id>".
+
+In the sorted sets the the score is the unix time of the vote, the element is
+the user ID of the voting user.
+
+Posting a news is equivalent to upvoting it.
+
+Saved news
+---
+
+The system stores a list of upvoted news for every user using a sorted set named
+"user.saved:<user id>", index by unix time. The value of the sorted set elements
+is a string composed by "<user id>,<first 8 bytes of SHA1(IP address)>".
+
+The hashed IP address is stored in order to allow the function converting votes
+into a score to run some filtering algorithm if needed.
+
+Submitted news
+---
+
+Like saved news every user has an associated sorted set with news he posted.
+The key is called "user.posted:<user id>". Again the score is the unix time and
+the element is the news id.
+
+Top and Latest news
+---
+
+news.cron is used to generate the "Latest News" page.
+It is a sorted set where the score is the Unix time the news was posted, and the
+value is the news ID.
+
+news.top is used to generate the "Top News" page.
+It is a sorted set where the score is the "RANK" of the news, and the value is
+the news ID.

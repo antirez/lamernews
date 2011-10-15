@@ -49,10 +49,17 @@ nav a {
 }
 
 rnav {
+    color:#aaa;
     position: absolute;
     top: 5px;
     right: 10px;
     font-weight:bold;
+    font-size:14px;
+}
+
+rnav a {
+    margin-left:10px;
+    margin-right:10px;
 }
 
 login {

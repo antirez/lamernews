@@ -24,6 +24,7 @@ Every user is represented by the following fields:
 
 A Redis hash named "user:<user id>" with the following fields:
 
+    id -> user ID
     username -> The username
     password -> Hashed password, SHA1(salt|password) note: | means concatenation
     ctime -> Registration time (unix time)

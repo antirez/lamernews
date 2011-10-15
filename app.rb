@@ -19,7 +19,7 @@ end
 get '/' do
     H.set_title "Top News - #{SiteName}"
     H.page {
-        "Hello World"
+        H.h2 {"Top news"}
     }
 end
 
@@ -44,6 +44,11 @@ get '/login' do
             });
         '}
     }
+end
+
+get '/logout' do
+    update_auth_token($user["id"]) if $user
+    redirect "/"
 end
 
 get '/api/login' do
@@ -72,7 +77,8 @@ end
 
 def application_header
     navitems = [    ["top","/"],
-                    ["latest","/latest"]]
+                    ["latest","/latest"],
+                    ["submit","/submit"]]
     navbar = H.nav {
         navitems.map{|ni|
             H.a(:href=>ni[1]) {H.entities ni[0]}
@@ -82,11 +88,13 @@ def application_header
         if $user
             text = $user['username']
             link = "/user/"+H.urlencode($user['username'])
+            H.a(:href => "/user/"+H.urlencode($user['username'])) { 
+                $user['username']+" (#{$user['karma']})"
+            }+" | "+
+            H.a(:href => "/logout") {"logout"}
         else
-            text = "login / register"
-            link = "/login"
+            H.a(:href => "/login") {"login / register"}
         end
-        H.a(:href => link) {text}
     }
     H.header {
         H.h1 {
@@ -97,7 +105,8 @@ end
 
 def application_footer
     H.footer {
-        "Lamer News source code is located "+H.a(:href=>""){"here"}
+        "Lamer News source code is located "+
+        H.a(:href=>"http://github.com/antirez/lamernews"){"here"}
     }
 end
 
@@ -131,6 +140,7 @@ def create_user(username,password)
     id = $r.incr("users.count")
     auth_token = get_rand
     $r.hmset("user:#{id}",
+        "id",id,
         "username",username,
         "password",hash_password(password),
         "ctime",Time.now.to_i,
@@ -141,6 +151,23 @@ def create_user(username,password)
     $r.set("username.to.id:#{username.downcase}",id)
     $r.set("auth:#{auth_token}",id)
     return auth_token
+end
+
+# Update the specified user authentication token with a random generated
+# one. This in other words means to logout all the sessions open for that
+# user.
+#
+# Return value: on success the new token is returned. Otherwise nil.
+# Side effect: the auth token is modified.
+def update_auth_token(user_id)
+    user = get_user_by_id(user_id)
+    puts user.inspect
+    return nil if !user
+    $r.del("auth:#{user['auth']}")
+    new_auth_token = get_rand
+    $r.hmset("user:#{user_id}","auth",new_auth_token)
+    $r.set("auth:#{new_auth_token}",user_id)
+    return new_auth_token
 end
 
 # Turn the password into an hashed one, using

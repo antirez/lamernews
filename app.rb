@@ -226,7 +226,9 @@ def create_user(username,password)
         "karma",10,
         "about","",
         "email","",
-        "auth",auth_token)
+        "auth",auth_token,
+        "flags","",
+        "karma_incr_time",Time.new.to_i)
     $r.set("username.to.id:#{username.downcase}",id)
     $r.set("auth:#{auth_token}",id)
     return auth_token
@@ -282,7 +284,7 @@ end
 
 # Fetch a news from Redis by id.
 def get_news_by_id(id)
-    $r.get("news:#{id}")
+    $r.hgetall("news:#{id}")
 end
 
 # Vote the specified news in the context of a given user.
@@ -297,7 +299,7 @@ end
 # Return value: true if the vote was inserted, otherwise
 # if the vote was duplicated, or user_id or news_id don't match any
 # existing user or news, false is returned.
-def vote_news(user_id,news_id,type)
+def vote_news(user_id,news_id,vote_type)
     # Fetch news and user
     user = ($user and $user["id"] == user_id) ? $user : get_user_by_id(user_id)
     news = get_news_by_id(news_id)
@@ -311,15 +313,17 @@ def vote_news(user_id,news_id,type)
     end
 
     # News was not already voted by that user. Add the vote.
-    $r.zadd((type == :up) ? "news.up:#{news_id}" : "news.down:#{news_id}",
-        Time.news.to_i, user_id)
-    $r.zadd("user.saved:#{user_id}", Time.now.to_i, news_id) if type == :up
+    $r.zadd((vote_type == :up) ? "news.up:#{news_id}" : "news.down:#{news_id}",
+        Time.now.to_i, user_id)
+    $r.zadd("user.saved:#{user_id}", Time.now.to_i, news_id) if vote_type == :up
     return true
 end
 
+# Given the news compute its score.
+# No side effects.
 def compute_news_score(news)
-    upvotes = $r.zrange("news.up:#{news_id}",0,-1,:withscores => true)
-    downvotes = $r.zrange("news.down:#{news_id}",0,-1,:withscores => true)
+    upvotes = $r.zrange("news.up:#{news["id"]}",0,-1,:withscores => true)
+    downvotes = $r.zrange("news.down:#{news["id"]}",0,-1,:withscores => true)
     # FIXME: For now we are doing a naive sum of votes, without time-based
     # filtering, nor IP filtering.
     # We could use just ZCARD here of course, but I'm using ZRANGE already
@@ -327,9 +331,14 @@ def compute_news_score(news)
     return (upvotes.length/2) - (downvotes.length/2)
 end
 
+# Given the news compute its rank, that is function of time and score.
+#
+# The general forumla is RANK = SCORE / (AGE ^ AGING_FACTOR)
 def compute_news_rank(news)
     age = Time.now.to_i - news["ctime"].to_i
-    return (news["score"]*1000)/(age**RankPowerAgeFactor)
+    age = NewsMinAge if age < NewsMinAge
+    puts "score: #{news["score"]} age: #{age}"
+    return (news["score"]*1000)/(age**RankAgingFactor)
 end
 
 # Add a news with the specified url or text.
@@ -349,8 +358,8 @@ def submit_news(title,url,text,user_id)
         url = "text://"+text[0...CommentMaxLength]
     end
     # Check for already posted news with the same URL.
-    if !textpost and (id = $r.get("url+"+url))
-        return id
+    if !textpost and (id = $r.get("url:"+url))
+        return id.to_i
     end
     # We can finally insert the news.
     ctime = Time.new.to_i
@@ -364,12 +373,12 @@ def submit_news(title,url,text,user_id)
         "score", 0,
         "rank", 0)
     # The posting user virtually upvoted the news posting it
-    vote_news(news_id,user_id,type)
+    vote_news(id,user_id,type)
     news = get_news_by_id(id)
     score = compute_news_score(news)
     news["score"] = score
     rank = compute_news_rank(news)
-    $r.hmset("news#{id}",
+    $r.hmset("news:#{id}",
         "score",score,
         "rank",rank)
     # Add the news to the user submitted news
@@ -380,6 +389,7 @@ def submit_news(title,url,text,user_id)
     $r.zadd("news.top",rank,id)
     # Add the news url for some time to avoid reposts in short time
     if !textpost
-        $r.setex("url:"+url,PreventRepostTime,1)
+        $r.setex("url:"+url,PreventRepostTime,id)
     end
+    return id
 end

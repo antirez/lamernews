@@ -73,6 +73,42 @@ get '/login' do
     }
 end
 
+get '/submit' do
+    redirect "/login" if !$user
+    H.set_title "Submit a new story - #{SiteName}"
+    H.page {
+        H.h2 {"Submit a new story"}+
+        H.submitform {
+            H.form(:name=>"f") {
+                H.label(:for => "title") {"title"}+
+                H.inputtext(:name => "title", :size => 80)+H.br+
+                H.label(:for => "url") {"url"}+H.br+
+                H.inputtext(:name => "url", :size => 60)+H.br+
+                "or if you don't have an url type some text"+
+                H.br+
+                H.label(:for => "text") {"text"}+
+                H.textarea(:name => "text", :cols => 60, :rows => 10) {}+
+                H.button(:name => "do_submit", :value => "Submit")
+            }
+        }+
+        H.div(:id => "errormsg"){}+
+        H.script(:type=>"text/javascript") {'
+            $(document).ready(function() {
+                $("input[name=do_submit]").click(submit);
+            });
+        '}
+    }
+end
+
+get "/news/:news_id" do
+    news = get_news_by_id(params["news_id"])
+    halt(404,"404 - This news does not exist.") if !news
+    H.set_title "#{H.entities news["title"]} - #{SiteName}"
+    H.page {
+        news_to_html(news)
+    }
+end
+
 get '/logout' do
     update_auth_token($user["id"]) if $user
     redirect "/"
@@ -392,4 +428,22 @@ def submit_news(title,url,text,user_id)
         $r.setex("url:"+url,PreventRepostTime,id)
     end
     return id
+end
+
+def news_to_html(news)
+    su = news["url"].split("/")
+    domain = (su[0] == "text:") ? "comment" : su[2]
+    H.news {
+        H.arrows {
+            "&#8679; &#8690;"
+        }+" "+
+        H.h2 {
+            H.a(:href=>news["url"]) {
+                H.entities news["title"]
+            }
+        }+" "+
+        H.address {
+            "("+H.entities(domain)+")"
+        }
+    }
 end

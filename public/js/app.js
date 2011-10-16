@@ -22,3 +22,25 @@ function login() {
     });
     return false;
 }
+
+function submit() {
+    var data = {
+        title: $("input[name=title]").val(),
+        url: $("input[name=url]").val(),
+        text: $("textarea[name=text]").val()
+    };
+    $.ajax({
+        type: "GET",
+        url: "/api/submit",
+        data: data,
+        success: function(reply) {
+            var r = jQuery.parseJSON(reply);
+            if (r.status == "ok") {
+                window.location.href = "/news/"+r.news_id;
+            } else {
+                $("#errormsg").html(r.error)
+            }
+        }
+    });
+    return false;
+}

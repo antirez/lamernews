@@ -430,6 +430,8 @@ def submit_news(title,url,text,user_id)
     return news_id
 end
 
+# Turn the news into its HTML representation, that is
+# a linked title with buttons to up/down vote.
 def news_to_html(news)
     su = news["url"].split("/")
     domain = (su[0] == "text:") ? "comment" : su[2]
@@ -451,6 +453,9 @@ def news_to_html(news)
     }
 end
 
+# If 'news' is a list of news entries (Ruby hashes with the same fields of
+# the Redis hash representing the news in the DB) this function will render
+# the HTML needed to show this news.
 def news_list_to_html(news)
     H.newslist {
         aux = ""
@@ -461,6 +466,16 @@ def news_list_to_html(news)
     }
 end
 
+# Generate the main page of the web site, the one where news are ordered by
+# rank.
+# 
+# As a side effect thsi function take care of checking if the rank stored
+# in the DB is no longer correct (as time is passing) and updates it if
+# needed.
+#
+# This way we can completely avoid having a cron job adjusting our news
+# score since this is done incrementally when there are pageviews on the
+# site.
 def get_top_news
     result = []
     news_ids = $r.zrevrange("news.top",0,NewsPerPage-1)

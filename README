@@ -85,10 +85,7 @@ Saved news
 
 The system stores a list of upvoted news for every user using a sorted set named
 "user.saved:<user id>", index by unix time. The value of the sorted set elements
-is a string composed by "<user id>,<first 8 bytes of SHA1(IP address)>".
-
-The hashed IP address is stored in order to allow the function converting votes
-into a score to run some filtering algorithm if needed.
+is the "<news id>.
 
 Submitted news
 ---

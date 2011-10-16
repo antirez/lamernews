@@ -280,6 +280,55 @@ end
 # News
 ################################################################################
 
+# Fetch a news from Redis by id.
+def get_news_by_id(id)
+    $r.get("news:#{id}")
+end
+
+# Vote the specified news in the context of a given user.
+# type is either :up or :down
+# 
+# The function takes care of the following:
+# 1) The vote is not duplicated.
+# 2) That the karma is decreased from voting user, accordingly to vote type.
+# 3) That the karma is transfered to the author of the post, if different.
+# 4) That the news score is updaed.
+#
+# Return value: true if the vote was inserted, otherwise
+# if the vote was duplicated, or user_id or news_id don't match any
+# existing user or news, false is returned.
+def vote_news(user_id,news_id,type)
+    # Fetch news and user
+    user = ($user and $user["id"] == user_id) ? $user : get_user_by_id(user_id)
+    news = get_news_by_id(news_id)
+    return false if !news or !user
+
+    # Now it's time to check if the user already voted that news, either
+    # up or down. If so return now.
+    if $r.zscore("news.up:#{news_id}",user_id) or
+       $r.zscore("news.down:#{news_id}",user_id)
+       return false
+    end
+
+    # News was not already voted by that user. Add the vote.
+    $r.zadd((type == :up) ? "news.up:#{news_id}" : "news.down:#{news_id}",
+        Time.news.to_i, user_id)
+    $r.zadd("user.saved:#{user_id}", Time.now.to_i, news_id) if type == :up
+    return true
+end
+
+def compute_news_score(news)
+    upvotes = $r.zrange("news.up:#{news_id}",0,-1,:withscores => true)
+    downvotes = $r.zrange("news.down:#{news_id}",0,-1,:withscores => true)
+    # TODO: do some time-based filtering, for instance lowering the value of
+    # votes that are too close in time.
+    # Also we should do duplicated IP filtering here.
+    # For now we just sum number of votes.
+end
+
+def compute_news_rank(news)
+end
+
 # Add a news with the specified url or text.
 #
 # If an url is passed but was already posted in the latest 48 hours the
@@ -311,4 +360,23 @@ def submit_news(title,url,text,user_id)
         "ctime", ctime,
         "score", 0,
         "rank", 0)
+    # The posting user virtually upvoted the news posting it
+    vote_news(news_id,user_id,type)
+    news = get_news_by_id(id)
+    score = compute_news_score(news)
+    news["score"] = score
+    rank = compute_news_rank(news)
+    $r.hmset("news#{id}",
+        "score",score,
+        "rank",rank)
+    # Add the news to the user submitted news
+    $r.zadd("user.posted:#{user_id}",ctime,id)
+    # Add the news into the chronological view
+    $r.zadd("news.cron",ctime,id)
+    # Add the news into the top view
+    $r.zadd("news.top",rank,id)
+    # Add the news url for some time to avoid reposts in short time
+    if !textpost
+        $r.setex("url:"+url,PreventRepostTime,1)
+    end
 end

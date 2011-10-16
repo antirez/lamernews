@@ -8,3 +8,4 @@ RankAgingFactor = 1.3
 NewsMinAge = 60
 KarmaIncrementInterval = 3600*3
 KarmaIncrementAmount = 1
+NewsPerPage = 30

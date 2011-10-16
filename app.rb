@@ -45,8 +45,9 @@ end
 
 get '/' do
     H.set_title "Top News - #{SiteName}"
+    topnews = get_top_news
     H.page {
-        H.h2 {"Top news"}
+        H.h2 {"Top news"}+news_list_to_html(topnews)
     }
 end
 
@@ -448,4 +449,32 @@ def news_to_html(news)
             "&#9660;"
         }
     }
+end
+
+def news_list_to_html(news)
+    H.newslist {
+        aux = ""
+        news.each{|n|
+            aux << news_to_html(n)
+        }
+        aux
+    }
+end
+
+def get_top_news
+    result = []
+    news_ids = $r.zrevrange("news.top",0,NewsPerPage-1)
+    news = $r.pipelined {
+        news_ids.each{|nid|
+            $r.hgetall("news:#{nid}")
+        }
+    }
+    news.each{|n|
+        hash = {}
+        n.each_slice(2) {|k,v|
+            hash[k] = v
+        }
+        result << hash
+    }
+    result
 end

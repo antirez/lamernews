@@ -55,8 +55,10 @@ News
 News are represented as an hash with key name "news:<news id>".
 The hash has the following fields:
 
+    id -> News id
     title -> News title
     url -> News url
+    user_id => The User ID that posted the news
     ctime -> News creation time. Unix time.
     score -> News score. See source to check how this is computed.
     rank -> News score adjusted by age: RANK = SCORE / AGE^ALPHA

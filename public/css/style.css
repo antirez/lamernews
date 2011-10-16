@@ -103,9 +103,10 @@ news a {
 }
 
 news a:visited {
-    color: #9999aa;
+    color: #6666aa;
 }
 
-news arrows {
-    font-size: 20px;
+news uparrow, news downarrow {
+    font-size: 16px;
+    color:#666;
 }

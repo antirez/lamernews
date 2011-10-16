@@ -434,8 +434,8 @@ def news_to_html(news)
     su = news["url"].split("/")
     domain = (su[0] == "text:") ? "comment" : su[2]
     H.news {
-        H.arrows {
-            "&#8679; &#8690;"
+        H.uparrow {
+            "&#9650;"
         }+" "+
         H.h2 {
             H.a(:href=>news["url"]) {
@@ -444,6 +444,9 @@ def news_to_html(news)
         }+" "+
         H.address {
             "("+H.entities(domain)+")"
+        }+" "+
+        H.downarrow {
+            "&#9660;"
         }
     }
 end

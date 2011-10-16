@@ -320,13 +320,16 @@ end
 def compute_news_score(news)
     upvotes = $r.zrange("news.up:#{news_id}",0,-1,:withscores => true)
     downvotes = $r.zrange("news.down:#{news_id}",0,-1,:withscores => true)
-    # TODO: do some time-based filtering, for instance lowering the value of
-    # votes that are too close in time.
-    # Also we should do duplicated IP filtering here.
-    # For now we just sum number of votes.
+    # FIXME: For now we are doing a naive sum of votes, without time-based
+    # filtering, nor IP filtering.
+    # We could use just ZCARD here of course, but I'm using ZRANGE already
+    # since this is what is needed in the long term for vote analysis.
+    return (upvotes.length/2) - (downvotes.length/2)
 end
 
 def compute_news_rank(news)
+    age = Time.now.to_i - news["ctime"].to_i
+    return (news["score"]*1000)/(age**RankPowerAgeFactor)
 end
 
 # Add a news with the specified url or text.

@@ -319,9 +319,31 @@ end
 # News
 ################################################################################
 
-# Fetch a news from Redis by id.
-def get_news_by_id(id)
-    $r.hgetall("news:#{id}")
+# Fetch one or more (if an Array is passed) news from Redis by id.
+# Note that we also load other informations about the news like
+# the username of the poster and other informations needed to render
+# the news into HTML.
+#
+# Doing this in a centralized way offers us the ability to exploit
+# Redis pipelining.
+def get_news_by_id(news_ids,opt={})
+    result = []
+    news_ids = [news_ids] if !news_ids.is_a? Array
+    news = $r.pipelined {
+        news_ids.each{|nid|
+            $r.hgetall("news:#{nid}")
+        }
+    }
+    news.each{|n|
+        # Adjust rank if too different from the real-time value.
+        hash = {}
+        n.each_slice(2) {|k,v|
+            hash[k] = v
+        }
+        update_news_rank_if_needed(hash) if opt[:update_rank]
+        result << hash
+    }
+    result
 end
 
 # Vote the specified news in the context of a given user.
@@ -495,20 +517,7 @@ end
 def get_top_news
     result = []
     news_ids = $r.zrevrange("news.top",0,NewsPerPage-1)
-    news = $r.pipelined {
-        news_ids.each{|nid|
-            $r.hgetall("news:#{nid}")
-        }
-    }
-    news.each{|n|
-        # Adjust rank if too different from the real-time value.
-        hash = {}
-        n.each_slice(2) {|k,v|
-            hash[k] = v
-        }
-        update_news_rank_if_needed(hash)
-        result << hash
-    }
+    result = get_news_by_id(news_ids,:update_rank => true)
     # Sort by rank before returning, since we adjusted ranks during iteration.
     result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f}
 end

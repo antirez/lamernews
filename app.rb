@@ -373,7 +373,6 @@ end
 def compute_news_rank(news)
     age = Time.now.to_i - news["ctime"].to_i
     age = NewsMinAge if age < NewsMinAge
-    puts "score: #{news["score"]} age: #{age}"
     return (news["score"]*1000)/(age**RankAgingFactor)
 end
 
@@ -399,9 +398,9 @@ def submit_news(title,url,text,user_id)
     end
     # We can finally insert the news.
     ctime = Time.new.to_i
-    id = $r.incr("news.count")
-    $r.hmset("news:#{id}",
-        "id", id,
+    news_id = $r.incr("news.count")
+    $r.hmset("news:#{news_id}",
+        "id", news_id,
         "title", title,
         "url", url,
         "user_id", user_id,
@@ -409,25 +408,25 @@ def submit_news(title,url,text,user_id)
         "score", 0,
         "rank", 0)
     # The posting user virtually upvoted the news posting it
-    vote_news(id,user_id,type)
-    news = get_news_by_id(id)
+    vote_news(news_id,user_id,type)
+    news = get_news_by_id(news_id)
     score = compute_news_score(news)
     news["score"] = score
     rank = compute_news_rank(news)
-    $r.hmset("news:#{id}",
+    $r.hmset("news:#{news_id}",
         "score",score,
         "rank",rank)
     # Add the news to the user submitted news
-    $r.zadd("user.posted:#{user_id}",ctime,id)
+    $r.zadd("user.posted:#{user_id}",ctime,news_id)
     # Add the news into the chronological view
-    $r.zadd("news.cron",ctime,id)
+    $r.zadd("news.cron",ctime,news_id)
     # Add the news into the top view
-    $r.zadd("news.top",rank,id)
+    $r.zadd("news.top",rank,news_id)
     # Add the news url for some time to avoid reposts in short time
     if !textpost
-        $r.setex("url:"+url,PreventRepostTime,id)
+        $r.setex("url:"+url,PreventRepostTime,news_id)
     end
-    return id
+    return news_id
 end
 
 def news_to_html(news)

@@ -64,6 +64,13 @@ The hash has the following fields:
     ctime -> News creation time. Unix time.
     score -> News score. See source to check how this is computed.
     rank -> News score adjusted by age: RANK = SCORE / AGE^ALPHA
+    up -> Counter with number of upvotes
+    down -> Counter with number of downvotes
+
+the "up" and "down" fields are in the news just as a fast way to access
+this information, as it is one of the things we show when we render the news
+into HTML. Otherwise this data is also available in the sorted sets
+news.up:<id> and news.down:<id> as you'll see below.
 
 Also recently posted urls have a key named "url:<actual full url>" with TTL 48
 hours and set to the news ID of a recently posted news having this url.

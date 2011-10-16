@@ -336,7 +336,7 @@ end
 # Return value: true if the vote was inserted, otherwise
 # if the vote was duplicated, or user_id or news_id don't match any
 # existing user or news, false is returned.
-def vote_news(user_id,news_id,vote_type)
+def vote_news(news_id,user_id,vote_type)
     # Fetch news and user
     user = ($user and $user["id"] == user_id) ? $user : get_user_by_id(user_id)
     news = get_news_by_id(news_id)
@@ -350,8 +350,9 @@ def vote_news(user_id,news_id,vote_type)
     end
 
     # News was not already voted by that user. Add the vote.
-    $r.zadd((vote_type == :up) ? "news.up:#{news_id}" : "news.down:#{news_id}",
-        Time.now.to_i, user_id)
+    if $r.zadd("news.#{vote_type}:#{news_id}", Time.now.to_i, user_id)
+        $r.hincrby("news:#{news_id}",vote_type,1)
+    end
     $r.zadd("user.saved:#{user_id}", Time.now.to_i, news_id) if vote_type == :up
     return true
 end
@@ -372,9 +373,8 @@ end
 #
 # The general forumla is RANK = SCORE / (AGE ^ AGING_FACTOR)
 def compute_news_rank(news)
-    age = Time.now.to_i - news["ctime"].to_i
-    age = NewsMinAge if age < NewsMinAge
-    return (news["score"]*1000)/(age**RankAgingFactor)
+    age = (Time.now.to_i - news["ctime"].to_i)+NewsAgePadding
+    return (news["score"].to_f*1000)/(age**RankAgingFactor)
 end
 
 # Add a news with the specified url or text.
@@ -407,9 +407,11 @@ def submit_news(title,url,text,user_id)
         "user_id", user_id,
         "ctime", ctime,
         "score", 0,
-        "rank", 0)
+        "rank", 0,
+        "up", 0,
+        "down", 0)
     # The posting user virtually upvoted the news posting it
-    vote_news(news_id,user_id,type)
+    vote_news(news_id,user_id,:up)
     news = get_news_by_id(news_id)
     score = compute_news_score(news)
     news["score"] = score
@@ -449,7 +451,7 @@ def news_to_html(news)
         }+" "+
         H.downarrow {
             "&#9660;"
-        }
+        }#+news["score"]+","+news["rank"]+","+compute_news_rank(news).to_s
     }
 end
 
@@ -464,6 +466,20 @@ def news_list_to_html(news)
         }
         aux
     }
+end
+
+# Updating the rank would require some cron job and worker in theory as
+# it is time dependent and we don't want to do any sorting operation at
+# page view time. But instead what we do is to compute the rank from the
+# score and update it in the sorted set only if there is some sensible error.
+# This way ranks are updated incrementally and "live" at every page view
+# only for the news where this makes sense, that is, top news.
+def update_news_rank_if_needed(n)
+    real_rank = compute_news_rank(n)
+    if (real_rank-n["rank"].to_f).abs > 0.001
+        $r.hmset("news:#{n["id"]}","rank",real_rank)
+        n["rank"] = real_rank.to_s
+    end
 end
 
 # Generate the main page of the web site, the one where news are ordered by
@@ -485,11 +501,14 @@ def get_top_news
         }
     }
     news.each{|n|
+        # Adjust rank if too different from the real-time value.
         hash = {}
         n.each_slice(2) {|k,v|
             hash[k] = v
         }
+        update_news_rank_if_needed(hash)
         result << hash
     }
-    result
+    # Sort by rank before returning, since we adjusted ranks during iteration.
+    result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f}
 end

@@ -473,7 +473,12 @@ def news_to_html(news)
         }+" "+
         H.downarrow {
             "&#9660;"
-        }#+news["score"]+","+news["rank"]+","+compute_news_rank(news).to_s
+        }+
+        H.p {
+            "#{news["up"]} up and #{news["down"]} down, posted by "+
+            H.username {news["username"]}
+        }
+        #+news["score"]+","+news["rank"]+","+compute_news_rank(news).to_s
     }
 end
 

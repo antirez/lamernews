@@ -113,3 +113,9 @@ news uparrow, news downarrow {
     font-size: 16px;
     color:#666;
 }
+
+news p {
+    font-size:14px;
+    color:#999;
+    margin-left:15px;
+}

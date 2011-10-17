@@ -332,6 +332,8 @@ def get_news_by_id(news_ids,opt={})
             $r.hgetall("news:#{nid}")
         }
     }
+
+    # Get all the news
     $r.pipelined {
         news.each{|n|
             # Adjust rank if too different from the real-time value.
@@ -342,6 +344,16 @@ def get_news_by_id(news_ids,opt={})
             update_news_rank_if_needed(hash) if opt[:update_rank]
             result << hash
         }
+    }
+
+    # Get the associated users information
+    usernames = $r.pipelined {
+        result.each{|n|
+            $r.hget("user:#{n["user_id"]}","username")
+        }
+    }
+    result.each_with_index{|n,i|
+        n["username"] = usernames[i]
     }
     result
 end
@@ -476,7 +488,11 @@ def news_to_html(news)
         }+
         H.p {
             "#{news["up"]} up and #{news["down"]} down, posted by "+
-            H.username {news["username"]}
+            H.username {
+                H.a(:href=>"/user/"+H.urlencode(news["username"])) {
+                    news["username"]
+                }
+            }+" "+str_elapsed(news["ctime"].to_i)
         }
         #+news["score"]+","+news["rank"]+","+compute_news_rank(news).to_s
     }
@@ -527,4 +543,19 @@ def get_top_news
     result = get_news_by_id(news_ids,:update_rank => true)
     # Sort by rank before returning, since we adjusted ranks during iteration.
     result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f}
+end
+
+###############################################################################
+# Utilit functions
+###############################################################################
+
+# Given an unix time in the past returns a string stating how much time
+# has elapsed from the specified time, in the form "2 hours ago".
+def str_elapsed(t)
+    seconds = Time.now.to_i - t
+    return "now" if seconds <= 1
+    return "#{seconds} seconds ago" if seconds < 60
+    return "#{seconds/60} minutes ago" if seconds < 60*60
+    return "#{seconds/60/60} hours ago" if seconds < 60*60*24
+    return "#{seconds/60/60/24} days ago"
 end

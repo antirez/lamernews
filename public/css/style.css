@@ -119,3 +119,7 @@ news p {
     color:#999;
     margin-left:20px;
 }
+
+username a {
+    color: #666;
+}

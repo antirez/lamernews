@@ -34,11 +34,8 @@ require 'json'
 require 'digest/sha1'
 
 before do
-    if !$r
-    then
-        $r = Redis.new(:host => RedisHost, :port => RedisPort)
-        H = HTMLGen.new
-    end
+    $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
+    H = HTMLGen.new if !defined?(H)
     $user = nil
     auth_user(request.cookies['auth'])
 end
@@ -334,14 +331,16 @@ def get_news_by_id(news_ids,opt={})
             $r.hgetall("news:#{nid}")
         }
     }
-    news.each{|n|
-        # Adjust rank if too different from the real-time value.
-        hash = {}
-        n.each_slice(2) {|k,v|
-            hash[k] = v
+    $r.pipelined {
+        news.each{|n|
+            # Adjust rank if too different from the real-time value.
+            hash = {}
+            n.each_slice(2) {|k,v|
+                hash[k] = v
+            }
+            update_news_rank_if_needed(hash) if opt[:update_rank]
+            result << hash
         }
-        update_news_rank_if_needed(hash) if opt[:update_rank]
-        result << hash
     }
     result
 end
@@ -501,6 +500,8 @@ end
 # score and update it in the sorted set only if there is some sensible error.
 # This way ranks are updated incrementally and "live" at every page view
 # only for the news where this makes sense, that is, top news.
+#
+# Note: this function can be called in the context of redis.pipelined {...}
 def update_news_rank_if_needed(n)
     real_rank = compute_news_rank(n)
     if (real_rank-n["rank"].to_f).abs > 0.001

@@ -26,6 +26,7 @@
 # policies, either expressed or implied, of Salvaore Sanfilippo.
 
 require 'rubygems'
+require 'hiredis'
 require 'redis'
 require 'page'
 require 'app_config'

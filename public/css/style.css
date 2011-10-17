@@ -114,6 +114,7 @@ news h2 a:visited {
 
 news uparrow, news downarrow {
     font-size: 16px;
+    cursor: pointer;
 }
 
 news uparrow {

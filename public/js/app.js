@@ -45,3 +45,18 @@ function submit() {
     });
     return false;
 }
+
+// Install the onclick event in all news arrows the user did not voted already.
+$(document).ready(function() {
+    $('news').each(function(i,news) {
+        var news_id = news.id;
+        var up_class = news.children[0].getAttribute("class");
+        if (!up_class) {
+            news.onclick=function() {alert("x");}
+        }
+        var down_class = news.children[3].getAttribute("class");
+        if (!down_class) {
+            news.onclick=function() {alert("y");}
+        }
+    });
+});

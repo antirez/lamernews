@@ -322,7 +322,6 @@ end
 # Side effect: the auth token is modified.
 def update_auth_token(user_id)
     user = get_user_by_id(user_id)
-    puts user.inspect
     return nil if !user
     $r.del("auth:#{user['auth']}")
     new_auth_token = get_rand

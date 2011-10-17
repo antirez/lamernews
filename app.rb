@@ -43,9 +43,17 @@ end
 
 get '/' do
     H.set_title "Top News - #{SiteName}"
-    topnews = get_top_news
+    news = get_top_news
     H.page {
-        H.h2 {"Top news"}+news_list_to_html(topnews)
+        H.h2 {"Top news"}+news_list_to_html(news)
+    }
+end
+
+get '/latest' do
+    H.set_title "Latest news - #{SiteName}"
+    news = get_latest_news
+    H.page {
+        H.h2 {"Latest news"}+news_list_to_html(news)
     }
 end
 
@@ -326,7 +334,10 @@ end
 # Redis pipelining.
 def get_news_by_id(news_ids,opt={})
     result = []
-    news_ids = [news_ids] if !news_ids.is_a? Array
+    if !news_ids.is_a? Array
+        opt[:single] = true
+        news_ids = [news_ids]
+    end
     news = $r.pipelined {
         news_ids.each{|nid|
             $r.hgetall("news:#{nid}")
@@ -355,7 +366,28 @@ def get_news_by_id(news_ids,opt={})
     result.each_with_index{|n,i|
         n["username"] = usernames[i]
     }
-    result
+
+    # Load $User vote information if we are in the context of a
+    # registered user.
+    if $user
+        votes = $r.pipelined {
+            result.each{|n|
+                $r.zscore("news.up:#{n["id"]}",$user["id"])
+                $r.zscore("news.down:#{n["id"]}",$user["id"])
+            }
+        }
+        result.each_with_index{|n,i|
+            if votes[i*2]
+                n["voted"] = :up
+            elsif votes[(i*2)+1]
+                n["voted"] = :down
+            end
+        }
+    end
+
+    # Return an array if we got an array as input, otherwise
+    # the single element the caller requested.
+    opt[:single] ? result[0] : result
 end
 
 # Vote the specified news in the context of a given user.
@@ -443,7 +475,8 @@ def submit_news(title,url,text,user_id)
         "score", 0,
         "rank", 0,
         "up", 0,
-        "down", 0)
+        "down", 0,
+        "comments", 0)
     # The posting user virtually upvoted the news posting it
     vote_news(news_id,user_id,:up)
     news = get_news_by_id(news_id)
@@ -467,12 +500,21 @@ def submit_news(title,url,text,user_id)
 end
 
 # Turn the news into its HTML representation, that is
-# a linked title with buttons to up/down vote.
+# a linked title with buttons to up/down vote plus additional info.
+# This function expects as input a news entry as obtained from
+# the get_news_by_id function.
 def news_to_html(news)
     su = news["url"].split("/")
     domain = (su[0] == "text:") ? "comment" : su[2]
-    H.news {
-        H.uparrow {
+    if news["voted"] == :up
+        upclass = "voted"
+        downclass = "disabled"
+    elsif news["voted"] == :down
+        downclass = "voted"
+        upclass = "disabled"
+    end
+    H.news(:id => news["id"]) {
+        H.uparrow(:class => upclass) {
             "&#9650;"
         }+" "+
         H.h2 {
@@ -481,9 +523,9 @@ def news_to_html(news)
             }
         }+" "+
         H.address {
-            "("+H.entities(domain)+")"
+            "at "+H.entities(domain)
         }+" "+
-        H.downarrow {
+        H.downarrow(:class => downclass) {
             "&#9660;"
         }+
         H.p {
@@ -492,10 +534,13 @@ def news_to_html(news)
                 H.a(:href=>"/user/"+H.urlencode(news["username"])) {
                     news["username"]
                 }
-            }+" "+str_elapsed(news["ctime"].to_i)
+            }+" "+str_elapsed(news["ctime"].to_i)+" "+
+            H.a(:href => "/news/#{news["id"]}") {
+                news["comments"]+" comments"
+            }
         }
         #+news["score"]+","+news["rank"]+","+compute_news_rank(news).to_s
-    }
+    }+"\n"
 end
 
 # If 'news' is a list of news entries (Ruby hashes with the same fields of
@@ -538,11 +583,16 @@ end
 # score since this is done incrementally when there are pageviews on the
 # site.
 def get_top_news
-    result = []
     news_ids = $r.zrevrange("news.top",0,NewsPerPage-1)
     result = get_news_by_id(news_ids,:update_rank => true)
     # Sort by rank before returning, since we adjusted ranks during iteration.
     result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f}
+end
+
+# Get news in chronological order.
+def get_latest_news
+    news_ids = $r.zrevrange("news.cron",0,NewsPerPage-1)
+    result = get_news_by_id(news_ids,:update_rank => true)
 end
 
 ###############################################################################

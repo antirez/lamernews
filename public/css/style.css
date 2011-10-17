@@ -12,7 +12,8 @@ a {
 
 h2 {
     margin-bottom:20px;
-    font-size:18px;
+    font-size:22px;
+    color:#333;
 }
 
 header {
@@ -94,24 +95,33 @@ news {
 
 news h2 {
     display: inline;
+    font-size:20px;
 }
 
 news address {
     display: inline;
     color: #999;
+    font-size:14px;
 }
 
-news a {
+news h2 a {
     color: #3333ee;
 }
 
-news a:visited {
+news h2 a:visited {
     color: #6666aa;
 }
 
 news uparrow, news downarrow {
     font-size: 16px;
-    color:#666;
+}
+
+news uparrow {
+    color:#999;
+}
+
+news downarrow {
+    color:#ccc;
 }
 
 news p {
@@ -120,6 +130,18 @@ news p {
     margin-left:20px;
 }
 
-username a {
+news p a {
     color: #666;
+}
+
+news uparrow.voted {
+    color:#99dd99;
+}
+
+news downarrow.voted {
+    color:#dd9999;
+}
+
+news downarrow.disabled, uparrow.disabled {
+    visibility: hidden;
 }

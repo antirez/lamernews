@@ -66,11 +66,10 @@ The hash has the following fields:
     rank -> News score adjusted by age: RANK = SCORE / AGE^ALPHA
     up -> Counter with number of upvotes
     down -> Counter with number of downvotes
+    comments -> number of comments
 
-the "up" and "down" fields are in the news just as a fast way to access
-this information, as it is one of the things we show when we render the news
-into HTML. Otherwise this data is also available in the sorted sets
-news.up:<id> and news.down:<id> as you'll see below.
+Note: up, down, comments fields are also available in other ways but we
+denormalize for speed.
 
 Also recently posted urls have a key named "url:<actual full url>" with TTL 48
 hours and set to the news ID of a recently posted news having this url.

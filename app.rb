@@ -95,6 +95,8 @@ get '/submit' do
                 H.br+
                 H.label(:for => "text") {"text"}+
                 H.textarea(:name => "text", :cols => 60, :rows => 10) {}+
+                H.inputhidden(:name => "apisecret",
+                              :value => $user['apisecret']) {}+
                 H.button(:name => "do_submit", :value => "Submit")
             }
         }+
@@ -107,6 +109,13 @@ get '/submit' do
     }
 end
 
+get '/logout' do
+    if $user and check_api_secret
+        update_auth_token($user["id"])
+    end
+    redirect "/"
+end
+
 get "/news/:news_id" do
     news = get_news_by_id(params["news_id"])
     halt(404,"404 - This news does not exist.") if !news
@@ -116,15 +125,31 @@ get "/news/:news_id" do
     }
 end
 
-get '/logout' do
-    update_auth_token($user["id"]) if $user
-    redirect "/"
+###############################################################################
+# API implementation
+###############################################################################
+
+post '/api/logout' do
+    if $user and check_api_secret
+        update_auth_token($user["id"])
+        return {:status => "ok"}.to_json
+    else
+        return {
+            :status => "err",
+            :error => "Wrong auth credentials or API secret."
+        }
+    end
 end
 
 get '/api/login' do
-    auth = check_user_credentials(params[:username],params[:password])
+    auth,apisecret = check_user_credentials(params[:username],
+                                            params[:password])
     if auth 
-        return {:status => "ok", :auth => auth}.to_json
+        return {
+            :status => "ok",
+            :auth => auth,
+            :apisecret => apisecret
+        }.to_json
     else
         return {
             :status => "err",
@@ -133,7 +158,7 @@ get '/api/login' do
     end
 end
 
-get '/api/create_account' do
+post '/api/create_account' do
     auth = create_user(params[:username],params[:password])
     if auth 
         return {:status => "ok", :auth => auth}.to_json
@@ -145,8 +170,11 @@ get '/api/create_account' do
     end
 end
 
-get '/api/submit' do
+post '/api/submit' do
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if not check_api_secret
+        return {:status => "err", :error => "Wrong form secret."}.to_json
+    end
     # We can have an empty url or an empty first comment, but not both.
     if (!check_params "title",:url,:text) or (params[:url].length == 0 and
                                               params[:text].length == 0)
@@ -193,6 +221,11 @@ def check_params_or_halt *required
     halt 500, H.h1{"500"}+H.p{"Missing parameters"}
 end
 
+def check_api_secret
+    return false if !$user
+    params["apisecret"] and (params["apisecret"] == $user["apisecret"])
+end
+
 def application_header
     navitems = [    ["top","/"],
                     ["latest","/latest"],
@@ -209,7 +242,10 @@ def application_header
             H.a(:href => "/user/"+H.urlencode($user['username'])) { 
                 $user['username']+" (#{$user['karma']})"
             }+" | "+
-            H.a(:href => "/logout") {"logout"}
+            H.a(:href =>
+                "/logout?apisecret=#{$user['apisecret']}") {
+                "logout"
+            }
         else
             H.a(:href => "/login") {"login / register"}
         end
@@ -270,6 +306,7 @@ def create_user(username,password)
         "about","",
         "email","",
         "auth",auth_token,
+        "apisecret",get_rand,
         "flags","",
         "karma_incr_time",Time.new.to_i)
     $r.set("username.to.id:#{username.downcase}",id)
@@ -313,12 +350,12 @@ def get_user_by_username(username)
 end
 
 # Check if the username/password pair identifies an user.
-# If so the auth token is returned, otherwise nil is returned.
+# If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
     hp = hash_password(password)
     user = get_user_by_username(username)
     return nil if !user
-    (user['password'] == hp) ? user['auth'] : nil
+    (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
 end
 
 ################################################################################

@@ -27,10 +27,11 @@ function submit() {
     var data = {
         title: $("input[name=title]").val(),
         url: $("input[name=url]").val(),
-        text: $("textarea[name=text]").val()
+        text: $("textarea[name=text]").val(),
+        apisecret: $("input[name=apisecret]").val()
     };
     $.ajax({
-        type: "GET",
+        type: "POST",
         url: "/api/submit",
         data: data,
         success: function(reply) {

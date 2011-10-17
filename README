@@ -32,6 +32,7 @@ A Redis hash named "user:<user id>" with the following fields:
     about -> Some optional info about the user
     email -> Optional, used to show gravatars
     auth -> authentication token
+    apisecret -> api POST requests secret code, to prevent CSRF attacks.
     flags -> flags used to mark users as admins and so forth
     karma_incr_time -> last time karma was incremented
 

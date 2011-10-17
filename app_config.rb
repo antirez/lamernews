@@ -1,6 +1,6 @@
 SiteName = "Lamer News"
 RedisHost = "127.0.0.1"
-RedisPort = 6379
+RedisPort = 10000
 PasswordSalt = "*LAMER*news*"
 CommentMaxLength = 4096
 PreventRepostTime = 3600*48

@@ -3,10 +3,10 @@ function login() {
         username: $("input[name=username]").val(),
         password: $("input[name=password]").val(),
     };
+    var register = $("input[name=register]").attr("checked");
     $.ajax({
-        type: "GET",
-        url: ($("input[name=register]").attr("checked")) ?
-            "/api/create_account" : "/api/login",
+        type: register ? "POST" : "GET",
+        url: register ? "/api/create_account" : "/api/login",
         data: data,
         success: function(reply) {
             var r = jQuery.parseJSON(reply);

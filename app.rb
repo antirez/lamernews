@@ -139,6 +139,7 @@ get "/news/:news_id" do
             H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
             H.button(:name => "post_comment", :value => "Send")
         }+H.div(:id => "errormsg"){}+
+        render_comments_for_news(news["id"])+
         H.script(:type=>"text/javascript") {'
             $(document).ready(function() {
                 $("input[name=post_comment]").click(post_comment);
@@ -776,6 +777,16 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
             "op" => "update"
         }
     end
+end
+
+def render_comments_for_news(news_id)
+    html = ""
+    Comments.render_comments(news_id) {|c|
+        html << H.comment {
+            H.entities(c["body"])
+        }
+    }
+    html
 end
 
 ###############################################################################

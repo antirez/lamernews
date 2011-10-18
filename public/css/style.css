@@ -151,3 +151,11 @@ form textarea {
     font-family: Courier;
     font-size:14px;
 }
+
+comment {
+    width:500px;
+    display:block;
+    border:1px solid #aaa;
+    margin-bottom:20px;
+    padding:10px;
+}

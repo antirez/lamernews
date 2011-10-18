@@ -146,3 +146,8 @@ news downarrow.voted {
 news downarrow.disabled, uparrow.disabled {
     visibility: hidden;
 }
+
+form textarea {
+    font-family: Courier;
+    font-size:14px;
+}

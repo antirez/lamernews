@@ -33,10 +33,20 @@ require 'app_config'
 require 'sinatra'
 require 'json'
 require 'digest/sha1'
+require 'comments'
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
     H = HTMLGen.new if !defined?(H)
+    if !defined?(Comments)
+        Comments = RedisComments.new($r,"comment",proc{|c,level|
+            if level == 0
+                c.sort {|a,b| b['ctime'] <=> a['ctime']}
+            else
+                c.sort {|a,b| a['ctime'] <=> b['ctime']}
+            end
+        })
+    end
     $user = nil
     auth_user(request.cookies['auth'])
 end
@@ -121,7 +131,18 @@ get "/news/:news_id" do
     halt(404,"404 - This news does not exist.") if !news
     H.set_title "#{H.entities news["title"]} - #{SiteName}"
     H.page {
-        news_to_html(news)
+        news_to_html(news)+
+        H.form(:name=>"f") {
+            H.inputhidden(:name => "news_id", :value => news["id"]) {}+
+            H.inputhidden(:name => "comment_id", :value => -1) {}+
+            H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
+            H.button(:name => "post_comment", :value => "Send")
+        }+H.div(:id => "errormsg"){}+
+        H.script(:type=>"text/javascript") {'
+            $(document).ready(function() {
+                $("input[name=post_comment]").click(post_comment);
+            });
+        '}
     }
 end
 
@@ -201,6 +222,55 @@ post '/api/submit' do
     }.to_json
 end
 
+post '/api/votenews' do
+    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if not check_api_secret
+        return {:status => "err", :error => "Wrong form secret."}.to_json
+    end
+    # Params sanity check
+    if (!check_params "newsid","votetype") or (params["votetype"] != "up" and
+                                               params["votetype"] != "down")
+        return {
+            :status => "err",
+            :error => "Missing news ID or invalid vote type."
+        }.to_json
+    end
+    # Vote the news
+    vote_type = params["votetype"].to_sym
+    if vote_news(params["newsid"].to_i,$user["id"],vote_type)
+        return { :status => "ok" }.to_json
+    else
+        return { :status => "err", 
+                 :error => "Invalid parameters or duplicated vote." }.to_json
+    end
+end
+
+post '/api/postcomment' do
+    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if not check_api_secret
+        return {:status => "err", :error => "Wrong form secret."}.to_json
+    end
+    # Params sanity check
+    if (!check_params "newsid","commentid","parentid",:comment)
+        return {
+            :status => "err",
+            :error => "Missing newsid, commentid, parentid, or comment
+                       parameter."
+        }.to_json
+    end
+    info = insert_comment(params["newsid"].to_i,$user['id'],
+                          params["commentid"].to_i,
+                          params["parent_id"].to_i,params["comment"])
+    if !info return {:status => "err", :error => "Invalid parameters."}.to_json
+    return {
+        :status => "ok",
+        :op => info['op'],
+        :comment_id => info['comment_id'],
+        :parent_id => params['parentid'],
+        :news_id => params['newsid']
+    }
+end
+
 # Check that the list of parameters specified exist.
 # If at least one is missing false is returned, otherwise true is returned.
 #
@@ -258,10 +328,17 @@ def application_header
 end
 
 def application_footer
+    if $user
+        apisecret = H.script("type" => "text/javascript") {
+            "var apisecret = '#{$user['apisecret']}';";
+        }
+    else
+        apisecret = ""
+    end
     H.footer {
         "Lamer News source code is located "+
         H.a(:href=>"http://github.com/antirez/lamernews"){"here"}
-    }
+    }+apisecret
 end
 
 ################################################################################
@@ -452,10 +529,22 @@ def vote_news(news_id,user_id,vote_type)
     end
 
     # News was not already voted by that user. Add the vote.
+    # Note that even if there is a race condition here and the user may be
+    # voting from another device/API in the time between the ZSCORE check
+    # and the zadd, this will not result in inconsistencies as we will just
+    # update the vote time with ZADD.
     if $r.zadd("news.#{vote_type}:#{news_id}", Time.now.to_i, user_id)
         $r.hincrby("news:#{news_id}",vote_type,1)
     end
     $r.zadd("user.saved:#{user_id}", Time.now.to_i, news_id) if vote_type == :up
+
+    # Compute the new values of score and karma, updating the news accordingly.
+    score = compute_news_score(news)
+    news["score"] = score
+    rank = compute_news_rank(news)
+    $r.hmset("news:#{news_id}",
+        "score",score,
+        "rank",rank)
     return true
 end
 
@@ -515,13 +604,6 @@ def submit_news(title,url,text,user_id)
         "comments", 0)
     # The posting user virtually upvoted the news posting it
     vote_news(news_id,user_id,:up)
-    news = get_news_by_id(news_id)
-    score = compute_news_score(news)
-    news["score"] = score
-    rank = compute_news_rank(news)
-    $r.hmset("news:#{news_id}",
-        "score",score,
-        "rank",rank)
     # Add the news to the user submitted news
     $r.zadd("user.posted:#{user_id}",ctime,news_id)
     # Add the news into the chronological view
@@ -632,7 +714,65 @@ def get_latest_news
 end
 
 ###############################################################################
-# Utilit functions
+# Comments
+###############################################################################
+
+# This function has different behaviors, depending on the arguments:
+#
+# 1) If comment_id is -1 insert a new comment into the specified news.
+# 2) If comment_id is an already existing comment in the context of the
+#    specified news, updates the comment.
+# 3) If comment_id is an already existing comment in the context of the
+#    specified news, but the comment is an empty string, delete the comment.
+#
+# Return value:
+#
+# If news_id does not exist or comment_id is not -1 but neither a valid
+# comment for that news, nil is returned.
+# Otherwise an hash is returned with the following fields:
+#   news_id: the news id
+#   comment_id: the updated comment id, or the new comment id
+#   op: the operation performed: "insert", "update", or "delete"
+#
+# More informations:
+#
+# The parent_id is only used for inserts (when comment_id == -1), otherwise
+# is ignored.
+def insert_comment(news_id,user_id,comment_id,parent_id,body)
+    news = get_news_by_id(news_id)
+    return false if !news
+    if comment_id == -1
+        comment = {"score" => 0,
+                   "body" => body,
+                   "parent_id" => parent_id,
+                   "user_id" => user_id,
+                   "ctime" => Time.now.to_i};
+        comment_id = Comments.insert(news_id,comment)
+        return false if !comment_id
+        return {
+            "news_id" => news_id,
+            "comment_id" => comment_id,
+            "op" => "insert"
+        }
+    else if comment.length == 0
+        return false if !Comments.del_comment(news_id,comment_id)
+        return {
+            "news_id" => news_id,
+            "comment_id" => comment_id,
+            "op" => "delete"
+        }
+    else
+        return false if !Comments.edit(news_id,comment_id,{"body" => body})
+        return {
+            "news_id" => news_id,
+            "comment_id" => comment_id,
+            "op" => "update"
+        }
+    end
+end
+
+###############################################################################
+# Utility functions
 ###############################################################################
 
 # Given an unix time in the past returns a string stating how much time

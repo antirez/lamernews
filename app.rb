@@ -133,8 +133,9 @@ get "/news/:news_id" do
     H.page {
         news_to_html(news)+
         H.form(:name=>"f") {
-            H.inputhidden(:name => "news_id", :value => news["id"]) {}+
-            H.inputhidden(:name => "comment_id", :value => -1) {}+
+            H.inputhidden(:name => "news_id", :value => news["id"])+
+            H.inputhidden(:name => "comment_id", :value => -1)+
+            H.inputhidden(:name => "parent_id", :value => -1)+
             H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
             H.button(:name => "post_comment", :value => "Send")
         }+H.div(:id => "errormsg"){}+
@@ -215,7 +216,7 @@ post '/api/submit' do
             }.to_json
         end
     end
-    news_id = submit_news(params[:title],params[:url],params[:text],$user["id"])
+    news_id = insert_news(params[:title],params[:url],params[:text],$user["id"])
     return  {
         :status => "ok",
         :news_id => news_id
@@ -228,16 +229,16 @@ post '/api/votenews' do
         return {:status => "err", :error => "Wrong form secret."}.to_json
     end
     # Params sanity check
-    if (!check_params "newsid","votetype") or (params["votetype"] != "up" and
-                                               params["votetype"] != "down")
+    if (!check_params "news_id","vote_type") or (params["vote_type"] != "up" and
+                                                 params["vote_type"] != "down")
         return {
             :status => "err",
             :error => "Missing news ID or invalid vote type."
         }.to_json
     end
     # Vote the news
-    vote_type = params["votetype"].to_sym
-    if vote_news(params["newsid"].to_i,$user["id"],vote_type)
+    vote_type = params["vote_type"].to_sym
+    if vote_news(params["news_id"].to_i,$user["id"],vote_type)
         return { :status => "ok" }.to_json
     else
         return { :status => "err", 
@@ -251,24 +252,24 @@ post '/api/postcomment' do
         return {:status => "err", :error => "Wrong form secret."}.to_json
     end
     # Params sanity check
-    if (!check_params "newsid","commentid","parentid",:comment)
+    if (!check_params "news_id","comment_id","parent_id",:comment)
         return {
             :status => "err",
-            :error => "Missing newsid, commentid, parentid, or comment
+            :error => "Missing news_id, comment_id, parent_id, or comment
                        parameter."
         }.to_json
     end
-    info = insert_comment(params["newsid"].to_i,$user['id'],
-                          params["commentid"].to_i,
+    info = insert_comment(params["news_id"].to_i,$user['id'],
+                          params["comment_id"].to_i,
                           params["parent_id"].to_i,params["comment"])
-    if !info return {:status => "err", :error => "Invalid parameters."}.to_json
+    return {:status => "err", :error => "Invalid parameters."}.to_json if !info
     return {
         :status => "ok",
         :op => info['op'],
         :comment_id => info['comment_id'],
-        :parent_id => params['parentid'],
-        :news_id => params['newsid']
-    }
+        :parent_id => params['parent_id'],
+        :news_id => params['news_id']
+    }.to_json
 end
 
 # Check that the list of parameters specified exist.
@@ -576,7 +577,7 @@ end
 #
 # Return value: the ID of the inserted news, or the ID of the news with
 # the same URL recently added.
-def submit_news(title,url,text,user_id)
+def insert_news(title,url,text,user_id)
     # If we don't have an url but a comment, we turn the url into
     # text://....first comment..., so it is just a special case of
     # title+url anyway.
@@ -739,6 +740,10 @@ end
 # The parent_id is only used for inserts (when comment_id == -1), otherwise
 # is ignored.
 def insert_comment(news_id,user_id,comment_id,parent_id,body)
+    puts "news_id: #{news_id}"
+    puts "comment_id: #{comment_id}"
+    puts "parent_id: #{parent_id}"
+    puts "body: #{body}"
     news = get_news_by_id(news_id)
     return false if !news
     if comment_id == -1
@@ -749,13 +754,15 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
                    "ctime" => Time.now.to_i};
         comment_id = Comments.insert(news_id,comment)
         return false if !comment_id
+        $r.hincrby("news:#{news_id}","comments",1);
         return {
             "news_id" => news_id,
             "comment_id" => comment_id,
             "op" => "insert"
         }
-    else if comment.length == 0
+    elsif comment.length == 0
         return false if !Comments.del_comment(news_id,comment_id)
+        $r.hincrby("news:#{news_id}","comments",-1);
         return {
             "news_id" => news_id,
             "comment_id" => comment_id,

@@ -48,11 +48,11 @@ function submit() {
 
 function post_comment() {
     var data = {
-        newsid: $("input[name=news_id]").val(),
-        commentid = $("input[name=comment_id"),
-        parentid = $("input[name=parent_id"),
-        comment: $("input[name=comment]").val(),
-        apisecret: $("input[name=apisecret]").val()
+        news_id: $("input[name=news_id]").val(),
+        comment_id: $("input[name=comment_id]").val(),
+        parent_id: $("input[name=parent_id]").val(),
+        comment: $("textarea[name=comment]").val(),
+        apisecret: apisecret
     };
     $.ajax({
         type: "POST",
@@ -83,8 +83,8 @@ $(document).ready(function() {
         if (!up_class) {
             news.children[0].onclick=function() {
                 var data = {
-                    newsid: news_id,
-                    votetype: "up",
+                    news_id: news_id,
+                    vote_type: "up",
                     apisecret: apisecret
                 };
                 $.ajax({
@@ -108,8 +108,8 @@ $(document).ready(function() {
         if (!down_class) {
             news.children[3].onclick=function() {
                 var data = {
-                    newsid : news_id,
-                    votetype: "down",
+                    news_id : news_id,
+                    vote_type: "down",
                     apisecret: apisecret
                 };
                 $.ajax({

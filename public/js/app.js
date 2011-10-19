@@ -25,10 +25,11 @@ function login() {
 
 function submit() {
     var data = {
+        news_id: $("input[name=news_id]").val(),
         title: $("input[name=title]").val(),
         url: $("input[name=url]").val(),
         text: $("textarea[name=text]").val(),
-        apisecret: $("input[name=apisecret]").val()
+        apisecret: apisecret
     };
     $.ajax({
         type: "POST",

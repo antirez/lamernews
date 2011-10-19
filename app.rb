@@ -98,6 +98,7 @@ get '/submit' do
         H.h2 {"Submit a new story"}+
         H.submitform {
             H.form(:name=>"f") {
+                H.inputhidden(:name => "news_id", :value => -1)+
                 H.label(:for => "title") {"title"}+
                 H.inputtext(:name => "title", :size => 80)+H.br+
                 H.label(:for => "url") {"url"}+H.br+
@@ -106,8 +107,6 @@ get '/submit' do
                 H.br+
                 H.label(:for => "text") {"text"}+
                 H.textarea(:name => "text", :cols => 60, :rows => 10) {}+
-                H.inputhidden(:name => "apisecret",
-                              :value => $user['apisecret']) {}+
                 H.button(:name => "do_submit", :value => "Submit")
             }
         }+
@@ -130,9 +129,10 @@ end
 get "/news/:news_id" do
     news = get_news_by_id(params["news_id"])
     halt(404,"404 - This news does not exist.") if !news
-    if news["url"].split("/")[0] == "text:"
+    # Show the news text if it is a news without URL.
+    if !news_domain(news)
         c = {
-            "body" => news["url"][7..-1],
+            "body" => news_text(news),
             "ctime" => news["ctime"],
             "user_id" => news["user_id"],
             "topcomment" => true
@@ -228,6 +228,50 @@ get "/editcomment/:news_id/:comment_id" do
     }
 end
 
+get "/editnews/:news_id" do
+    redirect "/login" if !$user
+    news = get_news_by_id(params["news_id"])
+    halt(404,"404 - This news does not exist.") if !news
+    halt(500,"Permission denied.") if $user['id'].to_i != news['user_id'].to_i
+
+    if news_domain(news)
+        text = ""
+    else
+        news['url'] = ""
+        text = news_text(news)
+    end
+    puts news.inspect
+    H.set_title "Edit news - #{SiteName}"
+    H.page {
+        news_to_html(news)+
+        H.submitform {
+            H.form(:name=>"f") {
+                H.inputhidden(:name => "news_id", :value => news['id'])+
+                H.label(:for => "title") {"title"}+
+                H.inputtext(:name => "title", :size => 80,
+                            :value => H.entities(news['title']))+H.br+
+                H.label(:for => "url") {"url"}+H.br+
+                H.inputtext(:name => "url", :size => 60,
+                            :value => H.entities(news['url']))+H.br+
+                "or if you don't have an url type some text"+
+                H.br+
+                H.label(:for => "text") {"text"}+
+                H.textarea(:name => "text", :cols => 60, :rows => 10) {
+                    H.entities(text)
+                }+H.button(:name => "do_submit", :value => "Edit")
+            }
+        }+
+        H.div(:id => "errormsg"){}+
+        H.note {
+            "Note: to remove the news set an empty title."
+        }+
+        H.script(:type=>"text/javascript") {'
+            $(document).ready(function() {
+                $("input[name=edit_news]").click(submit);
+            });
+        '}
+    }
+end
 
 ###############################################################################
 # API implementation
@@ -280,8 +324,9 @@ post '/api/submit' do
         return {:status => "err", :error => "Wrong form secret."}.to_json
     end
     # We can have an empty url or an empty first comment, but not both.
-    if (!check_params "title",:url,:text) or (params[:url].length == 0 and
-                                              params[:text].length == 0)
+    if (!check_params "title","news_id",:url,:text) or
+                               (params[:url].length == 0 and
+                                params[:text].length == 0)
         return {
             :status => "err",
             :error => "Please specify a news title and address or text."
@@ -298,7 +343,19 @@ post '/api/submit' do
             }.to_json
         end
     end
-    news_id = insert_news(params[:title],params[:url],params[:text],$user["id"])
+    if params[:news_id].to_i != -1
+        news_id = insert_news(params[:title],params[:url],params[:text],
+                              $user["id"])
+    else
+        news_id = edit_news(params[:news_id],params[:title],params[:url],
+                            params[:text],$user["id"])
+        if !news_id
+            return {
+                :status => "err",
+                :error => "Invalid parameters."
+            }.to_json
+        end
+    end
     return  {
         :status => "ok",
         :news_id => news_id
@@ -703,13 +760,26 @@ def insert_news(title,url,text,user_id)
     return news_id
 end
 
+# Return the host part of the news URL field.
+# If the url is in the form text:// nil is returned.
+def news_domain(news)
+    su = news["url"].split("/")
+    domain = (su[0] == "text:") ? nil : su[2]
+end
+
+# Assuming the news has an url in the form text:// returns the text
+# inside. Otherwise nil is returned.
+def news_text(news)
+    su = news["url"].split("/")
+    (su[0] == "text:") ? news["url"][7..-1] : nil
+end
+
 # Turn the news into its HTML representation, that is
 # a linked title with buttons to up/down vote plus additional info.
 # This function expects as input a news entry as obtained from
 # the get_news_by_id function.
 def news_to_html(news)
-    su = news["url"].split("/")
-    domain = (su[0] == "text:") ? nil : su[2]
+    domain = news_domain(news)
     news["url"] = "/news/#{news["id"]}" if !domain
     if news["voted"] == :up
         upclass = "voted"

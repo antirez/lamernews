@@ -153,9 +153,57 @@ form textarea {
 }
 
 comment {
+    position:relative;
     width:500px;
     display:block;
-    border:1px solid #aaa;
-    margin-bottom:20px;
-    padding:10px;
+    margin-bottom:40px;
+    min-height:50px;
+}
+
+comment avatar img {
+    position:absolute;
+    top:0px;
+    left:0px;
+    width:48px;
+    height:48px;
+}
+
+comment info {
+    position:relative;
+    left:60px;
+    font-size:14px;
+    color:#999;
+}
+
+comment info a.reply {
+    text-decoration:underline;
+    padding-left:5px;
+}
+
+comment pre {
+    width:50em;
+    position:relative;
+    left:60px;
+    top:10px;
+    font-family: Courier;
+    white-space: pre-wrap;       /* css-3 */
+    white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+    white-space: -pre-wrap;      /* Opera 4-6 */
+    white-space: -o-pre-wrap;    /* Opera 7 */
+    word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+note {
+    color: #666;
+    margin-left:20px;
+    font-size:14px;
+}
+
+comment.deleted {
+    color: #999;
+}
+
+topcomment {
+    display:block;
+    margin:20px;
 }

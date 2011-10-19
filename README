@@ -113,3 +113,35 @@ value is the news ID.
 news.top is used to generate the "Top News" page.
 It is a sorted set where the score is the "RANK" of the news, and the value is
 the news ID.
+
+Comments
+---
+
+Comments are represented using a very memory efficient pattern.
+The system is implemented in the comments.rb file.
+
+In short every thread (that is a collection of comments for a given
+news) is represented by an hash. Every hash entry represents a
+single comment:
+
+    * The hash field is the comment ID.
+    * The hash value is a JSON representation of the "comment object".
+
+The comment object has many fields, like ctime (creation time), body,
+user_id, and so forth. In order to render all the comments for a thread
+we simply do an HGETALL to fetch everything. Then we run the list of
+returned comments and build a graph of comments, calling a recursive
+function against it.
+
+Comments are never deleted, but just marked as deleted adding the "del"
+field with value 1 to the comment object. However when the thread is
+rendered into HTML deleted comments without childs are not displayed.
+Deleted comments with childs are displayed as [deleted comment] text.
+
+Please check comments.rb for details, it is trivial to read.
+
+User comments
+---
+
+All the comments posted by a given user are also taken into a sorted set
+of comments, keyed by creation time. The key name is: user.comments:<userid>.

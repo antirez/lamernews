@@ -41,7 +41,8 @@ class RedisComments
 
     def fetch(thread_id,comment_id)
         key = thread_key(thread_id)
-        @r.hget(key,id)
+        json = @r.hget(key,comment_id)
+        json ? JSON.parse(json) : nil
     end
     
     def insert(thread_id,comment)
@@ -58,10 +59,10 @@ class RedisComments
 
     def edit(thread_id,comment_id,updates)
         key = thread_key(thread_id)
-        old = @r.hget(key,id)
+        old = @r.hget(key,comment_id)
         return false if !old
         comment = JSON.parse(old).merge(updates)
-        @r.hset(key,id,comment.to_json)
+        @r.hset(key,comment_id,comment.to_json)
         return true
     end
 
@@ -87,7 +88,7 @@ class RedisComments
             byparent[parent_id] = [] if !byparent.has_key?(parent_id)
             byparent[parent_id] << c
         }
-        render_comments_rec(byparent,-1,0,block)
+        render_comments_rec(byparent,-1,0,block) if byparent[-1]
     end
 
     def render_comments_rec(byparent,parent_id,level,block)
@@ -95,8 +96,11 @@ class RedisComments
         thislevel = @sort_proc.call(thislevel,level) if @sort_proc
         thislevel.each{|c|
             c['level'] = level
-            block.call(c)
-            if byparent[c['id']]
+            parents = byparent[c['id']]
+            # Render the comment if not deleted, or if deleted but
+            # has replies.
+            block.call(c) if !c['del'] || c['del'].to_i == 0 || parents
+            if parents
                 render_comments_rec(byparent,c['id'],level+1,block)
             end
         }

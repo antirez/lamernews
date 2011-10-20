@@ -32,7 +32,7 @@ require 'page'
 require 'app_config'
 require 'sinatra'
 require 'json'
-require 'digest/sha1'
+require 'digest/sha2'
 require 'securerandom'
 require 'digest/md5'
 require 'comments'
@@ -598,10 +598,12 @@ def create_user(username,password)
     return nil if $r.exists("username.to.id:#{username.downcase}")
     id = $r.incr("users.count")
     auth_token = get_rand
+    salt = get_rand
     $r.hmset("user:#{id}",
         "id",id,
         "username",username,
-        "password",hash_password(password),
+        "password",hash_password(salt, password),
+        "salt",salt
         "ctime",Time.now.to_i,
         "karma",10,
         "about","",
@@ -632,9 +634,9 @@ def update_auth_token(user_id)
 end
 
 # Turn the password into an hashed one, using
-# SHA1(salt|password).
-def hash_password(password)
-    Digest::SHA1.hexdigest(PasswordSalt+password)
+# SHA256(salt:password).
+def hash_password(salt, password)
+    Digest::SHA256.hexdigest("#{salt}:#{password}")
 end
 
 # Return the user from the ID.
@@ -652,10 +654,11 @@ end
 # Check if the username/password pair identifies an user.
 # If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
-    hp = hash_password(password)
     user = get_user_by_username(username)
     return nil if !user
-    (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
+    hp = hash_password(user['salt'], password)
+    return nil unless hp == user['password']
+    [user['auth'], user['apisecret']]
 end
 
 ################################################################################

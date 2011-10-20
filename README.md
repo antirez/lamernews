@@ -124,8 +124,8 @@ In short every thread (that is a collection of comments for a given
 news) is represented by an hash. Every hash entry represents a
 single comment:
 
-    * The hash field is the comment ID.
-    * The hash value is a JSON representation of the "comment object".
+* The hash field is the comment ID.
+* The hash value is a JSON representation of the "comment object".
 
 The comment object has many fields, like ctime (creation time), body,
 user_id, and so forth. In order to render all the comments for a thread

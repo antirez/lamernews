@@ -6,13 +6,40 @@ written usign Ruby, Sinatra, Redis and JQuery.
 
 The goal is to have a system that is very simple to understand and modify and
 that is able to handle a very high load using a small virtual server, ensuring
-at the same time a very small latency user experience.
+at the same time a very low latency user experience.
 
 This project was created in order to run http://lamernews.com but is free for
 everybody to use, fork, and have fun with.
 
 We believe it is also a good programming example for Redis as a sole DB of a
 non trivial, real world, web application.
+
+Installation
+===
+
+Lamer news is a Ruby/Sinatra/Redis/JQuery application.
+You just need: Ruby 1.8.7 with the following gems:
+
+* redis
+* hiredis
+* sinatra
+* json
+* digest/sha1
+* digest/md5
+
+How to contribute
+===
+
+I plan to hack on Lamer News in my free time as it is interesting to have
+a non trivial open source example for Redis that is also an useful application.
+However contributions are welcomed. Just make sure to:
+
+* Keep it simple. No complex code, no extreme ruby programming. Ideally non ruby people should understand the code without much efforts.
+* Don't use templates, they suck.
+* If your code slows down significantly the page generation time it will not get merged.
+* Do everything you can to avoid depending on new ruby gems.
+* Open an issue on github before firing your editor to see if there are good chances that your changes will be merged.
+* If you don't want to follow all this rules, forking the code is *encouraged*! The license is two clause BSD, do with this code what you want. Run your site, turn it into a blog, hack it to the extreme consequences. Have fun :)
 
 Data Layout
 ===

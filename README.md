@@ -65,7 +65,7 @@ A Redis hash named `user:<user id>` with the following fields:
 
 Additionally the user has an additional key:
 
-    `sername.to.id:<lowercase_username>` -> User ID
+    `username.to.id:<lowercase_username>` -> User ID
 
 This is used to lookup users by name.
 

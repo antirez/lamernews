@@ -47,6 +47,28 @@ function submit() {
     return false;
 }
 
+function update_profile() {
+    var data = {
+        email: $("input[name=email]").val(),
+        about: $("textarea[name=about]").val(),
+        apisecret: apisecret
+    };
+    $.ajax({
+        type: "POST",
+        url: "/api/updateprofile",
+        data: data,
+        success: function(reply) {
+            var r = jQuery.parseJSON(reply);
+            if (r.status == "ok") {
+                window.location.reload();
+            } else {
+                $("#errormsg").html(r.error)
+            }
+        }
+    });
+    return false;
+}
+
 function post_comment() {
     var data = {
         news_id: $("input[name=news_id]").val(),

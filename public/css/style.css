@@ -26,7 +26,8 @@ header {
 
 header h1 {
     display: inline;
-    font-size:2em;
+    font-size:1.3em;
+    font-weight:bold;
     color:#333;
 }
 
@@ -105,11 +106,11 @@ news address {
 }
 
 news h2 a {
-    color: #3333ee;
+    color: black;
 }
 
 news h2 a:visited {
-    color: #6666aa;
+    color: #999999;
 }
 
 news uparrow, news downarrow {
@@ -206,4 +207,29 @@ comment.deleted {
 topcomment {
     display:block;
     margin:20px;
+}
+
+userinfo ul li {
+    list-style-type: none;
+    margin-bottom:10px;
+}
+
+userinfo p {
+    color: #666;
+    font-style: italic;
+    margin:20px;
+}
+
+userinfo avatar img {
+    width:48px;
+    height:48px;
+}
+
+userinfo h2 {
+    position:relative;
+    left:15px;
+    top:-15px;
+    display:inline;
+    font-size:28px;
+    color: #444;
 }

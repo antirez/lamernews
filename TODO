@@ -1,0 +1,28 @@
+Coding tasks
+---
+
+* RSS feed
+* Good support for quoting other guys messages
+* Having vim/emacs bindings in text area would be cool
+* iPhone/Android browser compatibility with ad-hoc CSS
+* Enlarge text area once the comment is big enough.
+* Every up vote costs some karma, down votes cost even more karma.
+* On up votes karma is transferred to posting user.
+* Automatically replace all the occurrences of Hacker in comments and news titles with H4k3r
+* Trottle by IP, using our INCR+TTL trick.
+* Require a minimal delay between same user submissions. At least write a "please wait" message.
+* User profile
+* Complete the API. Missing: get news stream and a few more.
+* Handle "comment" news.
+* Sorted set con tutti gli ID dei commenti postati da un dato utente.
+* Paginate top and latest
+* Comment votes. Just store ids inside JSON itself. Don't sort by votes, but make sure to show comments with many points in a different way, and comments with very little score with in gray. Just use goodcomment and badcomment classes.
+* Take a sorted set of users by karma
+* Increment user karma for every posted comment
+* Fortune
+* Plugins, that is, an user can create a plugin just providing a CSS part and a Javascript part of code, giving it a name. Then users can browse a list of plugins (sorted by number of installs or by submission time), and install them. At every page view all the CSS and JS for all the "installed" plugins is injected.
+
+Non coding tasks
+---
+
+* Security auditing

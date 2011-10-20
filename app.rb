@@ -50,6 +50,7 @@ before do
     end
     $user = nil
     auth_user(request.cookies['auth'])
+    increment_karma_if_needed if $user
 end
 
 get '/' do
@@ -237,8 +238,8 @@ get "/editnews/:news_id" do
     if news_domain(news)
         text = ""
     else
-        news['url'] = ""
         text = news_text(news)
+        news['url'] = ""
     end
     H.set_title "Edit news - #{SiteName}"
     H.page {
@@ -269,6 +270,57 @@ get "/editnews/:news_id" do
                 $("input[name=edit_news]").click(submit);
             });
         '}
+    }
+end
+
+get "/user/:username" do
+    user = get_user_by_username(params[:username])
+    halt(404,"Non existing user") if !user
+    posted_news,posted_comments = $r.pipelined {
+        $r.zcard("user.posted:#{user['id']}")
+        $r.zcard("user.comments:#{user['id']}")
+    }
+    H.set_title "#{H.entities user['username']} - #{SiteName}"
+    H.page {
+        H.userinfo {
+            H.avatar {
+                email = user["email"] || ""
+                digest = Digest::MD5.hexdigest(email)
+                H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
+            }+" "+
+            H.h2 {H.entities user['username']}+
+            H.p {
+                H.entities user['about']
+            }+
+            H.ul {
+                H.li {
+                    H.b {"created "}+
+                    "#{(Time.now.to_i-user['ctime'].to_i)/(3600*24)} days ago"
+                }+
+                H.li {H.b {"karma "}+ "#{user['karma']} points"}+
+                H.li {H.b {"posted news "}+posted_news.to_s}+
+                H.li {H.b {"posted comments "}+posted_comments.to_s}
+            }
+        }+if $user and $user['id'].to_i == user['id'].to_i
+            H.br+H.form(:name=>"f") {
+                H.label(:for => "email") {
+                    "email (not visible, used for gravatar)"
+                }+H.br+
+                H.inputtext(:name => "email", :size => 40,
+                            :value => H.entities(user['email']))+H.br+
+                H.label(:for => "about") {"about"}+H.br+
+                H.textarea(:name => "about", :cols => 60, :rows => 10){
+                    H.entities(user['about'])
+                }+H.br+
+                H.button(:name => "update_profile", :value => "Update profile")
+            }+
+            H.div(:id => "errormsg"){}+
+            H.script(:type=>"text/javascript") {'
+                $(document).ready(function() {
+                    $("input[name=update_profile]").click(update_profile);
+                });
+            '}
+        else "" end
     }
 end
 
@@ -414,6 +466,17 @@ post '/api/postcomment' do
     }.to_json
 end
 
+post '/api/updateprofile' do
+    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if !check_params(:about, :email)
+        return {:status => "err", :error => "Missing parameters."}.to_json
+    end
+    $r.hmset("user:#{$user['id']}",
+        "about", params[:about][0..4095],
+        "email", params[:email][0..255])
+    return {:status => "ok"}.to_json
+end
+
 # Check that the list of parameters specified exist.
 # If at least one is missing false is returned, otherwise true is returned.
 #
@@ -500,6 +563,25 @@ def auth_user(auth)
     return if !id
     user = $r.hgetall("user:#{id}")
     $user = user if user.length > 0
+end
+
+# In Lamer News users get karma visiting the site.
+# Increment the user karma by KarmaIncrementAmount if the latest increment
+# was performed more than KarmaIncrementInterval seconds ago.
+#
+# Return value: none.
+#
+# Notes: this function must be called only in the context of a logged in
+#        user.
+#
+# Side effects: the user karma is incremented and the $user hash updated.
+def increment_karma_if_needed
+    if $user['karma_incr_time'].to_i < (Time.now.to_i-KarmaIncrementInterval)
+        userkey = "user:#{$user['id']}"
+        $r.hset(userkey,"karma_incr_time",Time.now.to_i)
+        $r.hincrby(userkey,"karma",KarmaIncrementAmount)
+        $user['karma'] = $user['karma'].to_i + KarmaIncrementAmount
+    end
 end
 
 # Return the hex representation of an unguessable 160 bit random number.
@@ -700,7 +782,11 @@ def compute_news_score(news)
     # filtering, nor IP filtering.
     # We could use just ZCARD here of course, but I'm using ZRANGE already
     # since this is what is needed in the long term for vote analysis.
-    return (upvotes.length/2) - (downvotes.length/2)
+    score = (upvotes.length/2) - (downvotes.length/2)
+    # Now let's add the logarithm of the sum of all the votes, since
+    # something with 5 up and 5 down is less interesting than something
+    # with 50 up and 50 donw.
+    score += Math.log(upvotes.length/2+downvotes.length/2)*NewsScoreLogBooster
 end
 
 # Given the news compute its rank, that is function of time and score.
@@ -813,6 +899,7 @@ end
 # the get_news_by_id function.
 def news_to_html(news)
     domain = news_domain(news)
+    news = {}.merge(news) # Copy the object so we can modify it as we wish.
     news["url"] = "/news/#{news["id"]}" if !domain
     if news["voted"] == :up
         upclass = "voted"
@@ -830,13 +917,16 @@ def news_to_html(news)
                 H.entities news["title"]
             }
         }+" "+
-        if domain
-            H.address {
+        H.address {
+            if domain
                 "at "+H.entities(domain)
-            }+" "
-        else
-            " "
-        end +
+            else "" end +
+            if (news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
+                " " + H.a(:href => "/editnews/#{news["id"]}") {
+                    "[edit]"
+                }
+            else "" end
+        }+
         H.downarrow(:class => downclass) {
             "&#9660;"
         }+
@@ -895,7 +985,7 @@ end
 # score since this is done incrementally when there are pageviews on the
 # site.
 def get_top_news
-    news_ids = $r.zrevrange("news.top",0,NewsPerPage-1)
+    news_ids = $r.zrevrange("news.top",0,TopNewsPerPage-1)
     result = get_news_by_id(news_ids,:update_rank => true)
     # Sort by rank before returning, since we adjusted ranks during iteration.
     result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f}
@@ -903,7 +993,7 @@ end
 
 # Get news in chronological order.
 def get_latest_news
-    news_ids = $r.zrevrange("news.cron",0,NewsPerPage-1)
+    news_ids = $r.zrevrange("news.cron",0,LatestNewsPerPage-1)
     result = get_news_by_id(news_ids,:update_rank => true)
 end
 
@@ -1023,9 +1113,7 @@ def comment_to_html(c,u,news_id)
                     " (#{
                         (CommentEditTime - (Time.now.to_i-c['ctime'].to_i))/60
                     } minutes left)"
-            else
-                ""
-            end
+            else "" end
         }+H.pre {
             H.entities(c["body"].strip)
         }

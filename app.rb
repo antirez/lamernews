@@ -29,26 +29,15 @@ require 'rubygems'
 require 'hiredis'
 require 'redis'
 require 'page'
+require 'json'
 require 'app_config'
 require 'sinatra'
-require 'json'
 require 'digest/sha1'
 require 'digest/md5'
 require 'comments'
 
-$vcap_services = JSON.parse(ENV['VCAP_SERVICES']) if ENV['VCAP_SERVICES']
-
 before do
-    redis_conf = {}
-    if $vcap_services
-      redis = $vcap_services['redis-2.2'][0]
-      redis_conf = {:host => redis['credentials']['hostname'],
-                    :port => redis['credentials']['port'],
-                    :password => redis['credentials']['password']}
-    else
-      redis_conf = {:host => RedisHost, :port => RedisPort}
-    end
-    $r = Redis.new(redis_conf) if !$r
+    $r = Redis.new(RedisConfig) if !$r
     H = HTMLGen.new if !defined?(H)
     if !defined?(Comments)
         Comments = RedisComments.new($r,"comment",proc{|c,level|

@@ -2,8 +2,15 @@
 SiteName = "Lamer News"
 
 # Redis config
-RedisHost = "127.0.0.1"
-RedisPort = 10000
+RedisConfig = {:host => "127.0.0.1", :port => 10000}
+## Check for Cloud Foundry
+vcap_services = JSON.parse(ENV['VCAP_SERVICES']) if ENV['VCAP_SERVICES']
+if vcap_services
+  redis = vcap_services['redis-2.2'][0]
+  RedisConfig = {:host => redis['credentials']['hostname'],
+                 :port => redis['credentials']['port'],
+                 :password => redis['credentials']['password']}
+end
 
 # Security
 PasswordSalt = "*LAMER*news*"

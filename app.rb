@@ -940,8 +940,7 @@ def news_to_html(news)
             H.a(:href => "/news/#{news["id"]}") {
                 news["comments"]+" comments"
             }
-        }
-        #+news["score"]+","+news["rank"]+","+compute_news_rank(news).to_s
+        }#+news["score"].to_s+","+news["rank"].to_s+","+compute_news_rank(news).to_s
     }+"\n"
 end
 

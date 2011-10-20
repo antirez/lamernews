@@ -21,6 +21,8 @@ Coding tasks
 * Increment user karma for every posted comment
 * Fortune
 * Plugins, that is, an user can create a plugin just providing a CSS part and a Javascript part of code, giving it a name. Then users can browse a list of plugins (sorted by number of installs or by submission time), and install them. At every page view all the CSS and JS for all the "installed" plugins is injected.
+* Create pages with user submissions, upvoted stories (private), comments.
+  Link this pages to the profile accordingly.
 
 Non coding tasks
 ---

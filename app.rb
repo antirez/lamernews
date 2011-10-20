@@ -153,7 +153,7 @@ get "/news/:news_id" do
                 H.inputhidden(:name => "comment_id", :value => -1)+
                 H.inputhidden(:name => "parent_id", :value => -1)+
                 H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
-                H.button(:name => "post_comment", :value => "Send")
+                H.button(:name => "post_comment", :value => "Send comment")
             }+H.div(:id => "errormsg"){}
         else
             H.br
@@ -681,6 +681,7 @@ def get_news_by_id(news_ids,opt={})
             $r.hgetall("news:#{nid}")
         }
     }
+    return [] if !news
 
     # Get all the news
     $r.pipelined {

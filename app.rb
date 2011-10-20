@@ -77,7 +77,7 @@ get '/login' do
                 H.label(:for => "username") {"username"}+
                 H.inputtext(:name => "username")+
                 H.label(:for => "password") {"password"}+
-                H.inputtext(:name => "password")+H.br+
+                H.inputpass(:name => "password")+H.br+
                 H.checkbox(:name => "register", :value => "1")+
                 "create account"+H.br+
                 H.button(:name => "do_login", :value => "Login")

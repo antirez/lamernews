@@ -33,6 +33,7 @@ require 'app_config'
 require 'sinatra'
 require 'json'
 require 'digest/sha1'
+require 'securerandom'
 require 'digest/md5'
 require 'comments'
 
@@ -586,9 +587,7 @@ end
 
 # Return the hex representation of an unguessable 160 bit random number.
 def get_rand
-    rand = "";
-    File.open("/dev/urandom").read(20).each_byte{|x| rand << sprintf("%02x",x)}
-    rand
+    SecureRandom.hex(20)
 end
 
 # Create a new user with the specified username/password

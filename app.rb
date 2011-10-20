@@ -598,7 +598,6 @@ def create_user(username,password)
     return nil if $r.exists("username.to.id:#{username.downcase}")
     id = $r.incr("users.count")
     auth_token = get_rand
-    salt = get_rand
     $r.hmset("user:#{id}",
         "id",id,
         "username",username,

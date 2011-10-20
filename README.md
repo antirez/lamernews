@@ -49,7 +49,7 @@ Users
 
 Every user is represented by the following fields:
 
-A Redis hash named "user:<user id>" with the following fields:
+A Redis hash named `user:<user id>` with the following fields:
 
     id -> user ID
     username -> The username
@@ -65,7 +65,7 @@ A Redis hash named "user:<user id>" with the following fields:
 
 Additionally the user has an additional key:
 
-    username.to.id:<lowercase_username> -> User ID
+    `sername.to.id:<lowercase_username>` -> User ID
 
 This is used to lookup users by name.
 
@@ -77,12 +77,12 @@ is received.
 This token is in the form of a SHA1-sized hex number.
 The representation is a simple Redis key in the form:
 
-    auth:<lowercase_token> -> User ID
+    `auth:<lowercase_token>` -> User ID
 
 News
 ---
 
-News are represented as an hash with key name "news:<news id>".
+News are represented as an hash with key name `news:<news id>`.
 The hash has the following fields:
 
     id -> News id
@@ -99,7 +99,7 @@ The hash has the following fields:
 Note: up, down, comments fields are also available in other ways but we
 denormalize for speed.
 
-Also recently posted urls have a key named "url:<actual full url>" with TTL 48
+Also recently posted urls have a key named `url:<actual full url>` with TTL 48
 hours and set to the news ID of a recently posted news having this url.
 
 So if another user will try to post a given content again within 48 hours the
@@ -109,7 +109,7 @@ News votes
 ---
 
 Every news has a sorted set with user upvotes and downvotes. The keys are named
-respectively "news.up:<news id>" and "news.down:<news id>".
+respectively `news.up:<news id>` and `news.down:<news id>`.
 
 In the sorted sets the the score is the unix time of the vote, the element is
 the user ID of the voting user.
@@ -120,14 +120,14 @@ Saved news
 ---
 
 The system stores a list of upvoted news for every user using a sorted set named
-"user.saved:<user id>", index by unix time. The value of the sorted set elements
-is the "<news id>.
+`user.saved:<user id>`, index by unix time. The value of the sorted set elements
+is the `<news id>`.
 
 Submitted news
 ---
 
 Like saved news every user has an associated sorted set with news he posted.
-The key is called "user.posted:<user id>". Again the score is the unix time and
+The key is called `user.posted:<user id>`. Again the score is the unix time and
 the element is the news id.
 
 Top and Latest news
@@ -171,4 +171,4 @@ User comments
 ---
 
 All the comments posted by a given user are also taken into a sorted set
-of comments, keyed by creation time. The key name is: user.comments:<userid>.
+of comments, keyed by creation time. The key name is: `user.comments:<userid>`.

@@ -32,7 +32,7 @@ require 'page'
 require 'app_config'
 require 'sinatra'
 require 'json'
-require 'digest/sha2'
+require 'bcrypt'
 require 'securerandom'
 require 'digest/md5'
 require 'comments'
@@ -602,8 +602,7 @@ def create_user(username,password)
     $r.hmset("user:#{id}",
         "id",id,
         "username",username,
-        "password",hash_password(salt, password),
-        "salt",salt
+        "password",BCrypt::Password.create(password).to_s,
         "ctime",Time.now.to_i,
         "karma",10,
         "about","",
@@ -633,12 +632,6 @@ def update_auth_token(user_id)
     return new_auth_token
 end
 
-# Turn the password into an hashed one, using
-# SHA256(salt:password).
-def hash_password(salt, password)
-    Digest::SHA256.hexdigest("#{salt}:#{password}")
-end
-
 # Return the user from the ID.
 def get_user_by_id(id)
     $r.hgetall("user:#{id}")
@@ -656,8 +649,8 @@ end
 def check_user_credentials(username,password)
     user = get_user_by_username(username)
     return nil if !user
-    hp = hash_password(user['salt'], password)
-    return nil unless hp == user['password']
+    hp = BCrypt::Password.new(user['password'])
+    return nil unless hp.is_password?(password)
     [user['auth'], user['apisecret']]
 end
 

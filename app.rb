@@ -32,7 +32,8 @@ require 'page'
 require 'app_config'
 require 'sinatra'
 require 'json'
-require 'digest/sha1'
+require 'bcrypt'
+require 'securerandom'
 require 'digest/md5'
 require 'comments'
 
@@ -586,9 +587,7 @@ end
 
 # Return the hex representation of an unguessable 160 bit random number.
 def get_rand
-    rand = "";
-    File.open("/dev/urandom").read(20).each_byte{|x| rand << sprintf("%02x",x)}
-    rand
+    SecureRandom.hex(20)
 end
 
 # Create a new user with the specified username/password
@@ -602,7 +601,7 @@ def create_user(username,password)
     $r.hmset("user:#{id}",
         "id",id,
         "username",username,
-        "password",hash_password(password),
+        "password",BCrypt::Password.create(password).to_s,
         "ctime",Time.now.to_i,
         "karma",10,
         "about","",
@@ -632,12 +631,6 @@ def update_auth_token(user_id)
     return new_auth_token
 end
 
-# Turn the password into an hashed one, using
-# SHA1(salt|password).
-def hash_password(password)
-    Digest::SHA1.hexdigest(PasswordSalt+password)
-end
-
 # Return the user from the ID.
 def get_user_by_id(id)
     $r.hgetall("user:#{id}")
@@ -653,10 +646,11 @@ end
 # Check if the username/password pair identifies an user.
 # If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
-    hp = hash_password(password)
     user = get_user_by_username(username)
     return nil if !user
-    (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
+    hp = BCrypt::Password.new(user['password'])
+    return nil unless hp.is_password?(password)
+    [user['auth'], user['apisecret']]
 end
 
 ################################################################################

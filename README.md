@@ -2,7 +2,7 @@ About
 ===
 
 Lamer news is an implementation of a Reddit / Hacker News style news web site
-written usign Ruby, Sinatra, Redis and JQuery.
+written using Ruby, Sinatra, Redis and jQuery.
 
 The goal is to have a system that is very simple to understand and modify and
 that is able to handle a very high load using a small virtual server, ensuring
@@ -12,13 +12,13 @@ This project was created in order to run http://lamernews.com but is free for
 everybody to use, fork, and have fun with.
 
 We believe it is also a good programming example for Redis as a sole DB of a
-non trivial, real world, web application.
+nontrivial, real world, web application.
 
 Installation
 ===
 
-Lamer news is a Ruby/Sinatra/Redis/JQuery application.
-You just need: Ruby 1.8.7 with the following gems:
+Lamer news is a Ruby/Sinatra/Redis/jQuery application.
+You just need Ruby 1.8.7 with the following gems:
 
 * redis
 * hiredis

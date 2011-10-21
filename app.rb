@@ -25,15 +25,15 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Salvaore Sanfilippo.
 
-require 'rubygems'
-require 'hiredis'
-require 'redis'
-require 'page'
-require 'app_config'
-require 'sinatra'
-require 'json'
+require "rubygems"
+require "bundler"
+Bundler.require(:default)
+
 require 'digest/sha1'
 require 'digest/md5'
+
+require 'page'
+require 'app_config'
 require 'comments'
 
 before do

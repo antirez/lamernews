@@ -18,14 +18,11 @@ Installation
 ===
 
 Lamer news is a Ruby/Sinatra/Redis/jQuery application.
-You just need Ruby 1.8.7 with the following gems:
+You just need Ruby 1.8.7, and run:
 
-* redis
-* hiredis
-* sinatra
-* json
-* digest/sha1
-* digest/md5
+    gem install bundler --pre
+    bundle
+    shotgun
 
 How to contribute
 ===

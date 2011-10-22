@@ -676,8 +676,8 @@ end
 # If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
     user = get_user_by_username(username)
-    hp = hash_password(password,user['salt'])
     return nil if !user
+    hp = hash_password(password,user['salt'])
     (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
 end
 

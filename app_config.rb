@@ -6,7 +6,7 @@ RedisHost = "127.0.0.1"
 RedisPort = 10000
 
 # Security
-PBKDF2Iterations = 10000 # 10000 will make an attack harder but is slow.
+PBKDF2Iterations = 1000 # Set this to 5000 to improve security. But it is slow.
 PasswordSalt = "*LAMER*news*"
 UseOpenSSL = false
 

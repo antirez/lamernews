@@ -25,16 +25,17 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Salvatore Sanfilippo.
 
+require 'app_config'
 require 'rubygems'
 require 'hiredis'
 require 'redis'
 require 'page'
-require 'app_config'
 require 'sinatra'
 require 'json'
 require 'digest/sha1'
 require 'digest/md5'
 require 'comments'
+require 'pbkdf2'
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
@@ -632,10 +633,16 @@ def update_auth_token(user_id)
     return new_auth_token
 end
 
-# Turn the password into an hashed one, using
-# SHA1(salt|password).
+# Turn the password into an hashed one, using PBKDF2 with HMAC-SHA1
+# and 160 bit output.
 def hash_password(password)
-    Digest::SHA1.hexdigest(PasswordSalt+password)
+    p = PBKDF2.new do |p|
+        p.iterations = PBKDF2Iterations
+        p.password = password
+        p.salt = PasswordSalt
+        p.key_length = 160/8
+    end
+    p.hex_string
 end
 
 # Return the user from the ID.

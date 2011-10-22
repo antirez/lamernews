@@ -8,7 +8,7 @@ RedisPort = 10000
 # Security
 PBKDF2Iterations = 10000 # 10000 will make an attack harder but is slow.
 PasswordSalt = "*LAMER*news*"
-UseOpenSSL = true
+UseOpenSSL = false
 
 # Comments
 CommentMaxLength = 4096

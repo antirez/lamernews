@@ -7,7 +7,6 @@ RedisPort = 10000
 
 # Security
 PBKDF2Iterations = 1000 # Set this to 5000 to improve security. But it is slow.
-PasswordSalt = "*LAMER*news*"
 UseOpenSSL = false
 PasswordMinLength = 8
 

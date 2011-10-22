@@ -613,10 +613,12 @@ def create_user(username,password)
     return nil if $r.exists("username.to.id:#{username.downcase}")
     id = $r.incr("users.count")
     auth_token = get_rand
+    salt = get_rand
     $r.hmset("user:#{id}",
         "id",id,
         "username",username,
-        "password",hash_password(password),
+        "salt",salt,
+        "password",hash_password(password,salt),
         "ctime",Time.now.to_i,
         "karma",10,
         "about","",
@@ -648,11 +650,11 @@ end
 
 # Turn the password into an hashed one, using PBKDF2 with HMAC-SHA1
 # and 160 bit output.
-def hash_password(password)
+def hash_password(password,salt)
     p = PBKDF2.new do |p|
         p.iterations = PBKDF2Iterations
         p.password = password
-        p.salt = PasswordSalt
+        p.salt = salt
         p.key_length = 160/8
     end
     p.hex_string
@@ -673,8 +675,8 @@ end
 # Check if the username/password pair identifies an user.
 # If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
-    hp = hash_password(password)
     user = get_user_by_username(username)
+    hp = hash_password(password,user['salt'])
     return nil if !user
     (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
 end

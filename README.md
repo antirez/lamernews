@@ -26,6 +26,8 @@ You just need Ruby 1.8.7 with the following gems:
 * json
 * digest/sha1
 * digest/md5
+* ruby-hmac
+* openssl (not required but suggested to speedup password hashing)
 
 How to contribute
 ===

@@ -36,6 +36,7 @@ require 'digest/sha1'
 require 'digest/md5'
 require 'comments'
 require 'pbkdf2'
+require 'openssl' if UseOpenSSL
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r

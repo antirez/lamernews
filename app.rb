@@ -360,6 +360,18 @@ get '/api/login' do
 end
 
 post '/api/create_account' do
+    if (!check_params "username","password")
+        return {
+            :status => "err",
+            :error => "Username and password are two required fields."
+        }.to_json
+    end
+    if params[:password].length < PasswordMinLength
+        return {
+            :status => "err",
+            :error => "Password is too short. Min length:  #{PasswordMinLength}"
+        }.to_json
+    end
     auth = create_user(params[:username],params[:password])
     if auth 
         return {:status => "ok", :auth => auth}.to_json

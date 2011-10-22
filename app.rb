@@ -23,18 +23,23 @@
 # 
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
-# policies, either expressed or implied, of Salvaore Sanfilippo.
+# policies, either expressed or implied, of Salvatore Sanfilippo.
 
-require "rubygems"
-require "bundler"
-Bundler.require(:default)
-
+require 'rubygems'
+require 'app_config'
+require 'hiredis'
+require 'redis'
+require 'page'
+require 'sinatra'
+require 'json'
 require 'digest/sha1'
 require 'digest/md5'
 
 require 'page'
 require 'app_config'
 require 'comments'
+require 'pbkdf2'
+require 'openssl' if UseOpenSSL
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
@@ -358,6 +363,18 @@ get '/api/login' do
 end
 
 post '/api/create_account' do
+    if (!check_params "username","password")
+        return {
+            :status => "err",
+            :error => "Username and password are two required fields."
+        }.to_json
+    end
+    if params[:password].length < PasswordMinLength
+        return {
+            :status => "err",
+            :error => "Password is too short. Min length:  #{PasswordMinLength}"
+        }.to_json
+    end
     auth = create_user(params[:username],params[:password])
     if auth 
         return {:status => "ok", :auth => auth}.to_json
@@ -599,10 +616,12 @@ def create_user(username,password)
     return nil if $r.exists("username.to.id:#{username.downcase}")
     id = $r.incr("users.count")
     auth_token = get_rand
+    salt = get_rand
     $r.hmset("user:#{id}",
         "id",id,
         "username",username,
-        "password",hash_password(password),
+        "salt",salt,
+        "password",hash_password(password,salt),
         "ctime",Time.now.to_i,
         "karma",10,
         "about","",
@@ -632,10 +651,16 @@ def update_auth_token(user_id)
     return new_auth_token
 end
 
-# Turn the password into an hashed one, using
-# SHA1(salt|password).
-def hash_password(password)
-    Digest::SHA1.hexdigest(PasswordSalt+password)
+# Turn the password into an hashed one, using PBKDF2 with HMAC-SHA1
+# and 160 bit output.
+def hash_password(password,salt)
+    p = PBKDF2.new do |p|
+        p.iterations = PBKDF2Iterations
+        p.password = password
+        p.salt = salt
+        p.key_length = 160/8
+    end
+    p.hex_string
 end
 
 # Return the user from the ID.
@@ -653,9 +678,9 @@ end
 # Check if the username/password pair identifies an user.
 # If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
-    hp = hash_password(password)
     user = get_user_by_username(username)
     return nil if !user
+    hp = hash_password(password,user['salt'])
     (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
 end
 

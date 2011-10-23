@@ -1,5 +1,7 @@
 (function( window, document, $ ) {
 
+var apisecret = "";
+
 window.login = function() {
     var data = {
         username: $("input[name=username]").val(),

@@ -48,8 +48,10 @@ function submit() {
 }
 
 function update_profile() {
-	var checked = '0';
-	if($('input[name=new_window]').is(':checked')) checked = '1';
+	var checked = "0";
+	if($("input[name=new_window]").is(":checked")) {
+        checked = "1";
+    }
     var data = {
         email: $("input[name=email]").val(),
 		about: $("textarea[name=about]").val(),

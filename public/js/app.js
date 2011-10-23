@@ -1,6 +1,6 @@
 (function( window, $ ) {
 
-function login() {
+window.login = function() {
     var data = {
         username: $("input[name=username]").val(),
         password: $("input[name=password]").val(),
@@ -25,7 +25,7 @@ function login() {
     return false;
 }
 
-function submit() {
+window.submit = function() {
     var data = {
         news_id: $("input[name=news_id]").val(),
         title: $("input[name=title]").val(),
@@ -49,7 +49,7 @@ function submit() {
     return false;
 }
 
-function update_profile() {
+window.update_profile = function() {
     var data = {
         email: $("input[name=email]").val(),
         about: $("textarea[name=about]").val(),
@@ -71,7 +71,7 @@ function update_profile() {
     return false;
 }
 
-function post_comment() {
+window.post_comment = function() {
     var data = {
         news_id: $("input[name=news_id]").val(),
         comment_id: $("input[name=comment_id]").val(),

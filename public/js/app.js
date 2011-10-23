@@ -98,7 +98,7 @@ window.post_comment = function() {
                     window.location.href = "/news/"+r.news_id;
                 }
             } else {
-                $("#errormsg").html(r.error)
+                $("#errormsg").html(r.error);
             }
         }
     });
@@ -122,7 +122,8 @@ $(document).ready(function() {
                     url: "/api/votenews",
                     data: data,
                     success: function(reply) {
-                        var r = jQuery.parseJSON(reply);
+                        var r = jQuery.parseJSON(reply),
+                            n;
                         if (r.status == "ok") {
                             n = $("#"+news_id)[0];
                             n.children[0].setAttribute("class","voted");
@@ -147,7 +148,8 @@ $(document).ready(function() {
                     url: "/api/votenews",
                     data: data,
                     success: function(reply) {
-                        var r = jQuery.parseJSON(reply);
+                        var r = jQuery.parseJSON(reply),
+                            n;
                         if (r.status == "ok") {
                             n = $("#"+news_id)[0];
                             n.children[0].setAttribute("class","disabled");

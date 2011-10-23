@@ -260,7 +260,7 @@ get "/editnews/:news_id" do
                 H.label(:for => "text") {"text"}+
                 H.textarea(:name => "text", :cols => 60, :rows => 10) {
                     H.entities(text)
-                }+H.button(:name => "edit_news", :value => "Edit")
+                }+H.button(:name => "edit_news", :value => "Save changes")
             }
         }+
         H.div(:id => "errormsg"){}+

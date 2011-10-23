@@ -82,18 +82,13 @@ get '/login' do
                 H.inputpass(:name => "password")+H.br+
                 H.checkbox(:name => "register", :value => "1")+
                 "create account"+H.br+
-                H.button(:name => "do_login", :value => "Login")
+                H.submit(:name => "do_login", :value => "Login")
             }
         }+
         H.div(:id => "errormsg"){}+
         H.script(:type=>"text/javascript") {'
             $(document).ready(function() {
-                $("input[name=do_login]").click(login);
-                $("form[name=f]").keypress(function(event) {
-                    // If return (ASCII 13) is pressed, login
-                    if (event.which === 13)
-                        login();
-                });
+                $("form[name=f]").submit(login);
             });
         '}
     }

@@ -3,7 +3,7 @@
 window.login = function() {
     var data = {
         username: $("input[name=username]").val(),
-        password: $("input[name=password]").val(),
+        password: $("input[name=password]").val()
     };
     var register = $("input[name=register]").attr("checked");
     $.ajax({
@@ -18,7 +18,7 @@ window.login = function() {
                     '; expires=Thu, 1 Aug 2030 20:00:00 UTC; path=/';
                 window.location.href = "/";
             } else {
-                $("#errormsg").html(r.error)
+                $("#errormsg").html(r.error);
             }
         }
     });
@@ -42,7 +42,7 @@ window.submit = function() {
             if (r.status == "ok") {
                 window.location.href = "/news/"+r.news_id;
             } else {
-                $("#errormsg").html(r.error)
+                $("#errormsg").html(r.error);
             }
         }
     });
@@ -64,7 +64,7 @@ window.update_profile = function() {
             if (r.status == "ok") {
                 window.location.reload();
             } else {
-                $("#errormsg").html(r.error)
+                $("#errormsg").html(r.error);
             }
         }
     });

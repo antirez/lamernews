@@ -120,6 +120,7 @@ $(document).ready(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
+                            $('#'+news_id+' .upvotes').text(parseInt($('#'+news_id+' .upvotes').text()) + 1)
                             n = $("#"+news_id)[0];
                             n.children[0].setAttribute("class","voted");
                             n.children[3].setAttribute("class","disabled");
@@ -145,6 +146,7 @@ $(document).ready(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
+                            $('#'+news_id+' .downvotes').text(parseInt($('#'+news_id+' .downvotes').text()) + 1)
                             n = $("#"+news_id)[0];
                             n.children[0].setAttribute("class","disabled");
                             n.children[3].setAttribute("class","voted");

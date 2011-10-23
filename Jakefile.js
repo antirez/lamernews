@@ -49,7 +49,8 @@ var // Program References
           forin: false,
           maxerr: 100,
           loopfunc: true,
-          eqnull: true
+          eqnull: true,
+          jquery: true
         },
 
         // Uglify Optional Settings

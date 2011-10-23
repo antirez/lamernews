@@ -147,7 +147,7 @@ $(document).ready(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
-                            var vote_count = $('#'+news_id+' .downvotes')
+                            var vote_count = $("#"+news_id+" .downvotes")
                             vote_count.text(parseInt(vote_count.text(), 10) + 1)
                             n = $("#"+news_id)[0];
                             n.children[0].setAttribute("class","disabled");

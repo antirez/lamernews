@@ -955,9 +955,15 @@ def news_to_html(news)
             "&#9650;"
         }+" "+
         H.h2 {
-            H.a(:href=>news["url"]) {
-                H.entities news["title"]
-            }
+		      if $user['new_window'] == '1'
+					H.a(:href=>news['url'], :target=>'_blank') {
+						 H.entities news['title']
+					}
+				else
+					H.a(:href=>news["url"]) {
+						 H.entities news["title"]
+					}
+				end
         }+" "+
         H.address {
             if domain

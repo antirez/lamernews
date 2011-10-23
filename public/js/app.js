@@ -1,3 +1,5 @@
+(function( window, $ ) {
+
 function login() {
     var data = {
         username: $("input[name=username]").val(),
@@ -157,3 +159,5 @@ $(document).ready(function() {
         }
     });
 });
+
+})( this, this.jQuery );

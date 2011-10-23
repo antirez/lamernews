@@ -28,6 +28,11 @@ header {
     padding: 15px 0px 10px 15px;
     background-color:#7487ab;
     border-bottom: 5px #adbad3 solid;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 50px;
+    width:100%;
 }
 
 header h1 {
@@ -47,7 +52,7 @@ header a {
 
 content {
     display:block;
-    margin-top:20px;
+    margin-top:70px;
     margin-bottom:20px;
     padding: 15px;
 }

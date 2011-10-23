@@ -89,6 +89,11 @@ get '/login' do
         H.script(:type=>"text/javascript") {'
             $(document).ready(function() {
                 $("input[name=do_login]").click(login);
+                $("form[name=f]").keypress(function(event) {
+                    // If return (ASCII 13) is pressed, login
+                    if (event.which === 13)
+                        login();
+                });
             });
         '}
     }

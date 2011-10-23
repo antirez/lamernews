@@ -304,16 +304,16 @@ get "/user/:username" do
                 H.li {H.b {"posted comments "}+posted_comments.to_s}
             }
         }+if $user and $user['id'].to_i == user['id'].to_i
-            H.form(:name=>"f") {
-					 H.label(:for => "new_window") {
-                    "Open links in new window?"
-				    }+if $user['new_window'] == '1'
-					     H.checkbox(:name => "new_window", 
-								       :value => "1", :checked => "1") 
-					 else
-					     H.checkbox(:name => "new_window", :value => 1)
-				    end +
-					 H.br +  
+           H.form(:name=>"f") {
+                H.label(:for => "new_window") {
+                "Open links in new window?"
+                  }+if $user['new_window'] == '1'
+                      H.checkbox(:name => "new_window", 
+                                 :value => "1", :checked => "1") 
+                else
+                    H.checkbox(:name => "new_window", :value => 1)
+                end +
+                H.br +  
                 H.label(:for => "email") {
                     "email (not visible, used for gravatar)"
                 }+H.br+
@@ -497,7 +497,7 @@ post '/api/updateprofile' do
     $r.hmset("user:#{$user['id']}",
         "about", params[:about][0..4095],
         "email", params[:email][0..255],
-		  "new_window", (params[:new_window] == "1"?"1":"0"))
+        "new_window", (params[:new_window] == "1" ? "1" : "0"))
     return {:status => "ok"}.to_json
 end
 
@@ -955,15 +955,15 @@ def news_to_html(news)
             "&#9650;"
         }+" "+
         H.h2 {
-		      if $user['new_window'] == '1'
-					H.a(:href=>news['url'], :target=>'_blank') {
-						 H.entities news['title']
-					}
-				else
-					H.a(:href=>news["url"]) {
-						 H.entities news["title"]
-					}
-				end
+            if $user['new_window'] == '1'
+                H.a(:href=>news['url'], :target=>'_blank') {
+                H.entities news['title']
+            }
+            else
+                H.a(:href=>news["url"]) {
+                H.entities news["title"]
+                }
+            end
         }+" "+
         H.address {
             if domain

@@ -291,7 +291,7 @@ get "/user/:username" do
                 H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
             }+" "+
             H.h2 {H.entities user['username']}+
-            H.p {
+            H.pre {
                 H.entities user['about']
             }+
             H.ul {

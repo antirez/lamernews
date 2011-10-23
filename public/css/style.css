@@ -214,7 +214,7 @@ userinfo ul li {
     margin-bottom:10px;
 }
 
-userinfo p {
+userinfo pre {
     color: #666;
     font-style: italic;
     margin:20px;

@@ -221,7 +221,7 @@ get "/editcomment/:news_id/:comment_id" do
             H.button(:name => "post_comment", :value => "Edit")
         }+H.div(:id => "errormsg"){}+
         H.note {
-            "Note: to remove the comment remove all the text and presss Edit."
+            "Note: to remove the comment remove all the text and press Edit."
         }+
         H.script(:type=>"text/javascript") {'
             $(document).ready(function() {

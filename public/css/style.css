@@ -25,9 +25,9 @@ h2 {
 header {
     display:block;
     position:relative;
-    padding: 15px 0px 0px 15px;
-    background-color:#eee;
-    border-bottom: 1px #ccc solid;
+    padding: 15px 0px 10px 15px;
+    background-color:#7487ab;
+    border-bottom: 5px #adbad3 solid;
 }
 
 header h1 {
@@ -39,6 +39,10 @@ header h1 {
 
 header h1 a {
     color:#333;
+}
+
+header a {
+    color: #fff
 }
 
 content {

@@ -10,6 +10,12 @@ a {
     color:#666;
 }
 
+h2:first-child {
+    font-weight:bold; 
+    border-bottom:1px solid #ccc; 
+    padding-bottom: 10px;
+}
+
 h2 {
     margin-bottom:20px;
     font-size:22px;

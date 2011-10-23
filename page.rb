@@ -126,7 +126,7 @@ class HTMLGen
         self.html {
             H.head {
                 self.title{H.entities @title}+
-                self.meta(:charset => :utf8)+
+                self.meta(:charset => "utf-8")+
                 self.link(:href => "/css/style.css", :rel => "stylesheet",
                           :type => "text/css")+
                 self.link(:href => "/images/favicon.png", :rel => "shortcut icon")+

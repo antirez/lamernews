@@ -703,7 +703,13 @@ def get_news_by_id(news_ids,opt={})
             $r.hgetall("news:#{nid}")
         }
     }
-    return [] if !news
+    return [] if !news # Can happen only if news_ids is an empty array.
+
+    # Remove empty elements
+    news = news.select{|x| x.length > 0}
+    if news.length == 0
+        return opt[:single] ? nil : []
+    end
 
     # Get all the news
     $r.pipelined {

@@ -944,7 +944,8 @@ def news_to_html(news)
             if domain
                 "at "+H.entities(domain)
             else "" end +
-            if (news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
+            if ($user and $user['id'].to_i == news['user_id'].to_i and
+                news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
                 " " + H.a(:href => "/editnews/#{news["id"]}") {
                     "[edit]"
                 }

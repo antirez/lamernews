@@ -29,6 +29,22 @@ You just need Ruby 1.8.7 with the following gems:
 * ruby-hmac
 * openssl (not required but suggested to speedup password hashing)
 
+To use JavaScript build tools, install the following:
+
+* Node.JS
+* NPM
+
+Setup and install dev dependencies:
+```
+$ npm install
+```
+
+Run JavaScript build tools:
+```
+$ jake
+```
+
+
 How to contribute
 ===
 

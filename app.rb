@@ -288,7 +288,7 @@ get "/user/:username" do
             H.avatar {
                 email = user["email"] || ""
                 digest = Digest::MD5.hexdigest(email)
-                H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm", :alt=>user[username] + "'s avatar")
+                H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm", :alt=>user["username"] + "'s avatar")
             }+" "+
             H.h2 {H.entities user['username']}+
             H.pre {

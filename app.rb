@@ -542,7 +542,7 @@ def application_header
     }
     H.header {
         H.h1 {
-            H.entities SiteName
+            H.a(:href => "/") { H.entities SiteName}
         }+navbar+" "+rnavbar
     }
 end

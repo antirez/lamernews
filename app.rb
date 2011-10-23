@@ -169,6 +169,19 @@ get "/news/:news_id" do
     }
 end
 
+delete "/news/:news_id" do
+  nid = params["news_id"]
+  news = get_news_by_id(nid)
+  halt(404,"404 - This news does not exist.") if !news
+  halt(403,"403 - You don't have access to that news.") if $user['id'].to_i != news['user_id'].to_i
+
+  delete_news(nid)
+  return  {
+      :status => "ok",
+      :news_id => nid
+  }.to_json
+end
+
 get "/reply/:news_id/:comment_id" do
     redirect "/login" if !$user
     news = get_news_by_id(params["news_id"])
@@ -265,11 +278,14 @@ get "/editnews/:news_id" do
         }+
         H.div(:id => "errormsg"){}+
         H.note {
-            "Note: to remove the news set an empty title."
+            'Want to <a href="javascript:;" id="delete_news">remove this news?</a>'
         }+
         H.script(:type=>"text/javascript") {'
             $(document).ready(function() {
                 $("input[name=edit_news]").click(submit);
+                $("#delete_news").click(function () {
+                  if (confirm("Are you sure?")) _delete();
+                });
             });
         '}
     }
@@ -909,6 +925,12 @@ def edit_news(news_id,title,url,text,user_id)
         "title", title,
         "url", url)
     return news_id
+end
+
+# Delete news by its ID.
+def delete_news(news_id)
+  $r.del("news:"+news_id)
+  return news_id
 end
 
 # Return the host part of the news URL field.

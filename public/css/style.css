@@ -31,6 +31,10 @@ header h1 {
     color:#333;
 }
 
+header h1 a {
+    color:#333;
+}
+
 content {
     display:block;
     margin-top:20px;

@@ -1,4 +1,4 @@
-(function( window, $ ) {
+(function( window, document, $ ) {
 
 window.login = function() {
     var data = {
@@ -160,4 +160,4 @@ $(document).ready(function() {
     });
 });
 
-})( this, this.jQuery );
+})( this, this.document, this.jQuery );

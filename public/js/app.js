@@ -23,7 +23,7 @@ window.login = function() {
         }
     });
     return false;
-}
+};
 
 window.submit = function() {
     var data = {
@@ -47,7 +47,7 @@ window.submit = function() {
         }
     });
     return false;
-}
+};
 
 window.update_profile = function() {
     var data = {
@@ -69,7 +69,7 @@ window.update_profile = function() {
         }
     });
     return false;
-}
+};
 
 window.post_comment = function() {
     var data = {
@@ -101,7 +101,7 @@ window.post_comment = function() {
         }
     });
     return false;
-}
+};
 
 // Install the onclick event in all news arrows the user did not voted already.
 $(document).ready(function() {
@@ -130,7 +130,7 @@ $(document).ready(function() {
                         }
                     }
                 });
-            }
+            };
         }
         var down_class = news.children[3].getAttribute("class");
         if (!down_class) {
@@ -155,7 +155,7 @@ $(document).ready(function() {
                         }
                     }
                 });
-            }
+            };
         }
     });
 });

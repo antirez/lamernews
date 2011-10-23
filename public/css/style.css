@@ -69,7 +69,7 @@ nav a {
 rnav {
     color:#aaa;
     position: absolute;
-    top: 5px;
+    top: 10px;
     right: 10px;
     font-weight:bold;
     font-size:14px;
@@ -121,6 +121,15 @@ news h2 a {
 
 news h2 a:visited {
     color: #999999;
+}
+
+newslist news p {
+    padding-top: 10px;
+}
+
+newslist news p a {
+    background-color: #eee; 
+    padding: 3px;
 }
 
 news uparrow, news downarrow {

@@ -809,7 +809,10 @@ def compute_news_score(news)
     # Now let's add the logarithm of the sum of all the votes, since
     # something with 5 up and 5 down is less interesting than something
     # with 50 up and 50 donw.
-    score += Math.log(upvotes.length/2+downvotes.length/2)*NewsScoreLogBooster
+    votes = upvotes.length/2+downvotes.length/2
+    if votes > NewsScoreLogStart
+        score += Math.log(votes-NewsScoreLogStart)*NewsScoreLogBooster
+    end
 end
 
 # Given the news compute its rank, that is function of time and score.

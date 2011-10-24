@@ -74,13 +74,13 @@ nav a {
     margin-right:10px;
 }
 
-login,submitform {
+login,#submitform {
     display:block;
     position:relative;
     width:150px;
 }
 
-login label, submitform label {
+login label, #submitform label {
     font-size:12px;
     font-weight:bold;
 }

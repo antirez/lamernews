@@ -48,8 +48,13 @@ footer {
     text-align: center;
     color:#999;
     font-size:14px;
+    padding-top:20px;
     margin-bottom:30px;
+    text-shadow: 1px 1px 0 #fff,2px 2px 0 #eee;
+    font-size:1em;
 }
+footer a { border-bottom:1px dashed #ddd; }
+footer a:hover { color:#333; border-color:#aaa; }
 
 nav {
     margin-bottom:15px;
@@ -217,7 +222,20 @@ topcomment {
 userinfo ul li {
     list-style-type: none;
     margin-bottom:10px;
+    display:table-row;
 }
+
+userinfo ul li b {
+    display: table-cell;
+    text-align:right;
+    padding-right:6px;
+}
+
+userinfo ul li span {
+    display:table-cell;
+    padding-left:10px;
+}
+
 
 userinfo pre {
     color: #666;
@@ -237,4 +255,20 @@ userinfo h2 {
     display:inline;
     font-size:28px;
     color: #444;
+}
+
+form[name="f"] label { color:#444; }
+
+form[name="f"] input[type="text"] {
+    border:1px solid #ccc;
+    color:#444;
+    font-size:.8em;
+    margin: 0 0 1em 0;
+    padding: 4px 6px;
+}
+
+form[name="f"] textarea {
+    border:1px solid #ccc;
+    margin: 0 0 .5em 0;
+    padding:4px 6px;
 }

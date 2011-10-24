@@ -60,7 +60,7 @@ nav a {
     margin-left: 20px;
 }
 
-rnav {
+#account {
     color:#aaa;
     position: absolute;
     top: 5px;
@@ -69,7 +69,7 @@ rnav {
     font-size:14px;
 }
 
-rnav a {
+#account a {
     margin-left:10px;
     margin-right:10px;
 }

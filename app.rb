@@ -525,7 +525,7 @@ def application_header
             H.a(:href=>ni[1]) {H.entities ni[0]}
         }.inject{|a,b| a+"\n"+b}
     }
-    rnavbar = H.rnav {
+    rnavbar = H.nav(:id => "account") {
         if $user
             text = $user['username']
             link = "/user/"+H.urlencode($user['username'])

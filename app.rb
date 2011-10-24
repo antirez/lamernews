@@ -942,7 +942,7 @@ def news_to_html(news)
         downclass = "voted"
         upclass = "disabled"
     end
-    H.news(:id => news["id"]) {
+    H.article("data-news-id" => news["id"]) {
         H.uparrow(:class => upclass) {
             "&#9650;"
         }+" "+
@@ -983,7 +983,7 @@ end
 # the Redis hash representing the news in the DB) this function will render
 # the HTML needed to show this news.
 def news_list_to_html(news)
-    H.newslist {
+    H.section(:id => "newslist") {
         aux = ""
         news.each{|n|
             aux << news_to_html(n)

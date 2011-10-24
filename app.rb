@@ -87,7 +87,7 @@ get '/login' do
         }+
         H.div(:id => "errormsg"){}+
         H.script() {'
-            $(document).ready(function() {
+            $(function() {
                 $("input[name=do_login]").click(login);
             });
         '}
@@ -115,7 +115,7 @@ get '/submit' do
         }+
         H.div(:id => "errormsg"){}+
         H.script() {'
-            $(document).ready(function() {
+            $(function() {
                 $("input[name=do_submit]").click(submit);
             });
         '}
@@ -162,7 +162,7 @@ get "/news/:news_id" do
         end +
         render_comments_for_news(news["id"])+
         H.script() {'
-            $(document).ready(function() {
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
@@ -190,7 +190,7 @@ get "/reply/:news_id/:comment_id" do
             H.button(:name => "post_comment", :value => "Reply")
         }+H.div(:id => "errormsg"){}+
         H.script() {'
-            $(document).ready(function() {
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
@@ -224,7 +224,7 @@ get "/editcomment/:news_id/:comment_id" do
             "Note: to remove the comment remove all the text and press Edit."
         }+
         H.script() {'
-            $(document).ready(function() {
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
@@ -268,7 +268,7 @@ get "/editnews/:news_id" do
             "Note: to remove the news set an empty title."
         }+
         H.script() {'
-            $(document).ready(function() {
+            $(function() {
                 $("input[name=edit_news]").click(submit);
             });
         '}
@@ -318,7 +318,7 @@ get "/user/:username" do
             }+
             H.div(:id => "errormsg"){}+
             H.script() {'
-                $(document).ready(function() {
+                $(function() {
                     $("input[name=update_profile]").click(update_profile);
                 });
             '}

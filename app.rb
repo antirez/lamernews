@@ -86,8 +86,8 @@ get '/login' do
             }
         }+
         H.div(:id => "errormsg"){}+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=do_login]").click(login);
             });
         '}
@@ -114,8 +114,8 @@ get '/submit' do
             }
         }+
         H.div(:id => "errormsg"){}+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=do_submit]").click(submit);
             });
         '}
@@ -161,8 +161,8 @@ get "/news/:news_id" do
             H.br
         end +
         render_comments_for_news(news["id"])+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
@@ -189,8 +189,8 @@ get "/reply/:news_id/:comment_id" do
             H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
             H.button(:name => "post_comment", :value => "Reply")
         }+H.div(:id => "errormsg"){}+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
@@ -223,8 +223,8 @@ get "/editcomment/:news_id/:comment_id" do
         H.note {
             "Note: to remove the comment remove all the text and press Edit."
         }+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
@@ -267,8 +267,8 @@ get "/editnews/:news_id" do
         H.note {
             "Note: to remove the news set an empty title."
         }+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=edit_news]").click(submit);
             });
         '}
@@ -317,8 +317,8 @@ get "/user/:username" do
                 H.button(:name => "update_profile", :value => "Update profile")
             }+
             H.div(:id => "errormsg"){}+
-            H.script(:type=>"text/javascript") {'
-                $(document).ready(function() {
+            H.script() {'
+                $(function() {
                     $("input[name=update_profile]").click(update_profile);
                 });
             '}
@@ -549,7 +549,7 @@ end
 
 def application_footer
     if $user
-        apisecret = H.script("type" => "text/javascript") {
+        apisecret = H.script() {
             "var apisecret = '#{$user['apisecret']}';";
         }
     else

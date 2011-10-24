@@ -819,6 +819,7 @@ def compute_news_score(news)
     if votes > NewsScoreLogStart
         score += Math.log(votes-NewsScoreLogStart)*NewsScoreLogBooster
     end
+    score
 end
 
 # Given the news compute its rank, that is function of time and score.

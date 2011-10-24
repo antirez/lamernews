@@ -799,6 +799,7 @@ def vote_news(news_id,user_id,vote_type)
     $r.hmset("news:#{news_id}",
         "score",score,
         "rank",rank)
+    $r.zadd("news.top",rank,news_id)
     return rank
 end
 
@@ -1003,6 +1004,7 @@ def update_news_rank_if_needed(n)
     real_rank = compute_news_rank(n)
     if (real_rank-n["rank"].to_f).abs > 0.001
         $r.hmset("news:#{n["id"]}","rank",real_rank)
+        $r.zadd("news.top",real_rank,n["id"])
         n["rank"] = real_rank.to_s
     end
 end

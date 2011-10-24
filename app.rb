@@ -1122,13 +1122,13 @@ def comment_to_html(c,u,news_id)
             "[comment deleted]"
         }
     end
-    H.article(:class => "comment", :style=>indent, :id=>"#{news_id}-#{c['id']}") {
-        H.avatar {
+    H.article(:class => "comment", :style=>indent, "data-comment-id"=>"#{news_id}-#{c['id']}") {
+        H.span(:class => "avatar") {
             email = u["email"] || ""
             digest = Digest::MD5.hexdigest(email)
             H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
-        }+H.info {
-            H.username {
+        }+H.span(:class => "info") {
+            H.span(:class => "username") {
                 H.a(:href=>"/user/"+H.urlencode(u["username"])) {
                     H.entities u["username"]
                 }

@@ -165,7 +165,7 @@ form textarea {
     min-height:50px;
 }
 
-.comment avatar img {
+.comment .avatar img {
     position:absolute;
     top:0px;
     left:0px;
@@ -173,14 +173,14 @@ form textarea {
     height:48px;
 }
 
-.comment info {
+.comment .info {
     position:relative;
     left:60px;
     font-size:14px;
     color:#999;
 }
 
-.comment info a.reply {
+.comment .info a.reply {
     text-decoration:underline;
     padding-left:5px;
 }
@@ -225,7 +225,7 @@ userinfo pre {
     margin:20px;
 }
 
-userinfo avatar img {
+userinfo .avatar img {
     width:48px;
     height:48px;
 }

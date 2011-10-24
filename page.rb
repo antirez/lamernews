@@ -30,7 +30,7 @@ require 'cgi'
 class HTMLGen
     @@newlinetags = %w{html body div br ul hr title link head filedset label legend option table li select td tr meta}
     @@metatags = {
-        "js" => {"tag"=>"script","type"=>"text/javascript"},
+        "js" => {"tag"=>"script"},
         "inputtext" => {"tag"=>"input","type"=>"text"},
         "inputpass" => {"tag"=>"input","type"=>"password"},
         "inputfile" => {"tag"=>"input","type"=>"file"},

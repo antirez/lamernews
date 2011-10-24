@@ -1118,11 +1118,11 @@ def comment_to_html(c,u,news_id)
     indent = "margin-left:#{c['level'].to_i*CommentReplyShift}px"
 
     if c['del'] and c['del'].to_i == 1
-        return H.comment(:style => indent,:class=>"deleted") {
+        return H.article(:style => indent,:class=>"commented deleted") {
             "[comment deleted]"
         }
     end
-    H.comment(:style=>indent, :id=>"#{news_id}-#{c['id']}") {
+    H.article(:class => "comment", :style=>indent, :id=>"#{news_id}-#{c['id']}") {
         H.avatar {
             email = u["email"] || ""
             digest = Digest::MD5.hexdigest(email)

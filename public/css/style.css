@@ -74,13 +74,13 @@ nav a {
     margin-right:10px;
 }
 
-login,#submitform {
+#login,#submitform {
     display:block;
     position:relative;
     width:150px;
 }
 
-login label, #submitform label {
+#login label, #submitform label {
     font-size:12px;
     font-weight:bold;
 }
@@ -214,23 +214,23 @@ topcomment {
     margin:20px;
 }
 
-userinfo ul li {
+.userinfo ul li {
     list-style-type: none;
     margin-bottom:10px;
 }
 
-userinfo pre {
+.userinfo pre {
     color: #666;
     font-style: italic;
     margin:20px;
 }
 
-userinfo .avatar img {
+.userinfo .avatar img {
     width:48px;
     height:48px;
 }
 
-userinfo h2 {
+.userinfo h2 {
     position:relative;
     left:15px;
     top:-15px;

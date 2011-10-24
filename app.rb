@@ -74,7 +74,7 @@ end
 get '/login' do
     H.set_title "Login - #{SiteName}"
     H.page {
-        H.login {
+        H.div(:id => "login") {
             H.form(:name=>"f") {
                 H.label(:for => "username") {"username"}+
                 H.inputtext(:id => "username", :name => "username")+
@@ -284,8 +284,8 @@ get "/user/:username" do
     }
     H.set_title "#{H.entities user['username']} - #{SiteName}"
     H.page {
-        H.userinfo {
-            H.avatar {
+        H.div(:class => "userinfo") {
+            H.span(:class => "avatar") {
                 email = user["email"] || ""
                 digest = Digest::MD5.hexdigest(email)
                 H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")

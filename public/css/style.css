@@ -92,63 +92,63 @@ div #errormsg {
     margin-top: 15px;
 }
 
-news {
+article {
     display: block;
     font-size: 16px;
     margin-bottom:15px;
 }
 
-news h2 {
+article h2 {
     display: inline;
     font-size:20px;
 }
 
-news address {
+article address {
     display: inline;
     color: #999;
     font-size:14px;
 }
 
-news h2 a {
+article h2 a {
     color: black;
 }
 
-news h2 a:visited {
+article h2 a:visited {
     color: #999999;
 }
 
-news uparrow, news downarrow {
+article uparrow, article downarrow {
     font-size: 16px;
     cursor: pointer;
 }
 
-news uparrow {
+article uparrow {
     color:#999;
 }
 
-news downarrow {
+article downarrow {
     color:#ccc;
 }
 
-news p {
+article p {
     font-size:14px;
     color:#999;
     margin-left:20px;
 }
 
-news p a {
+article p a {
     color: #666;
 }
 
-news uparrow.voted {
+article uparrow.voted {
     color:#99dd99;
 }
 
-news downarrow.voted {
+article downarrow.voted {
     color:#dd9999;
 }
 
-news downarrow.disabled, uparrow.disabled {
+article downarrow.disabled, uparrow.disabled {
     visibility: hidden;
 }
 

@@ -117,16 +117,16 @@ article h2 a:visited {
     color: #999999;
 }
 
-article uparrow, article downarrow {
+article .uparrow, article .downarrow {
     font-size: 16px;
     cursor: pointer;
 }
 
-article uparrow {
+article .uparrow {
     color:#999;
 }
 
-article downarrow {
+article .downarrow {
     color:#ccc;
 }
 
@@ -140,15 +140,15 @@ article p a {
     color: #666;
 }
 
-article uparrow.voted {
+article .uparrow.voted {
     color:#99dd99;
 }
 
-article downarrow.voted {
+article .downarrow.voted {
     color:#dd9999;
 }
 
-article downarrow.disabled, uparrow.disabled {
+article .downarrow.disabled, .uparrow.disabled {
     visibility: hidden;
 }
 

@@ -943,7 +943,7 @@ def news_to_html(news)
         upclass = "disabled"
     end
     H.article("data-news-id" => news["id"]) {
-        H.uparrow(:class => upclass) {
+        H.a(:href => "", :class => "uparrow " + upclass) {
             "&#9650;"
         }+" "+
         H.h2 {
@@ -962,7 +962,7 @@ def news_to_html(news)
                 }
             else "" end
         }+
-        H.downarrow(:class => downclass) {
+        H.a(:href => "", :class => "downarrow " + downclass) {
             "&#9660;"
         }+
         H.p {

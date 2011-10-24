@@ -30,7 +30,7 @@ require 'cgi'
 class HTMLGen
     @@newlinetags = %w{html body div br ul hr title link head filedset label legend option table li select td tr meta}
     @@metatags = {
-        "js" => {"tag"=>"script","type"=>"text/javascript"},
+        "js" => {"tag"=>"script"},
         "inputtext" => {"tag"=>"input","type"=>"text"},
         "inputpass" => {"tag"=>"input","type"=>"password"},
         "inputfile" => {"tag"=>"input","type"=>"file"},
@@ -131,7 +131,7 @@ class HTMLGen
                           :type => "text/css")+
                 self.link(:href => "/images/favicon.png", :rel => "shortcut icon")+
                 self.script(:src =>
-                    "http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"){}+
+                    "//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"){}+
                 self.script(:src => "/js/app.js"){}
             }+
             self.body {

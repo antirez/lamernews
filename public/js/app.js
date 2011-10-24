@@ -102,7 +102,7 @@ function post_comment() {
 }
 
 // Install the onclick event in all news arrows the user did not voted already.
-$(document).ready(function() {
+$(function() {
     $('news').each(function(i,news) {
         var news_id = news.id;
         var up_class = news.children[0].getAttribute("class");

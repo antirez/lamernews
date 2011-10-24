@@ -13,7 +13,7 @@ PasswordMinLength = 8
 # Comments
 CommentMaxLength = 4096
 CommentEditTime = 3600*2
-CommentReplyShift = 30
+CommentReplyShift = 60
 
 # User
 KarmaIncrementInterval = 3600*3

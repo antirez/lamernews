@@ -55,7 +55,7 @@ A Redis hash named `user:<user id>` with the following fields:
 
     id -> user ID
     username -> The username
-    password -> Hashed password, SHA1(salt|password) note: | means concatenation
+    password -> Hashed password, PBKDF2(salt|password) note: | means concatenation
     ctime -> Registration time (unix time)
     karma -> User karma, earned visiting the site and posting good stuff
     about -> Some optional info about the user

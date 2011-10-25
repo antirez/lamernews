@@ -38,6 +38,8 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
+Version = "0.1.0"
+
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
     H = HTMLGen.new if !defined?(H)
@@ -583,7 +585,8 @@ def application_header
     }
     H.header {
         H.h1 {
-            H.a(:href => "/") { H.entities SiteName}
+            H.a(:href => "/") {H.entities SiteName}+" "+
+            H.small {Version}
         }+navbar+" "+rnavbar
     }
 end

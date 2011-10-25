@@ -35,6 +35,10 @@ header h1 a {
     color:#333;
 }
 
+header h1 small {
+    font-size: 14px;
+}
+
 #content {
     display:block;
     margin-top:20px;

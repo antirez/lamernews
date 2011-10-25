@@ -302,7 +302,7 @@ get "/user/:username" do
         $r.zcard("user.comments:#{user['id']}")
     }
     H.set_title "#{H.entities user['username']} - #{SiteName}"
-    owner = $user and $user['id'].to_i == user['id'].to_i
+    owner = $user && ($user['id'].to_i == user['id'].to_i)
     H.page {
         H.div(:class => "userinfo") {
             H.span(:class => "avatar") {
@@ -324,7 +324,7 @@ get "/user/:username" do
                 H.li {H.b {"posted comments "}+posted_comments.to_s}+
                 if owner
                     H.li {H.a(:href=>"/saved/0") {"saved news"}}
-                end
+                else "" end
             }
         }+if owner
             H.br+H.form(:name=>"f") {

@@ -1,7 +1,11 @@
-function login() {
+(function( window, document, $ ) {
+
+var apisecret = "";
+
+window.login = function() {
     var data = {
         username: $("input[name=username]").val(),
-        password: $("input[name=password]").val(),
+        password: $("input[name=password]").val()
     };
     var register = $("input[name=register]").attr("checked");
     $.ajax({
@@ -16,14 +20,14 @@ function login() {
                     '; expires=Thu, 1 Aug 2030 20:00:00 UTC; path=/';
                 window.location.href = "/";
             } else {
-                $("#errormsg").html(r.error)
+                $("#errormsg").html(r.error);
             }
         }
     });
     return false;
-}
+};
 
-function submit() {
+window.submit = function() {
     var data = {
         news_id: $("input[name=news_id]").val(),
         title: $("input[name=title]").val(),
@@ -40,14 +44,14 @@ function submit() {
             if (r.status == "ok") {
                 window.location.href = "/news/"+r.news_id;
             } else {
-                $("#errormsg").html(r.error)
+                $("#errormsg").html(r.error);
             }
         }
     });
     return false;
-}
+};
 
-function update_profile() {
+window.update_profile = function() {
     var data = {
         email: $("input[name=email]").val(),
         password: $("input[name=password]").val(),
@@ -63,14 +67,14 @@ function update_profile() {
             if (r.status == "ok") {
                 window.location.reload();
             } else {
-                $("#errormsg").html(r.error)
+                $("#errormsg").html(r.error);
             }
         }
     });
     return false;
-}
+};
 
-function post_comment() {
+window.post_comment = function() {
     var data = {
         news_id: $("input[name=news_id]").val(),
         comment_id: $("input[name=comment_id]").val(),
@@ -95,12 +99,12 @@ function post_comment() {
                     window.location.href = "/news/"+r.news_id;
                 }
             } else {
-                $("#errormsg").html(r.error)
+                $("#errormsg").html(r.error);
             }
         }
     });
     return false;
-}
+};
 
 // Install the onclick event in all news arrows the user did not voted already.
 $(function() {
@@ -119,7 +123,8 @@ $(function() {
                     url: "/api/votenews",
                     data: data,
                     success: function(reply) {
-                        var r = jQuery.parseJSON(reply);
+                        var r = jQuery.parseJSON(reply),
+                            n;
                         if (r.status == "ok") {
                             n = $("#"+news_id)[0];
                             n.children[0].setAttribute("class","voted");
@@ -129,7 +134,7 @@ $(function() {
                         }
                     }
                 });
-            }
+            };
         }
         var down_class = news.children[3].getAttribute("class");
         if (!down_class) {
@@ -144,7 +149,8 @@ $(function() {
                     url: "/api/votenews",
                     data: data,
                     success: function(reply) {
-                        var r = jQuery.parseJSON(reply);
+                        var r = jQuery.parseJSON(reply),
+                            n;
                         if (r.status == "ok") {
                             n = $("#"+news_id)[0];
                             n.children[0].setAttribute("class","disabled");
@@ -154,7 +160,9 @@ $(function() {
                         }
                     }
                 });
-            }
+            };
         }
     });
 });
+
+})( this, this.document, this.jQuery );

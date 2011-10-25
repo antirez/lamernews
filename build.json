@@ -1,0 +1,21 @@
+{
+	"files": {
+		"public/js/app": {
+			"src": [
+				"public/js/app.js"
+			],
+			"prehint": true,
+			"posthint": false,
+			"debug": true,
+
+			"meta": {
+				"label": "lamernews app.js",
+				"author": "antirez",
+				"version": "0.0.0",
+				"homeurl": "",
+				"license": [ "Two Clause BSD" ],
+				"copyright": "Copyright 2011 Salvatore Sanfilippo. "
+			}
+		}
+	}
+}

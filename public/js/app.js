@@ -50,6 +50,7 @@ function submit() {
 function update_profile() {
     var data = {
         email: $("input[name=email]").val(),
+        password: $("input[name=password]").val(),
         about: $("textarea[name=about]").val(),
         apisecret: apisecret
     };

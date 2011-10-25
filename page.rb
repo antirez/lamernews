@@ -132,7 +132,7 @@ class HTMLGen
                 self.link(:href => "/images/favicon.png", :rel => "shortcut icon")+
                 self.script(:src =>
                     "//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"){}+
-                self.script(:src => "/js/app.js"){}
+                self.script(:src => "/js/app.js?v=2"){}
             }+
             self.body {
                 self.div(:class => "container") {

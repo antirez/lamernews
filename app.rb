@@ -310,6 +310,10 @@ get "/user/:username" do
                 }+H.br+
                 H.inputtext(:name => "email", :size => 40,
                             :value => H.entities(user['email']))+H.br+
+                H.label(:for => "password") {
+                    "change password (optional)"
+                }+H.br+
+                H.inputpass(:name => "password", :size => 40)+H.br+
                 H.label(:for => "about") {"about"}+H.br+
                 H.textarea(:name => "about", :cols => 60, :rows => 10){
                     H.entities(user['about'])
@@ -369,7 +373,7 @@ post '/api/create_account' do
     if params[:password].length < PasswordMinLength
         return {
             :status => "err",
-            :error => "Password is too short. Min length:  #{PasswordMinLength}"
+            :error => "Password is too short. Min length: #{PasswordMinLength}"
         }.to_json
     end
     auth = create_user(params[:username],params[:password])
@@ -482,8 +486,19 @@ end
 
 post '/api/updateprofile' do
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
-    if !check_params(:about, :email)
+    if !check_params(:about, :email, :password)
         return {:status => "err", :error => "Missing parameters."}.to_json
+    end
+    if params[:password].length > 0
+        if params[:password].length < PasswordMinLength
+            return {
+                :status => "err",
+                :error => "Password is too short. "+
+                          "Min length: #{PasswordMinLength}"
+            }.to_json
+        end
+        $r.hmset("user:#{$user['id']}","password",
+            hash_password(params[:password],$user['salt']))
     end
     $r.hmset("user:#{$user['id']}",
         "about", params[:about][0..4095],

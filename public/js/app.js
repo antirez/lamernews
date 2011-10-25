@@ -122,8 +122,8 @@ $(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
-                            n = $("#"+news_id)[0];
-                            n.children[0].setAttribute("class","voted");
+                            n = $("article[data-news-id="+news_id+"]")[0];
+                            n.children[0].setAttribute("class","uparrow voted");
                             n.children[3].setAttribute("class","disabled");
                         } else {
                             alert("Vote not registered: "+r.error);
@@ -148,9 +148,9 @@ $(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
-                            n = $("#"+news_id)[0];
+                            n = $("article[data-news-id="+news_id+"]")[0];
                             n.children[0].setAttribute("class","disabled");
-                            n.children[3].setAttribute("class","voted");
+                            n.children[3].setAttribute("class","downarrow voted");
                         } else {
                             alert("Vote not registered: "+r.error);
                         }

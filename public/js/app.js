@@ -104,11 +104,12 @@ function post_comment() {
 
 // Install the onclick event in all news arrows the user did not voted already.
 $(function() {
-    $('news').each(function(i,news) {
-        var news_id = news.id;
+    $('#newslist article').each(function(i,news) {
+        var news_id = $(news).data("newsId");
         var up_class = news.children[0].getAttribute("class");
         if (!up_class) {
-            news.children[0].onclick=function() {
+            $(news.children[0]).click(function(e) {
+                e.preventDefault();
                 var data = {
                     news_id: news_id,
                     vote_type: "up",
@@ -129,11 +130,12 @@ $(function() {
                         }
                     }
                 });
-            }
+            });
         }
         var down_class = news.children[3].getAttribute("class");
         if (!down_class) {
-            news.children[3].onclick=function() {
+            $(news.children[3]).click(function(e) {
+                e.preventDefault();
                 var data = {
                     news_id : news_id,
                     vote_type: "down",
@@ -154,7 +156,7 @@ $(function() {
                         }
                     }
                 });
-            }
+            });
         }
     });
 });

@@ -74,12 +74,12 @@ end
 get '/login' do
     H.set_title "Login - #{SiteName}"
     H.page {
-        H.login {
+        H.div(:id => "login") {
             H.form(:name=>"f") {
                 H.label(:for => "username") {"username"}+
-                H.inputtext(:name => "username")+
+                H.inputtext(:id => "username", :name => "username")+
                 H.label(:for => "password") {"password"}+
-                H.inputpass(:name => "password")+H.br+
+                H.inputpass(:id => "password", :name => "password")+H.br+
                 H.checkbox(:name => "register", :value => "1")+
                 "create account"+H.br+
                 H.button(:name => "do_login", :value => "Login")
@@ -99,17 +99,17 @@ get '/submit' do
     H.set_title "Submit a new story - #{SiteName}"
     H.page {
         H.h2 {"Submit a new story"}+
-        H.submitform {
+        H.form(:id => "submitform") {
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => -1)+
                 H.label(:for => "title") {"title"}+
-                H.inputtext(:name => "title", :size => 80)+H.br+
+                H.inputtext(:id => "title", :name => "title", :size => 80)+H.br+
                 H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:name => "url", :size => 60)+H.br+
+                H.inputtext(:id => "url", :name => "url", :size => 60)+H.br+
                 "or if you don't have an url type some text"+
                 H.br+
                 H.label(:for => "text") {"text"}+
-                H.textarea(:name => "text", :cols => 60, :rows => 10) {}+
+                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {}+
                 H.button(:name => "do_submit", :value => "Submit")
             }
         }+
@@ -246,19 +246,19 @@ get "/editnews/:news_id" do
     H.set_title "Edit news - #{SiteName}"
     H.page {
         news_to_html(news)+
-        H.submitform {
+        H.form(:id => "submitform") {
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => news['id'])+
                 H.label(:for => "title") {"title"}+
-                H.inputtext(:name => "title", :size => 80,
+                H.inputtext(:id => "title", :name => "title", :size => 80,
                             :value => H.entities(news['title']))+H.br+
                 H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:name => "url", :size => 60,
+                H.inputtext(:id => "url", :name => "url", :size => 60,
                             :value => H.entities(news['url']))+H.br+
                 "or if you don't have an url type some text"+
                 H.br+
                 H.label(:for => "text") {"text"}+
-                H.textarea(:name => "text", :cols => 60, :rows => 10) {
+                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {
                     H.entities(text)
                 }+H.button(:name => "edit_news", :value => "Edit")
             }
@@ -284,8 +284,8 @@ get "/user/:username" do
     }
     H.set_title "#{H.entities user['username']} - #{SiteName}"
     H.page {
-        H.userinfo {
-            H.avatar {
+        H.div(:class => "userinfo") {
+            H.span(:class => "avatar") {
                 email = user["email"] || ""
                 digest = Digest::MD5.hexdigest(email)
                 H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
@@ -308,14 +308,14 @@ get "/user/:username" do
                 H.label(:for => "email") {
                     "email (not visible, used for gravatar)"
                 }+H.br+
-                H.inputtext(:name => "email", :size => 40,
+                H.inputtext(:id => "email", :name => "email", :size => 40,
                             :value => H.entities(user['email']))+H.br+
                 H.label(:for => "password") {
                     "change password (optional)"
                 }+H.br+
                 H.inputpass(:name => "password", :size => 40)+H.br+
                 H.label(:for => "about") {"about"}+H.br+
-                H.textarea(:name => "about", :cols => 60, :rows => 10){
+                H.textarea(:id => "about", :name => "about", :cols => 60, :rows => 10){
                     H.entities(user['about'])
                 }+H.br+
                 H.button(:name => "update_profile", :value => "Update profile")
@@ -545,7 +545,7 @@ def application_header
             H.a(:href=>ni[1]) {H.entities ni[0]}
         }.inject{|a,b| a+"\n"+b}
     }
-    rnavbar = H.rnav {
+    rnavbar = H.nav(:id => "account") {
         if $user
             text = $user['username']
             link = "/user/"+H.urlencode($user['username'])
@@ -968,14 +968,14 @@ def news_to_html(news)
     news = {}.merge(news) # Copy the object so we can modify it as we wish.
     news["url"] = "/news/#{news["id"]}" if !domain
     if news["voted"] == :up
-        upclass = "voted"
-        downclass = "disabled"
+        upclass = "uparrow voted"
+        downclass = "downarrow disabled"
     elsif news["voted"] == :down
-        downclass = "voted"
-        upclass = "disabled"
+        downclass = "uparrow voted"
+        upclass = "downarrow disabled"
     end
-    H.news(:id => news["id"]) {
-        H.uparrow(:class => upclass) {
+    H.article("data-news-id" => news["id"]) {
+        H.a(:href => "#up", :class => upclass) {
             "&#9650;"
         }+" "+
         H.h2 {
@@ -994,7 +994,7 @@ def news_to_html(news)
                 }
             else "" end
         }+
-        H.downarrow(:class => downclass) {
+        H.a(:href => "#down", :class =>  downclass) {
             "&#9660;"
         }+
         H.p {
@@ -1015,7 +1015,7 @@ end
 # the Redis hash representing the news in the DB) this function will render
 # the HTML needed to show this news.
 def news_list_to_html(news)
-    H.newslist {
+    H.section(:id => "newslist") {
         aux = ""
         news.each{|n|
             aux << news_to_html(n)
@@ -1150,17 +1150,17 @@ def comment_to_html(c,u,news_id)
     indent = "margin-left:#{c['level'].to_i*CommentReplyShift}px"
 
     if c['del'] and c['del'].to_i == 1
-        return H.comment(:style => indent,:class=>"deleted") {
+        return H.article(:style => indent,:class=>"commented deleted") {
             "[comment deleted]"
         }
     end
-    H.comment(:style=>indent, :id=>"#{news_id}-#{c['id']}") {
-        H.avatar {
+    H.article(:class => "comment", :style=>indent, "data-comment-id"=>"#{news_id}-#{c['id']}") {
+        H.span(:class => "avatar") {
             email = u["email"] || ""
             digest = Digest::MD5.hexdigest(email)
             H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
-        }+H.info {
-            H.username {
+        }+H.span(:class => "info") {
+            H.span(:class => "username") {
                 H.a(:href=>"/user/"+H.urlencode(u["username"])) {
                     H.entities u["username"]
                 }

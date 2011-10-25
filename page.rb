@@ -127,12 +127,12 @@ class HTMLGen
             H.head {
                 self.title{H.entities @title}+
                 self.meta(:charset => :utf8)+
-                self.link(:href => "/css/style.css?v=3", :rel => "stylesheet",
+                self.link(:href => "/css/style.css?v=4", :rel => "stylesheet",
                           :type => "text/css")+
                 self.link(:href => "/images/favicon.png", :rel => "shortcut icon")+
                 self.script(:src =>
                     "//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"){}+
-                self.script(:src => "/js/app.js?v=3"){}
+                self.script(:src => "/js/app.js?v=4"){}
             }+
             self.body {
                 self.div(:class => "container") {

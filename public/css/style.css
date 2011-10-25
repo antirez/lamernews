@@ -238,3 +238,7 @@ topcomment {
     font-size:28px;
     color: #444;
 }
+
+.userinfo a {
+    text-decoration: underline;
+}

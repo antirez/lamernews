@@ -71,6 +71,23 @@ get '/latest' do
     }
 end
 
+get '/saved/:start' do
+    redirect "/login" if !$user
+    start = params[:start].to_i
+    start = 0 if start < 0
+    H.set_title "Saved news - #{SiteName}"
+    news,count = get_saved_news($user['id'],start)
+    paginate = {
+        :start => start,
+        :count => count,
+        :perpage => SavedNewsPerPage,
+        :link => "/saved/$"
+    }
+    H.page {
+        H.h2 {"Your saved news"}+news_list_to_html(news,paginate)
+    }
+end
+
 get '/login' do
     H.set_title "Login - #{SiteName}"
     H.page {
@@ -283,6 +300,7 @@ get "/user/:username" do
         $r.zcard("user.comments:#{user['id']}")
     }
     H.set_title "#{H.entities user['username']} - #{SiteName}"
+    owner = $user and $user['id'].to_i == user['id'].to_i
     H.page {
         H.div(:class => "userinfo") {
             H.span(:class => "avatar") {
@@ -301,9 +319,12 @@ get "/user/:username" do
                 }+
                 H.li {H.b {"karma "}+ "#{user['karma']} points"}+
                 H.li {H.b {"posted news "}+posted_news.to_s}+
-                H.li {H.b {"posted comments "}+posted_comments.to_s}
+                H.li {H.b {"posted comments "}+posted_comments.to_s}+
+                if owner
+                    H.li {H.a(:href=>"/saved/0") {"saved news"}}
+                end
             }
-        }+if $user and $user['id'].to_i == user['id'].to_i
+        }+if owner
             H.br+H.form(:name=>"f") {
                 H.label(:for => "email") {
                     "email (not visible, used for gravatar)"
@@ -1014,12 +1035,20 @@ end
 # If 'news' is a list of news entries (Ruby hashes with the same fields of
 # the Redis hash representing the news in the DB) this function will render
 # the HTML needed to show this news.
-def news_list_to_html(news)
+def news_list_to_html(news,paginate=nil)
     H.section(:id => "newslist") {
         aux = ""
         news.each{|n|
             aux << news_to_html(n)
         }
+        if paginate
+            last_displayed = paginate[:start]+paginate[:perpage]
+            if last_displayed < paginate[:count]
+                nextpage = paginate[:link].sub("$",
+                           (paginate[:start]+paginate[:perpage]).to_s)
+                aux << H.a(:href => nextpage,:class=> "more") {"[more]"}
+            end
+        end
         aux
     }
 end
@@ -1061,7 +1090,14 @@ end
 # Get news in chronological order.
 def get_latest_news
     news_ids = $r.zrevrange("news.cron",0,LatestNewsPerPage-1)
-    result = get_news_by_id(news_ids,:update_rank => true)
+    get_news_by_id(news_ids,:update_rank => true)
+end
+
+# Get saved news of current user
+def get_saved_news(user_id,start=0)
+    count = $r.zcard("user.saved:#{user_id}").to_i
+    news_ids = $r.zrevrange("user.saved:#{user_id}",start,start+(SavedNewsPerPage-1))
+    return get_news_by_id(news_ids),count
 end
 
 ###############################################################################

@@ -995,7 +995,7 @@ def news_to_html(news)
         upclass = "uparrow voted"
         downclass = "downarrow disabled"
     elsif news["voted"] == :down
-        downclass = "uparrow voted"
+        downclass = "downarrow voted"
         upclass = "downarrow disabled"
     end
     H.article("data-news-id" => news["id"]) {

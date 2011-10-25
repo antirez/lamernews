@@ -136,7 +136,7 @@ class HTMLGen
             }+
             self.body {
                 self.div(:class => "container") {
-                    _header+H.content{yield}+_footer
+                    _header+H.div(:id => "content"){yield}+_footer
                 }
             }
         }

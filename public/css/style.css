@@ -1,13 +1,19 @@
 html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, font, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td { margin: 0; padding: 0; border: 0; outline: 0; font-weight: inherit; font-style: inherit; font-size: 100%; font-family: inherit; vertical-align: baseline; }
 
 body {
-    font-family: "Helvetica Neue";
+    font-family: Helvetica;
     text-rendering: optimizeLegibility;
 }
 
 a {
     text-decoration:none;
     color:#666;
+}
+
+h2:first-child {
+    font-weight:bold; 
+    border-bottom:1px solid #ccc; 
+    padding-bottom: 10px;
 }
 
 h2 {
@@ -19,9 +25,14 @@ h2 {
 header {
     display:block;
     position:relative;
-    padding: 15px 0px 0px 15px;
-    background-color:#eee;
-    border-bottom: 1px #ccc solid;
+    padding: 15px 0px 10px 15px;
+    background-color:#7487ab;
+    border-bottom: 5px #adbad3 solid;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 30px;
+    width:100%;
 }
 
 header h1 {
@@ -35,9 +46,13 @@ header h1 a {
     color:#333;
 }
 
+header a {
+    color: #fff
+}
+
 content {
     display:block;
-    margin-top:20px;
+    margin-top:70px;
     margin-bottom:20px;
     padding: 15px;
 }
@@ -63,8 +78,8 @@ nav a {
 rnav {
     color:#aaa;
     position: absolute;
-    top: 5px;
-    right: 10px;
+    top: 20px;
+    right: 20px;
     font-weight:bold;
     font-size:14px;
 }
@@ -115,6 +130,15 @@ news h2 a {
 
 news h2 a:visited {
     color: #999999;
+}
+
+newslist news p {
+    padding-top: 10px;
+}
+
+newslist news p a {
+    background-color: #eee; 
+    padding: 3px;
 }
 
 news uparrow, news downarrow {

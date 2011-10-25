@@ -59,15 +59,15 @@ get '/' do
     H.set_title "Top News - #{SiteName}"
     news = get_top_news
     H.page {
-        H.h2 {"Top news"}+news_list_to_html(news)
+        H.h2 {"Top News"}+news_list_to_html(news)
     }
 end
 
 get '/latest' do
-    H.set_title "Latest news - #{SiteName}"
+    H.set_title "Latest News - #{SiteName}"
     news = get_latest_news
     H.page {
-        H.h2 {"Latest news"}+news_list_to_html(news)
+        H.h2 {"Latest News"}+news_list_to_html(news)
     }
 end
 
@@ -234,7 +234,7 @@ end
 get "/editnews/:news_id" do
     redirect "/login" if !$user
     news = get_news_by_id(params["news_id"])
-    halt(404,"404 - This news does not exist.") if !news
+    halt(404,"404 - This news item does not exist.") if !news
     halt(500,"Permission denied.") if $user['id'].to_i != news['user_id'].to_i
 
     if news_domain(news)
@@ -243,7 +243,7 @@ get "/editnews/:news_id" do
         text = news_text(news)
         news['url'] = ""
     end
-    H.set_title "Edit news - #{SiteName}"
+    H.set_title "Edit News - #{SiteName}"
     H.page {
         news_to_html(news)+
         H.submitform {

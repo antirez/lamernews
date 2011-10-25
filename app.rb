@@ -998,7 +998,10 @@ def news_to_html(news)
             "&#9660;"
         }+
         H.p {
-            "#{news["up"]} up and #{news["down"]} down, posted by "+
+				H.span(:class => :upvotes) { news['up'] } +
+				" up and " +
+				H.span(:class => :downvotes) { news['down'] } +
+				" down, posted by " +
             H.username {
                 H.a(:href=>"/user/"+H.urlencode(news["username"])) {
                     H.entities news["username"]

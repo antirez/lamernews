@@ -205,6 +205,10 @@ note {
     font-size:14px;
 }
 
+note a {
+  text-decoration: underline;
+}
+
 comment.deleted {
     color: #999;
 }

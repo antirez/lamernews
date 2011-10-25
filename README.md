@@ -25,6 +25,7 @@ You need to install Redis and Ruby 1.8.7 with the following gems:
 * sinatra
 * json
 * ruby-hmac
+* openssl (not needed but will speedup the authentication if available).
 
 How to contribute
 ===

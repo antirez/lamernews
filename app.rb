@@ -400,13 +400,13 @@ post '/api/create_account' do
             :error => "Password is too short. Min length: #{PasswordMinLength}"
         }.to_json
     end
-    auth = create_user(params[:username],params[:password])
+    auth,errmsg = create_user(params[:username],params[:password])
     if auth 
         return {:status => "ok", :auth => auth}.to_json
     else
         return {
             :status => "err",
-            :error => "Username is busy. Please select a different one."
+            :error => errmsg
         }.to_json
     end
 end
@@ -652,10 +652,17 @@ end
 
 # Create a new user with the specified username/password
 #
-# Return value: the auth token if the user was correctly creaed.
-#               nil if the username already exists.
+# Return value: the function returns two values, the first is the
+#               auth token if the registration succeeded, otherwise
+#               is nil. The second is the error message if the function
+#               failed (detected testing the first return value).
 def create_user(username,password)
-    return nil if $r.exists("username.to.id:#{username.downcase}")
+    if $r.exists("username.to.id:#{username.downcase}")
+        return nil, "Username is busy, please try a different one."
+    end
+    if rate_limit_by_ip(3600*15,"create_user",request.ip)
+        return nil, "Please wait some time before creating a new user."
+    end
     id = $r.incr("users.count")
     auth_token = get_rand
     salt = get_rand
@@ -674,7 +681,7 @@ def create_user(username,password)
         "karma_incr_time",Time.new.to_i)
     $r.set("username.to.id:#{username.downcase}",id)
     $r.set("auth:#{auth_token}",id)
-    return auth_token
+    return auth_token,nil
 end
 
 # Update the specified user authentication token with a random generated
@@ -1252,4 +1259,12 @@ def str_elapsed(t)
     return "#{seconds/60} minutes ago" if seconds < 60*60
     return "#{seconds/60/60} hours ago" if seconds < 60*60*24
     return "#{seconds/60/60/24} days ago"
+end
+
+# Generic API limiting function
+def rate_limit_by_ip(delay,*tags)
+    key = "limit:"+tags.join(".")
+    return true if $r.exists(key)
+    $r.setex(key,delay,1)
+    return false
 end

@@ -29,3 +29,4 @@ NewsScoreLogStart = 10
 NewsScoreLogBooster = 2
 RankAgingFactor = 1.3
 PreventRepostTime = 3600*48
+NewsSubmissionBreak = 60*15

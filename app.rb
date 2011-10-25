@@ -166,8 +166,9 @@ get "/news/:news_id" do
     end
     H.set_title "#{H.entities news["title"]} - #{SiteName}"
     H.page {
-        news_to_html(news)+
-        top_comment+
+        H.section(:id => "newslist") {
+            news_to_html(news)
+        }+top_comment+
         if $user
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => news["id"])+

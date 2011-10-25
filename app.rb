@@ -392,6 +392,11 @@ post '/api/submit' do
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
     end
+
+    if submitted_recently
+        return {:status => "err", :error => "You have submitted a story too recently, please wait #{allowed_to_post_in_seconds} seconds."}.to_json
+    end
+
     # We can have an empty url or an empty first comment, but not both.
     if (!check_params "title","news_id",:url,:text) or
                                (params[:url].length == 0 and
@@ -696,6 +701,16 @@ def check_user_credentials(username,password)
     (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
 end
 
+# Has the user submitted a news story in the last `NewsSubmissionBreak` seconds?
+def submitted_recently
+  allowed_to_post_in_seconds > 0
+end
+
+# Indicates when the user is allowed to submit another story after the last.
+def allowed_to_post_in_seconds
+  $r.ttl("user:#{$user['id']}:submitted_recently")
+end
+
 ################################################################################
 # News
 ################################################################################
@@ -890,6 +905,8 @@ def insert_news(title,url,text,user_id)
     $r.zadd("news.top",rank,news_id)
     # Add the news url for some time to avoid reposts in short time
     $r.setex("url:"+url,PreventRepostTime,news_id) if !textpost
+    # Set a timeout indicating when the user may post again
+    $r.setex("user:#{$user['id']}:submitted_recently",NewsSubmissionBreak,'1')
     return news_id
 end
 

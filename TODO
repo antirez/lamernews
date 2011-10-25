@@ -12,7 +12,6 @@ Coding tasks
 * On up votes karma is transferred to posting user.
 * Automatically replace all the occurrences of Hacker in comments and news titles with H4k3r
 * Trottle by IP, using our INCR+TTL trick.
-* Require a minimal delay between same user submissions. At least write a "please wait" message.
 * User profile
 * Complete the API. Missing: get news stream and a few more.
 * Handle "comment" news.

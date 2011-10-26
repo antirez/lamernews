@@ -639,8 +639,16 @@ def application_footer
         apisecret = ""
     end
     H.footer {
-        "Lamer News source code is located "+
-        H.a(:href=>"http://github.com/antirez/lamernews"){"here"}
+        links = [
+            ["source code", "http://github.com/antirez/lamernews"],
+            ["rss feed", "/rss"],
+            ["twitter", FooterTwitterLink],
+            ["google group", FooterGoogleGroupLink]
+        ]
+        links.map{|l| l[1] ?
+            H.a(:href => l[1]) {H.entities l[0]} :
+            nil
+        }.select{|l| l}.join(" | ")
     }+apisecret
 end
 

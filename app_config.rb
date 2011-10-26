@@ -31,3 +31,7 @@ RankAgingFactor = 1.3
 PreventRepostTime = 3600*48
 NewsSubmissionBreak = 60*15
 SavedNewsPerPage = 10
+
+# Footer links
+FooterTwitterLink = false
+FooterGoogleGroupLink = false

@@ -93,6 +93,7 @@ class RedisComments
 
     def render_comments_rec(byparent,parent_id,level,block)
         thislevel = byparent[parent_id]
+        return "" if !thislevel
         thislevel = @sort_proc.call(thislevel,level) if @sort_proc
         thislevel.each{|c|
             c['level'] = level

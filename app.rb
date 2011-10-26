@@ -408,6 +408,12 @@ post '/api/logout' do
 end
 
 get '/api/login' do
+    if (!check_params_as_string "username","password")
+        return {
+            :status => "err",
+            :error => "Invalid username or password."
+        }.to_json
+    end
     auth,apisecret = check_user_credentials(params[:username],
                                             params[:password])
     if auth 
@@ -429,6 +435,12 @@ post '/api/create_account' do
         return {
             :status => "err",
             :error => "Username and password are two required fields."
+        }.to_json
+    end
+    if (!check_params_as_string "username","password")
+        return {
+            :status => "err",
+            :error => "Invalid username or password."
         }.to_json
     end
     if params[:password].length < PasswordMinLength
@@ -455,12 +467,19 @@ post '/api/submit' do
     end
 
     # We can have an empty url or an empty first comment, but not both.
-    if (!check_params "title","news_id",:url,:text) or
+    if (!check_params "title","news_id") or
                                (params[:url].length == 0 and
                                 params[:text].length == 0)
         return {
             :status => "err",
             :error => "Please specify a news title and address or text."
+        }.to_json
+    end
+    if (!check_params_as_string "title","news_id",:url,:text)
+        return {
+            :status => "err",
+            :error => "Invalid title, news_ud, url or text
+                       parameter."
         }.to_json
     end
     # Make sure the URL is about an acceptable protocol, that is
@@ -554,6 +573,14 @@ post '/api/postcomment' do
                        parameter."
         }.to_json
     end
+    if (!check_params_as_string "news_id","comment_id","parent_id",:comment)
+        return {
+            :status => "err",
+            :error => "Invalid news_id, comment_id, parent_id, or comment
+                       parameter."
+        }.to_json
+    end
+
     info = insert_comment(params["news_id"].to_i,$user['id'],
                           params["comment_id"].to_i,
                           params["parent_id"].to_i,params["comment"])
@@ -572,8 +599,12 @@ end
 
 post '/api/updateprofile' do
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
-    if !check_params(:about, :email, :password)
-        return {:status => "err", :error => "Missing parameters."}.to_json
+    if (!check_params_as_string "about","email","password")
+        return {
+            :status => "err",
+            :error => "Invalid about, email or password
+                       parameter."
+        }.to_json
     end
     if params[:password].length > 0
         if params[:password].length < PasswordMinLength
@@ -600,7 +631,16 @@ end
 # of being a non empty string.
 def check_params *required
     required.each{|p|
-        if !params[p] or (p.is_a? String and params[p].length == 0)
+        if !params[p] or (params[p].is_a? String and params[p].length == 0)
+            return false
+        end
+    }
+    true
+end
+
+def check_params_as_string *required
+    required.each{|p|
+        if params[p] and !params[p].is_a? String
             return false
         end
     }
@@ -720,10 +760,12 @@ end
 #               is nil. The second is the error message if the function
 #               failed (detected testing the first return value).
 def create_user(username,password)
+    return nil, "Invalid username or password" if !username or !password or !username.is_a? String or !password.is_a? String
+    return nil, "Invalid username or password" if username.length == 0 or password.length == 0
     if $r.exists("username.to.id:#{username.downcase}")
         return nil, "Username is busy, please try a different one."
     end
-    if rate_limit_by_ip(3600*15,"create_user",request.ip)
+    if rate_limit_by_ip(3600*15,"create_user",request.ip) and request.ip != '127.0.0.1'
         return nil, "Please wait some time before creating a new user."
     end
     id = $r.incr("users.count")
@@ -790,6 +832,7 @@ end
 # Check if the username/password pair identifies an user.
 # If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
+    return nil if !username or !password or username.length == 0 or password.length == 0
     user = get_user_by_username(username)
     return nil if !user
     hp = hash_password(password,user['salt'])

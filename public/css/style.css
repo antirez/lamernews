@@ -156,6 +156,11 @@ article .downarrow.disabled, .uparrow.disabled {
     visibility: hidden;
 }
 
+article.deleted {
+    padding-left:20px;
+    color:#999;
+}
+
 form textarea {
     font-family: Courier;
     font-size:14px;

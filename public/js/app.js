@@ -31,14 +31,19 @@ function submit() {
         text: $("textarea[name=text]").val(),
         apisecret: apisecret
     };
+    var del = $("input[name=del]").length && $("input[name=del]").attr("checked");
     $.ajax({
         type: "POST",
-        url: "/api/submit",
+        url: del ? "/api/delnews" : "/api/submit",
         data: data,
         success: function(reply) {
             var r = jQuery.parseJSON(reply);
             if (r.status == "ok") {
-                window.location.href = "/news/"+r.news_id;
+                if (r.news_id == -1) {
+                    window.location.href = "/";
+                } else {
+                    window.location.href = "/news/"+r.news_id;
+                }
             } else {
                 $("#errormsg").html(r.error)
             }

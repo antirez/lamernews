@@ -38,7 +38,7 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
-Version = "0.1.3"
+Version = "0.2.0"
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
@@ -280,13 +280,13 @@ get "/editnews/:news_id" do
                 H.label(:for => "text") {"text"}+
                 H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {
                     H.entities(text)
-                }+H.button(:name => "edit_news", :value => "Edit")
+                }+H.br+
+                H.checkbox(:name => "del", :value => "1")+
+                "delete this news"+H.br+
+                H.button(:name => "edit_news", :value => "Edit")
             }
         }+
         H.div(:id => "errormsg"){}+
-        H.note {
-            "Note: to remove the news set an empty title."
-        }+
         H.script() {'
             $(function() {
                 $("input[name=edit_news]").click(submit);
@@ -417,10 +417,6 @@ post '/api/submit' do
         return {:status => "err", :error => "Wrong form secret."}.to_json
     end
 
-    if submitted_recently
-        return {:status => "err", :error => "You have submitted a story too recently, please wait #{allowed_to_post_in_seconds} seconds."}.to_json
-    end
-
     # We can have an empty url or an empty first comment, but not both.
     if (!check_params "title","news_id",:url,:text) or
                                (params[:url].length == 0 and
@@ -442,6 +438,13 @@ post '/api/submit' do
         end
     end
     if params[:news_id].to_i == -1
+        if submitted_recently
+            return {
+                :status => "err",
+                :error => "You have submitted a story too recently, "+
+                "please wait #{allowed_to_post_in_seconds} seconds."
+            }.to_json
+        end
         news_id = insert_news(params[:title],params[:url],params[:text],
                               $user["id"])
     else
@@ -457,8 +460,25 @@ post '/api/submit' do
     end
     return  {
         :status => "ok",
-        :news_id => news_id
+        :news_id => news_id.to_i
     }.to_json
+end
+
+post '/api/delnews' do
+    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if not check_api_secret
+        return {:status => "err", :error => "Wrong form secret."}.to_json
+    end
+    if (!check_params "news_id")
+        return {
+            :status => "err",
+            :error => "Please specify a news title."
+        }.to_json
+    end
+    if del_news(params[:news_id],$user["id"])
+        return {:status => "ok", :news_id => -1}.to_json
+    end
+    return {:status => "err", :error => "News too old or wrong ID/owner."}.to_json
 end
 
 post '/api/votenews' do
@@ -977,6 +997,18 @@ def edit_news(news_id,title,url,text,user_id)
     return news_id
 end
 
+# Mark an existing news as removed.
+def del_news(news_id,user_id)
+    news = get_news_by_id(news_id)
+    return false if !news or news['user_id'].to_i != user_id.to_i
+    return false if !(news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
+
+    $r.hmset("news:#{news_id}","del",1)
+    $r.zrem("news.top",news_id)
+    $r.zrem("news.cron",news_id)
+    return true
+end
+
 # Return the host part of the news URL field.
 # If the url is in the form text:// nil is returned.
 def news_domain(news)
@@ -996,6 +1028,9 @@ end
 # This function expects as input a news entry as obtained from
 # the get_news_by_id function.
 def news_to_html(news)
+    return H.article (:class => "deleted") {
+        "[deleted news]"
+    } if news["del"]
     domain = news_domain(news)
     news = {}.merge(news) # Copy the object so we can modify it as we wish.
     news["url"] = "/news/#{news["id"]}" if !domain

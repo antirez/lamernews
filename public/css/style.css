@@ -223,6 +223,18 @@ topcomment {
     margin:20px;
 }
 
+.singlecomment {
+    background-color: #eee;
+    border: 1px dotted #ccc;
+    padding: 15px;
+    margin:10px;
+}
+
+.commentreplies h2 {
+    font-size: 18px;
+    border-bottom: 1px solid #aaa;
+}
+
 .userinfo ul li {
     list-style-type: none;
     margin-bottom:10px;

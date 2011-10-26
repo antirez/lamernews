@@ -189,6 +189,24 @@ get "/news/:news_id" do
     }
 end
 
+get "/comment/:news_id/:comment_id" do
+    news = get_news_by_id(params["news_id"])
+    halt(404,"404 - This news does not exist.") if !news
+    comment = Comments.fetch(params["news_id"],params["comment_id"])
+    halt(404,"404 - This comment does not exist.") if !comment
+    H.page {
+        H.section(:id => "newslist") {
+            news_to_html(news)
+        }+H.div(:class => "singlecomment") {
+            u = get_user_by_id(comment["user_id"]) or DeletedUser
+            comment_to_html(comment,u,news["news_id"])
+        }+H.div(:class => "commentreplies") {
+            H.h2 {"Replies"}
+        }+
+        render_comments_for_news(news["id"],params["comment_id"].to_i)
+    }
+end
+
 get "/reply/:news_id/:comment_id" do
     redirect "/login" if !$user
     news = get_news_by_id(params["news_id"])
@@ -1028,7 +1046,7 @@ end
 # This function expects as input a news entry as obtained from
 # the get_news_by_id function.
 def news_to_html(news)
-    return H.article (:class => "deleted") {
+    return H.article(:class => "deleted") {
         "[deleted news]"
     } if news["del"]
     domain = news_domain(news)
@@ -1236,6 +1254,10 @@ def comment_to_html(c,u,news_id)
             "[comment deleted]"
         }
     end
+    show_edit_link = !c['topcomment'] &&
+                ($user && ($user['id'].to_i == c['user_id'].to_i)) &&
+                (c['ctime'].to_i > (Time.now.to_i - CommentEditTime))
+
     H.article(:class => "comment", :style=>indent, "data-comment-id"=>"#{news_id}-#{c['id']}") {
         H.span(:class => "avatar") {
             email = u["email"] || ""
@@ -1247,16 +1269,15 @@ def comment_to_html(c,u,news_id)
                     H.entities u["username"]
                 }
             }+" "+str_elapsed(c["ctime"].to_i)+". "+
+            H.a(:href=>"/comment/#{news_id}/#{c["id"]}", :class=>"reply") {
+                "link"
+            }+" "+
             if $user and !c['topcomment']
                 H.a(:href=>"/reply/#{news_id}/#{c["id"]}", :class=>"reply") {
                     "reply"
                 }+" "
-            else
-                " "
-            end +
-            if !c['topcomment'] and
-               ($user and ($user['id'].to_i == c['user_id'].to_i)) and
-               (c['ctime'].to_i > (Time.now.to_i - CommentEditTime))
+            else " " end +
+            if show_edit_link
                 H.a(:href=> "/editcomment/#{news_id}/#{c["id"]}",
                     :class =>"reply") {"edit"}+
                     " (#{
@@ -1269,10 +1290,10 @@ def comment_to_html(c,u,news_id)
     }
 end
 
-def render_comments_for_news(news_id)
+def render_comments_for_news(news_id,root=-1)
     html = ""
     user = {}
-    Comments.render_comments(news_id) {|c|
+    Comments.render_comments(news_id,root) {|c|
         user[c["id"]] = get_user_by_id(c["user_id"]) if !user[c["id"]]
         user[c["id"]] = DeletedUser if !user[c["id"]]
         u = user[c["id"]]

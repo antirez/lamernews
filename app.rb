@@ -628,8 +628,6 @@ def application_header
     }
     rnavbar = H.nav(:id => "account") {
         if $user
-            text = $user['username']
-            link = "/user/"+H.urlencode($user['username'])
             H.a(:href => "/user/"+H.urlencode($user['username'])) { 
                 $user['username']+" (#{$user['karma']})"
             }+" | "+

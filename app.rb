@@ -408,6 +408,12 @@ post '/api/logout' do
 end
 
 get '/api/login' do
+    if (!check_params "username","password")
+        return {
+            :status => "err",
+            :error => "Username and password are two required fields."
+        }.to_json
+    end
     auth,apisecret = check_user_credentials(params[:username],
                                             params[:password])
     if auth 
@@ -600,6 +606,7 @@ end
 # of being a non empty string.
 def check_params *required
     required.each{|p|
+        params[p].strip! if params[p] and params[p].is_a? String
         if !params[p] or (p.is_a? String and params[p].length == 0)
             return false
         end

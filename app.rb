@@ -1269,9 +1269,11 @@ def comment_to_html(c,u,news_id)
                     H.entities u["username"]
                 }
             }+" "+str_elapsed(c["ctime"].to_i)+". "+
-            H.a(:href=>"/comment/#{news_id}/#{c["id"]}", :class=>"reply") {
-                "link"
-            }+" "+
+            if !c['topcomment']
+                H.a(:href=>"/comment/#{news_id}/#{c["id"]}", :class=>"reply") {
+                    "link"
+                }+" "
+            else "" end +
             if $user and !c['topcomment']
                 H.a(:href=>"/reply/#{news_id}/#{c["id"]}", :class=>"reply") {
                     "reply"

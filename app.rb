@@ -65,6 +65,25 @@ get '/' do
     }
 end
 
+get '/rss' do
+    content_type 'text/xml', :charset => 'utf-8'
+    news = get_latest_news
+    H.rss(:version => "2.0", "xmlns:atom" => "http://www.w3.org/2005/Atom") {
+        H.channel {
+            H.title {
+                "Lamer News"
+            } + " " +
+            H.link {
+                "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
+            } + " " +
+            H.description {
+                "Description pending"
+            } + " " +
+            news_list_to_rss(news)
+        }
+    }
+end
+
 get '/latest' do
     H.set_title "Latest news - #{SiteName}"
     news = get_latest_news
@@ -1041,6 +1060,38 @@ def news_text(news)
     (su[0] == "text:") ? news["url"][7..-1] : nil
 end
 
+# Turn the news into its RSS representation
+# This function expects as input a news entry as obtained from
+# the get_news_by_id function.
+def news_to_rss(news)
+    domain = news_domain(news)
+    news = {}.merge(news) # Copy the object so we can modify it as we wish.
+    news["ln_url"] = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}/news/#{news["id"]}"
+    news["url"] = news["ln_url"] if !domain
+
+    H.item {
+        H.title {
+            H.entities news["title"]
+        } + " " +
+        H.guid {
+            H.entities news["url"]
+        } + " " +
+        H.link {
+            H.entities news["url"]
+        } + " " +
+        H.description {
+            "<![CDATA[" +
+            H.a(:href=>news["ln_url"]) {
+                "Comments"
+            } + "]]>"
+        } + " " +
+        H.comments {
+            H.entities news["ln_url"]
+        }
+    }+"\n"
+end
+
+
 # Turn the news into its HTML representation, that is
 # a linked title with buttons to up/down vote plus additional info.
 # This function expects as input a news entry as obtained from
@@ -1094,6 +1145,17 @@ def news_to_html(news)
             }
         }#+news["score"].to_s+","+news["rank"].to_s+","+compute_news_rank(news).to_s
     }+"\n"
+end
+
+# If 'news' is a list of news entries (Ruby hashes with the same fields of
+# the Redis hash representing the news in the DB) this function will render
+# the RSS needed to show this news.
+def news_list_to_rss(news)
+    aux = ""
+    news.each{|n|
+        aux << news_to_rss(n)
+    }
+    aux
 end
 
 # If 'news' is a list of news entries (Ruby hashes with the same fields of

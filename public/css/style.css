@@ -144,11 +144,11 @@ article p a {
     color: #666;
 }
 
-article .uparrow.voted {
+article.comment .uparrow.voted, article .uparrow.voted {
     color:#99dd99;
 }
 
-article .downarrow.voted {
+article.comment .downarrow.voted, article .downarrow.voted {
     color:#dd9999;
 }
 
@@ -206,6 +206,11 @@ form textarea {
     white-space: -pre-wrap;      /* Opera 4-6 */
     white-space: -o-pre-wrap;    /* Opera 7 */
     word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+article.comment .uparrow, article.comment .downarrow {
+    color:#aaa;
+    font-size:14px;
 }
 
 note {

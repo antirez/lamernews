@@ -592,6 +592,31 @@ post '/api/updateprofile' do
     return {:status => "ok"}.to_json
 end
 
+post '/api/votecomment' do
+    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if not check_api_secret
+        return {:status => "err", :error => "Wrong form secret."}.to_json
+    end
+    # Params sanity check
+    if (!check_params "comment_id","vote_type") or
+                                            (params["vote_type"] != "up" and
+                                             params["vote_type"] != "down")
+        return {
+            :status => "err",
+            :error => "Missing news ID or invalid vote type."
+        }.to_json
+    end
+    # Vote the news
+    vote_type = params["vote_type"].to_sym
+    news_id,comment_id = params["comment_id"].split("-")
+    if vote_comment(news_id.to_i,comment_id.to_i,$user["id"],vote_type)
+        return { :status => "ok", :comment_id => params["comment_id"] }.to_json
+    else
+        return { :status => "err", 
+                 :error => "Invalid parameters or duplicated vote." }.to_json
+    end
+end
+
 # Check that the list of parameters specified exist.
 # If at least one is missing false is returned, otherwise true is returned.
 #
@@ -1258,10 +1283,6 @@ end
 # The parent_id is only used for inserts (when comment_id == -1), otherwise
 # is ignored.
 def insert_comment(news_id,user_id,comment_id,parent_id,body)
-    puts "news_id: #{news_id}"
-    puts "comment_id: #{comment_id}"
-    puts "parent_id: #{parent_id}"
-    puts "body: #{body}"
     news = get_news_by_id(news_id)
     return false if !news
     if comment_id == -1
@@ -1347,6 +1368,23 @@ def comment_to_html(c,u,news_id)
                     "reply"
                 }+" "
             else " " end +
+            if !c['topcomment']
+                upclass = "uparrow"
+                downclass = "downarrow"
+                if $user and c['up'] and c['up'].index($user['id'].to_i)
+                    upclass << " voted"
+                    downclass << " disabled"
+                elsif $user and c['down'] and c['down'].index($user['id'].to_i)
+                    downclass << " voted"
+                    upclass << " disabled"
+                end
+                H.a(:href => "#up", :class => upclass) {
+                    "&#9650;"
+                }+" "+
+                H.a(:href => "#down", :class => downclass) {
+                    "&#9660;"
+                }
+            else " " end +
             if show_edit_link
                 H.a(:href=> "/editcomment/#{news_id}/#{c["id"]}",
                     :class =>"reply") {"edit"}+
@@ -1369,7 +1407,17 @@ def render_comments_for_news(news_id,root=-1)
         u = user[c["id"]]
         html << comment_to_html(c,u,news_id)
     }
-    html
+    H.div("id" => "comments") {html}
+end
+
+def vote_comment(news_id,comment_id,user_id,vote_type)
+    user_id = user_id.to_i
+    comment = Comments.fetch(news_id,comment_id)
+    return false if !comment
+    varray = (comment[vote_type.to_s] or [])
+    return false if varray.index(user_id)
+    varray << user_id
+    return Comments.edit(news_id,comment_id,{vote_type.to_s => varray})
 end
 
 ###############################################################################

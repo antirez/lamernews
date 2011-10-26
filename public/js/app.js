@@ -165,3 +165,61 @@ $(function() {
         }
     });
 });
+
+// Install the onclick event in all comments arrows the user did not
+// voted already.
+$(function() {
+    $('#comments article.comment').each(function(i,comment) {
+        var comment_id = $(comment).data("commentId");
+        comment = $(comment);
+        up = comment.find(".uparrow");
+        down = comment.find(".downarrow");
+        var voted = up.hasClass("voted") || down.hasClass("voted");
+        if (!voted) {
+            up.click(function(e) {
+                e.preventDefault();
+                var data = {
+                    comment_id: comment_id,
+                    vote_type: "up",
+                    apisecret: apisecret
+                };
+                $.ajax({
+                    type: "POST",
+                    url: "/api/votecomment",
+                    data: data,
+                    success: function(reply) {
+                        var r = jQuery.parseJSON(reply);
+                        if (r.status == "ok") {
+                            $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("voted")
+                            $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("disabled")
+                        } else {
+                            alert("Vote not registered: "+r.error);
+                        }
+                    }
+                });
+            });
+            down.click(function(e) {
+                e.preventDefault();
+                var data = {
+                    comment_id: comment_id,
+                    vote_type: "down",
+                    apisecret: apisecret
+                };
+                $.ajax({
+                    type: "POST",
+                    url: "/api/votecomment",
+                    data: data,
+                    success: function(reply) {
+                        var r = jQuery.parseJSON(reply);
+                        if (r.status == "ok") {
+                            $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("disabled")
+                            $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("voted")
+                        } else {
+                            alert("Vote not registered: "+r.error);
+                        }
+                    }
+                });
+            });
+        }
+    });
+});

@@ -403,7 +403,7 @@ post '/api/logout' do
         return {
             :status => "err",
             :error => "Wrong auth credentials or API secret."
-        }
+        }.to_json
     end
 end
 

@@ -114,6 +114,7 @@ $(function() {
         var up_class = news.children[0].getAttribute("class");
         if (!up_class) {
             $(news.children[0]).click(function(e) {
+                if (typeof(apisecret) == 'undefined') return; // Not logged in
                 e.preventDefault();
                 var data = {
                     news_id: news_id,
@@ -140,6 +141,7 @@ $(function() {
         var down_class = news.children[3].getAttribute("class");
         if (!down_class) {
             $(news.children[3]).click(function(e) {
+                if (typeof(apisecret) == 'undefined') return; // Not logged in
                 e.preventDefault();
                 var data = {
                     news_id : news_id,
@@ -177,6 +179,7 @@ $(function() {
         var voted = up.hasClass("voted") || down.hasClass("voted");
         if (!voted) {
             up.click(function(e) {
+                if (typeof(apisecret) == 'undefined') return; // Not logged in
                 e.preventDefault();
                 var data = {
                     comment_id: comment_id,
@@ -199,6 +202,7 @@ $(function() {
                 });
             });
             down.click(function(e) {
+                if (typeof(apisecret) == 'undefined') return; // Not logged in
                 e.preventDefault();
                 var data = {
                     comment_id: comment_id,

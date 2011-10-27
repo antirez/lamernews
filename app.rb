@@ -45,11 +45,19 @@ before do
     H = HTMLGen.new if !defined?(H)
     if !defined?(Comments)
         Comments = RedisComments.new($r,"comment",proc{|c,level|
-            if level == 0
-                c.sort {|a,b| b['ctime'] <=> a['ctime']}
-            else
-                c.sort {|a,b| a['ctime'] <=> b['ctime']}
-            end
+            c.sort {|a,b|
+                ascore = compute_comment_score a
+                bscore = compute_comment_score b
+                if ascore == bscore
+                    # If score is the same favor newer comments
+                    b['ctime'].to_i <=> a['ctime'].to_i
+                else
+                    # If score is different order by score.
+                    # FIXME: do something smarter favouring newest comments
+                    # but only in the short time.
+                    bscore <=> ascore
+                end
+            }
         })
     end
     $user = nil

@@ -1290,7 +1290,8 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
                    "body" => body,
                    "parent_id" => parent_id,
                    "user_id" => user_id,
-                   "ctime" => Time.now.to_i};
+                   "ctime" => Time.now.to_i,
+                   "up" => [user_id.to_i] };
         comment_id = Comments.insert(news_id,comment)
         return false if !comment_id
         $r.hincrby("news:#{news_id}","comments",1);
@@ -1332,11 +1333,19 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
     end
 end
 
+# Compute the comment score
+def compute_comment_score(c)
+    upcount = (c['up'] ? c['up'].length : 0)
+    downcount = (c['down'] ? c['down'].length : 0)
+    upcount-downcount
+end
+
 # Render a comment into HTML.
 # 'c' is the comment representation as a Ruby hash.
 # 'u' is the user, obtained from the user_id by the caller.
 def comment_to_html(c,u,news_id)
     indent = "margin-left:#{c['level'].to_i*CommentReplyShift}px"
+    score = compute_comment_score(c)
 
     if c['del'] and c['del'].to_i == 1
         return H.article(:style => indent,:class=>"commented deleted") {
@@ -1378,6 +1387,7 @@ def comment_to_html(c,u,news_id)
                     downclass << " voted"
                     upclass << " disabled"
                 end
+                "#{score} points "+
                 H.a(:href => "#up", :class => upclass) {
                     "&#9650;"
                 }+" "+

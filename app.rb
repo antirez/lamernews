@@ -145,7 +145,7 @@ get '/submit' do
     H.set_title "Submit a new story - #{SiteName}"
     H.page {
         H.h2 {"Submit a new story"}+
-        H.form(:id => "submitform") {
+        H.div(:id => "submitform") {
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => -1)+
                 H.label(:for => "title") {"title"}+
@@ -311,7 +311,7 @@ get "/editnews/:news_id" do
     H.set_title "Edit news - #{SiteName}"
     H.page {
         news_to_html(news)+
-        H.form(:id => "submitform") {
+        H.div(:id => "submitform") {
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => news['id'])+
                 H.label(:for => "title") {"title"}+

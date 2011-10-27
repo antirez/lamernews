@@ -38,7 +38,7 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
-Version = "0.4.0"
+Version = "0.4.1"
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r

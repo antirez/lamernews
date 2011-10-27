@@ -21,13 +21,13 @@ KarmaIncrementAmount = 1
 DeletedUser = {"username" => "deleted_user", "email" => "", "id" => -1}
 
 # News and ranking
-NewsAgePadding = 60*10
+NewsAgePadding = 60*60*8
 TopNewsPerPage = 30
 LatestNewsPerPage = 100
 NewsEditTime = 60*15
 NewsScoreLogStart = 10
 NewsScoreLogBooster = 2
-RankAgingFactor = 1.3
+RankAgingFactor = 1.6
 PreventRepostTime = 3600*48
 NewsSubmissionBreak = 60*15
 SavedNewsPerPage = 10

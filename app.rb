@@ -38,7 +38,7 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
-Version = "0.4.0"
+Version = "0.4.1"
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
@@ -986,7 +986,7 @@ end
 # The general forumla is RANK = SCORE / (AGE ^ AGING_FACTOR)
 def compute_news_rank(news)
     age = (Time.now.to_i - news["ctime"].to_i)+NewsAgePadding
-    return (news["score"].to_f*1000)/(age**RankAgingFactor)
+    return (news["score"].to_f)/((age/3600)**RankAgingFactor)
 end
 
 # Add a news with the specified url or text.
@@ -1182,7 +1182,7 @@ def news_to_html(news)
             H.a(:href => "/news/#{news["id"]}") {
                 news["comments"]+" comments"
             }
-        }#+news["score"].to_s+","+news["rank"].to_s+","+compute_news_rank(news).to_s
+        }#+"score: "+news["score"].to_s+" old rank:"+news["rank"].to_s+" new rank:"+compute_news_rank(news).to_s
     }+"\n"
 end
 

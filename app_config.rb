@@ -16,7 +16,7 @@ CommentEditTime = 3600*2
 CommentReplyShift = 60
 
 # Karma
-UserIniitalKarma = 1
+UserInitialKarma = 1
 KarmaIncrementInterval = 3600
 KarmaIncrementAmount = 1
 NewsDownvoteMinKarma = 30

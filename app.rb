@@ -612,7 +612,7 @@ post '/api/votecomment' do
                                              params["vote_type"] != "down")
         return {
             :status => "err",
-            :error => "Missing news ID or invalid vote type."
+            :error => "Missing comment ID or invalid vote type."
         }.to_json
     end
     # Vote the news

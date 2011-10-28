@@ -30,7 +30,7 @@ require 'cgi'
 class HTMLGen
     @@newlinetags = %w{html body div br ul hr title link head filedset label legend option table li select td tr meta}
     @@metatags = {
-        "js" => {"tag"=>"script","type"=>"text/javascript"},
+        "js" => {"tag"=>"script"},
         "inputtext" => {"tag"=>"input","type"=>"text"},
         "inputpass" => {"tag"=>"input","type"=>"password"},
         "inputfile" => {"tag"=>"input","type"=>"file"},
@@ -125,18 +125,19 @@ class HTMLGen
         "<!DOCTYPE html>"+
         self.html {
             H.head {
+                self.meta(:charset => "utf-8")+
                 self.title{H.entities @title}+
-                self.meta(:charset => :utf8)+
-                self.link(:href => "/css/style.css", :rel => "stylesheet",
+                self.meta(:content => :nofollow, :name => :robots)+
+                self.link(:href => "/css/style.css?v=6", :rel => "stylesheet",
                           :type => "text/css")+
                 self.link(:href => "/images/favicon.png", :rel => "shortcut icon")+
                 self.script(:src =>
-                    "http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"){}+
-                self.script(:src => "/js/app.js"){}
+                    "//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"){}+
+                self.script(:src => "/js/app.js?v=6"){}
             }+
             self.body {
                 self.div(:class => "container") {
-                    _header+H.content{yield}+_footer
+                    _header+H.div(:id => "content"){yield}+_footer
                 }
             }
         }

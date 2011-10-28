@@ -41,16 +41,26 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
+Version = "0.5.0"
+
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
     H = HTMLGen.new if !defined?(H)
     if !defined?(Comments)
         Comments = RedisComments.new($r,"comment",proc{|c,level|
-            if level == 0
-                c.sort {|a,b| b['ctime'] <=> a['ctime']}
-            else
-                c.sort {|a,b| a['ctime'] <=> b['ctime']}
-            end
+            c.sort {|a,b|
+                ascore = compute_comment_score a
+                bscore = compute_comment_score b
+                if ascore == bscore
+                    # If score is the same favor newer comments
+                    b['ctime'].to_i <=> a['ctime'].to_i
+                else
+                    # If score is different order by score.
+                    # FIXME: do something smarter favouring newest comments
+                    # but only in the short time.
+                    bscore <=> ascore
+                end
+            }
         })
     end
     $user = nil
@@ -66,6 +76,25 @@ get '/' do
     }
 end
 
+get '/rss' do
+    content_type 'text/xml', :charset => 'utf-8'
+    news = get_latest_news
+    H.rss(:version => "2.0", "xmlns:atom" => "http://www.w3.org/2005/Atom") {
+        H.channel {
+            H.title {
+                "#{SiteName}"
+            } + " " +
+            H.link {
+                "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
+            } + " " +
+            H.description {
+                "Description pending"
+            } + " " +
+            news_list_to_rss(news)
+        }
+    }
+end
+
 get '/latest' do
     H.set_title "Latest news - #{SiteName}"
     news = get_latest_news
@@ -74,23 +103,40 @@ get '/latest' do
     }
 end
 
+get '/saved/:start' do
+    redirect "/login" if !$user
+    start = params[:start].to_i
+    start = 0 if start < 0
+    H.set_title "Saved news - #{SiteName}"
+    news,count = get_saved_news($user['id'],start)
+    paginate = {
+        :start => start,
+        :count => count,
+        :perpage => SavedNewsPerPage,
+        :link => "/saved/$"
+    }
+    H.page {
+        H.h2 {"Your saved news"}+news_list_to_html(news,paginate)
+    }
+end
+
 get '/login' do
     H.set_title "Login - #{SiteName}"
     H.page {
-        H.login {
+        H.div(:id => "login") {
             H.form(:name=>"f") {
                 H.label(:for => "username") {"username"}+
-                H.inputtext(:name => "username")+
+                H.inputtext(:id => "username", :name => "username")+
                 H.label(:for => "password") {"password"}+
-                H.inputpass(:name => "password")+H.br+
+                H.inputpass(:id => "password", :name => "password")+H.br+
                 H.checkbox(:name => "register", :value => "1")+
                 "create account"+H.br+
                 H.button(:name => "do_login", :value => "Login")
             }
         }+
         H.div(:id => "errormsg"){}+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=do_login]").click(login);
             });
         '}
@@ -102,23 +148,23 @@ get '/submit' do
     H.set_title "Submit a new story - #{SiteName}"
     H.page {
         H.h2 {"Submit a new story"}+
-        H.submitform {
+        H.form(:id => "submitform") {
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => -1)+
                 H.label(:for => "title") {"title"}+
-                H.inputtext(:name => "title", :size => 80)+H.br+
+                H.inputtext(:id => "title", :name => "title", :size => 80)+H.br+
                 H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:name => "url", :size => 60)+H.br+
+                H.inputtext(:id => "url", :name => "url", :size => 60)+H.br+
                 "or if you don't have an url type some text"+
                 H.br+
                 H.label(:for => "text") {"text"}+
-                H.textarea(:name => "text", :cols => 60, :rows => 10) {}+
+                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {}+
                 H.button(:name => "do_submit", :value => "Submit")
             }
         }+
         H.div(:id => "errormsg"){}+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=do_submit]").click(submit);
             });
         '}
@@ -150,8 +196,9 @@ get "/news/:news_id" do
     end
     H.set_title "#{H.entities news["title"]} - #{SiteName}"
     H.page {
-        news_to_html(news)+
-        top_comment+
+        H.section(:id => "newslist") {
+            news_to_html(news)
+        }+top_comment+
         if $user
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => news["id"])+
@@ -164,11 +211,29 @@ get "/news/:news_id" do
             H.br
         end +
         render_comments_for_news(news["id"])+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
+    }
+end
+
+get "/comment/:news_id/:comment_id" do
+    news = get_news_by_id(params["news_id"])
+    halt(404,"404 - This news does not exist.") if !news
+    comment = Comments.fetch(params["news_id"],params["comment_id"])
+    halt(404,"404 - This comment does not exist.") if !comment
+    H.page {
+        H.section(:id => "newslist") {
+            news_to_html(news)
+        }+H.div(:class => "singlecomment") {
+            u = get_user_by_id(comment["user_id"]) or DeletedUser
+            comment_to_html(comment,u,news["news_id"])
+        }+H.div(:class => "commentreplies") {
+            H.h2 {"Replies"}
+        }+
+        render_comments_for_news(news["id"],params["comment_id"].to_i)
     }
 end
 
@@ -192,8 +257,8 @@ get "/reply/:news_id/:comment_id" do
             H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
             H.button(:name => "post_comment", :value => "Reply")
         }+H.div(:id => "errormsg"){}+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
@@ -224,10 +289,10 @@ get "/editcomment/:news_id/:comment_id" do
             H.button(:name => "post_comment", :value => "Edit")
         }+H.div(:id => "errormsg"){}+
         H.note {
-            "Note: to remove the comment remove all the text and presss Edit."
+            "Note: to remove the comment remove all the text and press Edit."
         }+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=post_comment]").click(post_comment);
             });
         '}
@@ -249,29 +314,29 @@ get "/editnews/:news_id" do
     H.set_title "Edit news - #{SiteName}"
     H.page {
         news_to_html(news)+
-        H.submitform {
+        H.form(:id => "submitform") {
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => news['id'])+
                 H.label(:for => "title") {"title"}+
-                H.inputtext(:name => "title", :size => 80,
+                H.inputtext(:id => "title", :name => "title", :size => 80,
                             :value => H.entities(news['title']))+H.br+
                 H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:name => "url", :size => 60,
+                H.inputtext(:id => "url", :name => "url", :size => 60,
                             :value => H.entities(news['url']))+H.br+
                 "or if you don't have an url type some text"+
                 H.br+
                 H.label(:for => "text") {"text"}+
-                H.textarea(:name => "text", :cols => 60, :rows => 10) {
+                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {
                     H.entities(text)
-                }+H.button(:name => "edit_news", :value => "Edit")
+                }+H.br+
+                H.checkbox(:name => "del", :value => "1")+
+                "delete this news"+H.br+
+                H.button(:name => "edit_news", :value => "Edit")
             }
         }+
         H.div(:id => "errormsg"){}+
-        H.note {
-            "Note: to remove the news set an empty title."
-        }+
-        H.script(:type=>"text/javascript") {'
-            $(document).ready(function() {
+        H.script() {'
+            $(function() {
                 $("input[name=edit_news]").click(submit);
             });
         '}
@@ -286,15 +351,16 @@ get "/user/:username" do
         $r.zcard("user.comments:#{user['id']}")
     }
     H.set_title "#{H.entities user['username']} - #{SiteName}"
+    owner = $user && ($user['id'].to_i == user['id'].to_i)
     H.page {
-        H.userinfo {
-            H.avatar {
+        H.div(:class => "userinfo") {
+            H.span(:class => "avatar") {
                 email = user["email"] || ""
                 digest = Digest::MD5.hexdigest(email)
                 H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
             }+" "+
             H.h2 {H.entities user['username']}+
-            H.p {
+            H.pre {
                 H.entities user['about']
             }+
             H.ul {
@@ -304,24 +370,31 @@ get "/user/:username" do
                 }+
                 H.li {H.b {"karma "}+ "#{user['karma']} points"}+
                 H.li {H.b {"posted news "}+posted_news.to_s}+
-                H.li {H.b {"posted comments "}+posted_comments.to_s}
+                H.li {H.b {"posted comments "}+posted_comments.to_s}+
+                if owner
+                    H.li {H.a(:href=>"/saved/0") {"saved news"}}
+                else "" end
             }
-        }+if $user and $user['id'].to_i == user['id'].to_i
+        }+if owner
             H.br+H.form(:name=>"f") {
                 H.label(:for => "email") {
                     "email (not visible, used for gravatar)"
                 }+H.br+
-                H.inputtext(:name => "email", :size => 40,
+                H.inputtext(:id => "email", :name => "email", :size => 40,
                             :value => H.entities(user['email']))+H.br+
+                H.label(:for => "password") {
+                    "change password (optional)"
+                }+H.br+
+                H.inputpass(:name => "password", :size => 40)+H.br+
                 H.label(:for => "about") {"about"}+H.br+
-                H.textarea(:name => "about", :cols => 60, :rows => 10){
+                H.textarea(:id => "about", :name => "about", :cols => 60, :rows => 10){
                     H.entities(user['about'])
                 }+H.br+
                 H.button(:name => "update_profile", :value => "Update profile")
             }+
             H.div(:id => "errormsg"){}+
-            H.script(:type=>"text/javascript") {'
-                $(document).ready(function() {
+            H.script() {'
+                $(function() {
                     $("input[name=update_profile]").click(update_profile);
                 });
             '}
@@ -341,7 +414,7 @@ post '/api/logout' do
         return {
             :status => "err",
             :error => "Wrong auth credentials or API secret."
-        }
+        }.to_json
     end
 end
 
@@ -372,16 +445,16 @@ post '/api/create_account' do
     if params[:password].length < PasswordMinLength
         return {
             :status => "err",
-            :error => "Password is too short. Min length:  #{PasswordMinLength}"
+            :error => "Password is too short. Min length: #{PasswordMinLength}"
         }.to_json
     end
-    auth = create_user(params[:username],params[:password])
+    auth,errmsg = create_user(params[:username],params[:password])
     if auth 
         return {:status => "ok", :auth => auth}.to_json
     else
         return {
             :status => "err",
-            :error => "Username is busy. Please select a different one."
+            :error => errmsg
         }.to_json
     end
 end
@@ -391,6 +464,7 @@ post '/api/submit' do
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
     end
+
     # We can have an empty url or an empty first comment, but not both.
     if (!check_params "title","news_id",:url,:text) or
                                (params[:url].length == 0 and
@@ -412,6 +486,13 @@ post '/api/submit' do
         end
     end
     if params[:news_id].to_i == -1
+        if submitted_recently
+            return {
+                :status => "err",
+                :error => "You have submitted a story too recently, "+
+                "please wait #{allowed_to_post_in_seconds} seconds."
+            }.to_json
+        end
         news_id = insert_news(params[:title],params[:url],params[:text],
                               $user["id"])
     else
@@ -427,8 +508,25 @@ post '/api/submit' do
     end
     return  {
         :status => "ok",
-        :news_id => news_id
+        :news_id => news_id.to_i
     }.to_json
+end
+
+post '/api/delnews' do
+    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if not check_api_secret
+        return {:status => "err", :error => "Wrong form secret."}.to_json
+    end
+    if (!check_params "news_id")
+        return {
+            :status => "err",
+            :error => "Please specify a news title."
+        }.to_json
+    end
+    if del_news(params[:news_id],$user["id"])
+        return {:status => "ok", :news_id => -1}.to_json
+    end
+    return {:status => "err", :error => "News too old or wrong ID/owner."}.to_json
 end
 
 post '/api/votenews' do
@@ -446,11 +544,12 @@ post '/api/votenews' do
     end
     # Vote the news
     vote_type = params["vote_type"].to_sym
-    if vote_news(params["news_id"].to_i,$user["id"],vote_type)
+    karma,error = vote_news(params["news_id"].to_i,$user["id"],vote_type)
+    if karma
         return { :status => "ok" }.to_json
     else
         return { :status => "err", 
-                 :error => "Invalid parameters or duplicated vote." }.to_json
+                 :error => error }.to_json
     end
 end
 
@@ -485,13 +584,49 @@ end
 
 post '/api/updateprofile' do
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
-    if !check_params(:about, :email)
+    if !check_params(:about, :email, :password)
         return {:status => "err", :error => "Missing parameters."}.to_json
+    end
+    if params[:password].length > 0
+        if params[:password].length < PasswordMinLength
+            return {
+                :status => "err",
+                :error => "Password is too short. "+
+                          "Min length: #{PasswordMinLength}"
+            }.to_json
+        end
+        $r.hmset("user:#{$user['id']}","password",
+            hash_password(params[:password],$user['salt']))
     end
     $r.hmset("user:#{$user['id']}",
         "about", params[:about][0..4095],
         "email", params[:email][0..255])
     return {:status => "ok"}.to_json
+end
+
+post '/api/votecomment' do
+    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if not check_api_secret
+        return {:status => "err", :error => "Wrong form secret."}.to_json
+    end
+    # Params sanity check
+    if (!check_params "comment_id","vote_type") or
+                                            (params["vote_type"] != "up" and
+                                             params["vote_type"] != "down")
+        return {
+            :status => "err",
+            :error => "Missing news ID or invalid vote type."
+        }.to_json
+    end
+    # Vote the news
+    vote_type = params["vote_type"].to_sym
+    news_id,comment_id = params["comment_id"].split("-")
+    if vote_comment(news_id.to_i,comment_id.to_i,$user["id"],vote_type)
+        return { :status => "ok", :comment_id => params["comment_id"] }.to_json
+    else
+        return { :status => "err", 
+                 :error => "Invalid parameters or duplicated vote." }.to_json
+    end
 end
 
 # Check that the list of parameters specified exist.
@@ -528,10 +663,8 @@ def application_header
             H.a(:href=>ni[1]) {H.entities ni[0]}
         }.inject{|a,b| a+"\n"+b}
     }
-    rnavbar = H.rnav {
+    rnavbar = H.nav(:id => "account") {
         if $user
-            text = $user['username']
-            link = "/user/"+H.urlencode($user['username'])
             H.a(:href => "/user/"+H.urlencode($user['username'])) { 
                 $user['username']+" (#{$user['karma']})"
             }+" | "+
@@ -545,22 +678,31 @@ def application_header
     }
     H.header {
         H.h1 {
-            H.entities SiteName
+            H.a(:href => "/") {H.entities SiteName}+" "+
+            H.small {Version}
         }+navbar+" "+rnavbar
     }
 end
 
 def application_footer
     if $user
-        apisecret = H.script("type" => "text/javascript") {
+        apisecret = H.script() {
             "var apisecret = '#{$user['apisecret']}';";
         }
     else
         apisecret = ""
     end
     H.footer {
-        "Lamer News source code is located "+
-        H.a(:href=>"http://github.com/antirez/lamernews"){"here"}
+        links = [
+            ["source code", "http://github.com/antirez/lamernews"],
+            ["rss feed", "/rss"],
+            ["twitter", FooterTwitterLink],
+            ["google group", FooterGoogleGroupLink]
+        ]
+        links.map{|l| l[1] ?
+            H.a(:href => l[1]) {H.entities l[0]} :
+            nil
+        }.select{|l| l}.join(" | ")
     }+apisecret
 end
 
@@ -596,9 +738,26 @@ def increment_karma_if_needed
     if $user['karma_incr_time'].to_i < (Time.now.to_i-KarmaIncrementInterval)
         userkey = "user:#{$user['id']}"
         $r.hset(userkey,"karma_incr_time",Time.now.to_i)
-        $r.hincrby(userkey,"karma",KarmaIncrementAmount)
-        $user['karma'] = $user['karma'].to_i + KarmaIncrementAmount
+        increment_user_karma_by($user['id'],KarmaIncrementAmount)
     end
+end
+
+# Increment the user karma by the specified amount and make sure to
+# update $user to reflect the change if it is the same user id.
+def increment_user_karma_by(user_id,increment)
+    userkey = "user:#{user_id}"
+    $r.hincrby(userkey,"karma",increment)
+    if $user and ($user['id'].to_i == user_id.to_i)
+        $user['karma'] = $user['karma'].to_i + increment
+    end
+end
+
+# Return the specified user karma.
+def get_user_karma(user_id)
+    return $user['karma'].to_i if $user and (user_id.to_i == $user['id'].to_i)
+    userkey = "user:#{user_id}"
+    karma = $r.hget(userkey,"karma")
+    karma ? karma.to_i : 0
 end
 
 # Return the hex representation of an unguessable 160 bit random number.
@@ -610,10 +769,17 @@ end
 
 # Create a new user with the specified username/password
 #
-# Return value: the auth token if the user was correctly creaed.
-#               nil if the username already exists.
+# Return value: the function returns two values, the first is the
+#               auth token if the registration succeeded, otherwise
+#               is nil. The second is the error message if the function
+#               failed (detected testing the first return value).
 def create_user(username,password)
-    return nil if $r.exists("username.to.id:#{username.downcase}")
+    if $r.exists("username.to.id:#{username.downcase}")
+        return nil, "Username is busy, please try a different one."
+    end
+    if rate_limit_by_ip(3600*15,"create_user",request.ip)
+        return nil, "Please wait some time before creating a new user."
+    end
     id = $r.incr("users.count")
     auth_token = get_rand
     salt = get_rand
@@ -623,7 +789,7 @@ def create_user(username,password)
         "salt",salt,
         "password",hash_password(password,salt),
         "ctime",Time.now.to_i,
-        "karma",10,
+        "karma",UserInitialKarma,
         "about","",
         "email","",
         "auth",auth_token,
@@ -632,7 +798,7 @@ def create_user(username,password)
         "karma_incr_time",Time.new.to_i)
     $r.set("username.to.id:#{username.downcase}",id)
     $r.set("auth:#{auth_token}",id)
-    return auth_token
+    return auth_token,nil
 end
 
 # Update the specified user authentication token with a random generated
@@ -684,6 +850,16 @@ def check_user_credentials(username,password)
     (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
 end
 
+# Has the user submitted a news story in the last `NewsSubmissionBreak` seconds?
+def submitted_recently
+  allowed_to_post_in_seconds > 0
+end
+
+# Indicates when the user is allowed to submit another story after the last.
+def allowed_to_post_in_seconds
+  $r.ttl("user:#{$user['id']}:submitted_recently")
+end
+
 ################################################################################
 # News
 ################################################################################
@@ -706,7 +882,13 @@ def get_news_by_id(news_ids,opt={})
             $r.hgetall("news:#{nid}")
         }
     }
-    return [] if !news
+    return [] if !news # Can happen only if news_ids is an empty array.
+
+    # Remove empty elements
+    news = news.select{|x| x.length > 0}
+    if news.length == 0
+        return opt[:single] ? nil : []
+    end
 
     # Get all the news
     $r.pipelined {
@@ -763,20 +945,34 @@ end
 # 3) That the karma is transfered to the author of the post, if different.
 # 4) That the news score is updaed.
 #
-# Return value: the news rank if the vote was inserted, otherwise
-# if the vote was duplicated, or user_id or news_id don't match any
-# existing user or news, false is returned.
+# Return value: two return values are returned: rank,error
+#
+# If the fucntion is successful rank is not nil, and represents the news karma
+# after the vote was registered. The error is set to nil.
+#
+# On error the returned karma is false, and error is a string describing the
+# error that prevented the vote.
 def vote_news(news_id,user_id,vote_type)
     # Fetch news and user
     user = ($user and $user["id"] == user_id) ? $user : get_user_by_id(user_id)
     news = get_news_by_id(news_id)
-    return false if !news or !user
+    return false,"No such news or user." if !news or !user
 
     # Now it's time to check if the user already voted that news, either
     # up or down. If so return now.
     if $r.zscore("news.up:#{news_id}",user_id) or
        $r.zscore("news.down:#{news_id}",user_id)
-       return false
+       return false,"Duplicated vote."
+    end
+
+    # Check if the user has enough karma to perform this operation
+    if $user['id'] != news['user_id']
+        if (vote_type == :up and
+             (get_user_karma(user_id) < NewsUpvoteMinKarma)) or
+           (vote_type == :down and
+             (get_user_karma(user_id) < NewsDownvoteMinKarma))
+            return false,"You don't have enough karma to vote #{vote_type}"
+        end
     end
 
     # News was not already voted by that user. Add the vote.
@@ -796,7 +992,20 @@ def vote_news(news_id,user_id,vote_type)
     $r.hmset("news:#{news_id}",
         "score",score,
         "rank",rank)
-    return rank
+    $r.zadd("news.top",rank,news_id)
+
+    # Remove some karma to the user if needed, and transfer karma to the
+    # news owner in the case of an upvote.
+    if $user['id'] != news['user_id']
+        if vote_type == :up
+            increment_user_karma_by(user_id,-NewsUpvoteKarmaCost)
+            increment_user_karma_by(news['user_id'],NewsUpvoteKarmaTransfered)
+        else
+            increment_user_karma_by(user_id,-NewsDownvoteKarmaCost)
+        end
+    end
+
+    return rank,nil
 end
 
 # Given the news compute its score.
@@ -812,7 +1021,11 @@ def compute_news_score(news)
     # Now let's add the logarithm of the sum of all the votes, since
     # something with 5 up and 5 down is less interesting than something
     # with 50 up and 50 donw.
-    score += Math.log(upvotes.length/2+downvotes.length/2)*NewsScoreLogBooster
+    votes = upvotes.length/2+downvotes.length/2
+    if votes > NewsScoreLogStart
+        score += Math.log(votes-NewsScoreLogStart)*NewsScoreLogBooster
+    end
+    score
 end
 
 # Given the news compute its rank, that is function of time and score.
@@ -820,7 +1033,7 @@ end
 # The general forumla is RANK = SCORE / (AGE ^ AGING_FACTOR)
 def compute_news_rank(news)
     age = (Time.now.to_i - news["ctime"].to_i)+NewsAgePadding
-    return (news["score"].to_f*1000)/(age**RankAgingFactor)
+    return (news["score"].to_f)/((age/3600)**RankAgingFactor)
 end
 
 # Add a news with the specified url or text.
@@ -858,7 +1071,7 @@ def insert_news(title,url,text,user_id)
         "down", 0,
         "comments", 0)
     # The posting user virtually upvoted the news posting it
-    rank = vote_news(news_id,user_id,:up)
+    rank,error = vote_news(news_id,user_id,:up)
     # Add the news to the user submitted news
     $r.zadd("user.posted:#{user_id}",ctime,news_id)
     # Add the news into the chronological view
@@ -867,6 +1080,8 @@ def insert_news(title,url,text,user_id)
     $r.zadd("news.top",rank,news_id)
     # Add the news url for some time to avoid reposts in short time
     $r.setex("url:"+url,PreventRepostTime,news_id) if !textpost
+    # Set a timeout indicating when the user may post again
+    $r.setex("user:#{$user['id']}:submitted_recently",NewsSubmissionBreak,'1')
     return news_id
 end
 
@@ -905,6 +1120,18 @@ def edit_news(news_id,title,url,text,user_id)
     return news_id
 end
 
+# Mark an existing news as removed.
+def del_news(news_id,user_id)
+    news = get_news_by_id(news_id)
+    return false if !news or news['user_id'].to_i != user_id.to_i
+    return false if !(news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
+
+    $r.hmset("news:#{news_id}","del",1)
+    $r.zrem("news.top",news_id)
+    $r.zrem("news.cron",news_id)
+    return true
+end
+
 # Return the host part of the news URL field.
 # If the url is in the form text:// nil is returned.
 def news_domain(news)
@@ -919,23 +1146,60 @@ def news_text(news)
     (su[0] == "text:") ? news["url"][7..-1] : nil
 end
 
+# Turn the news into its RSS representation
+# This function expects as input a news entry as obtained from
+# the get_news_by_id function.
+def news_to_rss(news)
+    domain = news_domain(news)
+    news = {}.merge(news) # Copy the object so we can modify it as we wish.
+    news["ln_url"] = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}/news/#{news["id"]}"
+    news["url"] = news["ln_url"] if !domain
+
+    H.item {
+        H.title {
+            H.entities news["title"]
+        } + " " +
+        H.guid {
+            H.entities news["url"]
+        } + " " +
+        H.link {
+            H.entities news["url"]
+        } + " " +
+        H.description {
+            "<![CDATA[" +
+            H.a(:href=>news["ln_url"]) {
+                "Comments"
+            } + "]]>"
+        } + " " +
+        H.comments {
+            H.entities news["ln_url"]
+        }
+    }+"\n"
+end
+
+
 # Turn the news into its HTML representation, that is
 # a linked title with buttons to up/down vote plus additional info.
 # This function expects as input a news entry as obtained from
 # the get_news_by_id function.
 def news_to_html(news)
+    return H.article(:class => "deleted") {
+        "[deleted news]"
+    } if news["del"]
     domain = news_domain(news)
     news = {}.merge(news) # Copy the object so we can modify it as we wish.
     news["url"] = "/news/#{news["id"]}" if !domain
+    upclass = "uparrow"
+    downclass = "downarrow"
     if news["voted"] == :up
-        upclass = "voted"
-        downclass = "disabled"
+        upclass << " voted"
+        downclass << " disabled"
     elsif news["voted"] == :down
-        downclass = "voted"
-        upclass = "disabled"
+        downclass << " voted"
+        upclass << " disabled"
     end
-    H.news(:id => news["id"]) {
-        H.uparrow(:class => upclass) {
+    H.article("data-news-id" => news["id"]) {
+        H.a(:href => "#up", :class => upclass) {
             "&#9650;"
         }+" "+
         H.h2 {
@@ -947,13 +1211,14 @@ def news_to_html(news)
             if domain
                 "at "+H.entities(domain)
             else "" end +
-            if (news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
+            if ($user and $user['id'].to_i == news['user_id'].to_i and
+                news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
                 " " + H.a(:href => "/editnews/#{news["id"]}") {
                     "[edit]"
                 }
             else "" end
         }+
-        H.downarrow(:class => downclass) {
+        H.a(:href => "#down", :class =>  downclass) {
             "&#9660;"
         }+
         H.p {
@@ -966,19 +1231,38 @@ def news_to_html(news)
             H.a(:href => "/news/#{news["id"]}") {
                 news["comments"]+" comments"
             }
-        }#+news["score"].to_s+","+news["rank"].to_s+","+compute_news_rank(news).to_s
+        }#+"score: "+news["score"].to_s+" old rank:"+news["rank"].to_s+" new rank:"+compute_news_rank(news).to_s
     }+"\n"
 end
 
 # If 'news' is a list of news entries (Ruby hashes with the same fields of
 # the Redis hash representing the news in the DB) this function will render
+# the RSS needed to show this news.
+def news_list_to_rss(news)
+    aux = ""
+    news.each{|n|
+        aux << news_to_rss(n)
+    }
+    aux
+end
+
+# If 'news' is a list of news entries (Ruby hashes with the same fields of
+# the Redis hash representing the news in the DB) this function will render
 # the HTML needed to show this news.
-def news_list_to_html(news)
-    H.newslist {
+def news_list_to_html(news,paginate=nil)
+    H.section(:id => "newslist") {
         aux = ""
         news.each{|n|
             aux << news_to_html(n)
         }
+        if paginate
+            last_displayed = paginate[:start]+paginate[:perpage]
+            if last_displayed < paginate[:count]
+                nextpage = paginate[:link].sub("$",
+                           (paginate[:start]+paginate[:perpage]).to_s)
+                aux << H.a(:href => nextpage,:class=> "more") {"[more]"}
+            end
+        end
         aux
     }
 end
@@ -995,6 +1279,7 @@ def update_news_rank_if_needed(n)
     real_rank = compute_news_rank(n)
     if (real_rank-n["rank"].to_f).abs > 0.001
         $r.hmset("news:#{n["id"]}","rank",real_rank)
+        $r.zadd("news.top",real_rank,n["id"])
         n["rank"] = real_rank.to_s
     end
 end
@@ -1019,7 +1304,14 @@ end
 # Get news in chronological order.
 def get_latest_news
     news_ids = $r.zrevrange("news.cron",0,LatestNewsPerPage-1)
-    result = get_news_by_id(news_ids,:update_rank => true)
+    get_news_by_id(news_ids,:update_rank => true)
+end
+
+# Get saved news of current user
+def get_saved_news(user_id,start=0)
+    count = $r.zcard("user.saved:#{user_id}").to_i
+    news_ids = $r.zrevrange("user.saved:#{user_id}",start,start+(SavedNewsPerPage-1))
+    return get_news_by_id(news_ids),count
 end
 
 ###############################################################################
@@ -1048,10 +1340,6 @@ end
 # The parent_id is only used for inserts (when comment_id == -1), otherwise
 # is ignored.
 def insert_comment(news_id,user_id,comment_id,parent_id,body)
-    puts "news_id: #{news_id}"
-    puts "comment_id: #{comment_id}"
-    puts "parent_id: #{parent_id}"
-    puts "body: #{body}"
     news = get_news_by_id(news_id)
     return false if !news
     if comment_id == -1
@@ -1059,7 +1347,8 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
                    "body" => body,
                    "parent_id" => parent_id,
                    "user_id" => user_id,
-                   "ctime" => Time.now.to_i};
+                   "ctime" => Time.now.to_i,
+                   "up" => [user_id.to_i] };
         comment_id = Comments.insert(news_id,comment)
         return false if !comment_id
         $r.hincrby("news:#{news_id}","comments",1);
@@ -1071,6 +1360,7 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
             "comment_id" => comment_id,
             "op" => "insert"
         }
+        increment_user_karma_by(user_id,KarmaIncrementComment)
     end
 
     # If we reached this point the next step is either to update or
@@ -1101,38 +1391,69 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
     end
 end
 
+# Compute the comment score
+def compute_comment_score(c)
+    upcount = (c['up'] ? c['up'].length : 0)
+    downcount = (c['down'] ? c['down'].length : 0)
+    upcount-downcount
+end
+
 # Render a comment into HTML.
 # 'c' is the comment representation as a Ruby hash.
 # 'u' is the user, obtained from the user_id by the caller.
 def comment_to_html(c,u,news_id)
     indent = "margin-left:#{c['level'].to_i*CommentReplyShift}px"
+    score = compute_comment_score(c)
 
     if c['del'] and c['del'].to_i == 1
-        return H.comment(:style => indent,:class=>"deleted") {
+        return H.article(:style => indent,:class=>"commented deleted") {
             "[comment deleted]"
         }
     end
-    H.comment(:style=>indent, :id=>"#{news_id}-#{c['id']}") {
-        H.avatar {
+    show_edit_link = !c['topcomment'] &&
+                ($user && ($user['id'].to_i == c['user_id'].to_i)) &&
+                (c['ctime'].to_i > (Time.now.to_i - CommentEditTime))
+
+    H.article(:class => "comment", :style=>indent, "data-comment-id"=>"#{news_id}-#{c['id']}") {
+        H.span(:class => "avatar") {
             email = u["email"] || ""
             digest = Digest::MD5.hexdigest(email)
             H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
-        }+H.info {
-            H.username {
+        }+H.span(:class => "info") {
+            H.span(:class => "username") {
                 H.a(:href=>"/user/"+H.urlencode(u["username"])) {
                     H.entities u["username"]
                 }
             }+" "+str_elapsed(c["ctime"].to_i)+". "+
+            if !c['topcomment']
+                H.a(:href=>"/comment/#{news_id}/#{c["id"]}", :class=>"reply") {
+                    "link"
+                }+" "
+            else "" end +
             if $user and !c['topcomment']
                 H.a(:href=>"/reply/#{news_id}/#{c["id"]}", :class=>"reply") {
                     "reply"
                 }+" "
-            else
-                " "
-            end +
-            if !c['topcomment'] and
-               ($user and ($user['id'].to_i == c['user_id'].to_i)) and
-               (c['ctime'].to_i > (Time.now.to_i - CommentEditTime))
+            else " " end +
+            if !c['topcomment']
+                upclass = "uparrow"
+                downclass = "downarrow"
+                if $user and c['up'] and c['up'].index($user['id'].to_i)
+                    upclass << " voted"
+                    downclass << " disabled"
+                elsif $user and c['down'] and c['down'].index($user['id'].to_i)
+                    downclass << " voted"
+                    upclass << " disabled"
+                end
+                "#{score} points "+
+                H.a(:href => "#up", :class => upclass) {
+                    "&#9650;"
+                }+" "+
+                H.a(:href => "#down", :class => downclass) {
+                    "&#9660;"
+                }
+            else " " end +
+            if show_edit_link
                 H.a(:href=> "/editcomment/#{news_id}/#{c["id"]}",
                     :class =>"reply") {"edit"}+
                     " (#{
@@ -1145,16 +1466,26 @@ def comment_to_html(c,u,news_id)
     }
 end
 
-def render_comments_for_news(news_id)
+def render_comments_for_news(news_id,root=-1)
     html = ""
     user = {}
-    Comments.render_comments(news_id) {|c|
+    Comments.render_comments(news_id,root) {|c|
         user[c["id"]] = get_user_by_id(c["user_id"]) if !user[c["id"]]
         user[c["id"]] = DeletedUser if !user[c["id"]]
         u = user[c["id"]]
         html << comment_to_html(c,u,news_id)
     }
-    html
+    H.div("id" => "comments") {html}
+end
+
+def vote_comment(news_id,comment_id,user_id,vote_type)
+    user_id = user_id.to_i
+    comment = Comments.fetch(news_id,comment_id)
+    return false if !comment
+    varray = (comment[vote_type.to_s] or [])
+    return false if varray.index(user_id)
+    varray << user_id
+    return Comments.edit(news_id,comment_id,{vote_type.to_s => varray})
 end
 
 ###############################################################################
@@ -1170,4 +1501,12 @@ def str_elapsed(t)
     return "#{seconds/60} minutes ago" if seconds < 60*60
     return "#{seconds/60/60} hours ago" if seconds < 60*60*24
     return "#{seconds/60/60/24} days ago"
+end
+
+# Generic API limiting function
+def rate_limit_by_ip(delay,*tags)
+    key = "limit:"+tags.join(".")
+    return true if $r.exists(key)
+    $r.setex(key,delay,1)
+    return false
 end

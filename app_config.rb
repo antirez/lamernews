@@ -13,18 +13,34 @@ PasswordMinLength = 8
 # Comments
 CommentMaxLength = 4096
 CommentEditTime = 3600*2
-CommentReplyShift = 30
+CommentReplyShift = 60
+
+# Karma
+UserInitialKarma = 1
+KarmaIncrementInterval = 3600
+KarmaIncrementAmount = 1
+NewsDownvoteMinKarma = 30
+NewsDownvoteKarmaCost = 6
+NewsUpvoteMinKarma = 0
+NewsUpvoteKarmaCost = 1
+NewsUpvoteKarmaTransfered = 1
+KarmaIncrementComment = 1
 
 # User
-KarmaIncrementInterval = 3600*3
-KarmaIncrementAmount = 1
 DeletedUser = {"username" => "deleted_user", "email" => "", "id" => -1}
 
 # News and ranking
-NewsAgePadding = 60*10
+NewsAgePadding = 60*60*8
 TopNewsPerPage = 30
 LatestNewsPerPage = 100
 NewsEditTime = 60*15
-NewsScoreLogBooster = 5
-RankAgingFactor = 1.3
+NewsScoreLogStart = 10
+NewsScoreLogBooster = 2
+RankAgingFactor = 1.6
 PreventRepostTime = 3600*48
+NewsSubmissionBreak = 60*15
+SavedNewsPerPage = 10
+
+# Footer links
+FooterTwitterLink = false
+FooterGoogleGroupLink = false

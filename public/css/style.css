@@ -31,7 +31,15 @@ header h1 {
     color:#333;
 }
 
-content {
+header h1 a {
+    color:#333;
+}
+
+header h1 small {
+    font-size: 14px;
+}
+
+#content {
     display:block;
     margin-top:20px;
     margin-bottom:20px;
@@ -42,7 +50,7 @@ footer {
     display:block;
     border-top: 1px #ccc solid;
     text-align: center;
-    color:#999;
+    color:#ccc;
     font-size:14px;
     margin-bottom:30px;
 }
@@ -56,7 +64,7 @@ nav a {
     margin-left: 20px;
 }
 
-rnav {
+#account {
     color:#aaa;
     position: absolute;
     top: 5px;
@@ -65,18 +73,18 @@ rnav {
     font-size:14px;
 }
 
-rnav a {
+#account a {
     margin-left:10px;
     margin-right:10px;
 }
 
-login,submitform {
+#login,#submitform {
     display:block;
     position:relative;
     width:150px;
 }
 
-login label, submitform label {
+#login label, #submitform label {
     font-size:12px;
     font-weight:bold;
 }
@@ -88,64 +96,69 @@ div #errormsg {
     margin-top: 15px;
 }
 
-news {
+article {
     display: block;
     font-size: 16px;
     margin-bottom:15px;
 }
 
-news h2 {
+article h2 {
     display: inline;
     font-size:20px;
 }
 
-news address {
+article address {
     display: inline;
     color: #999;
     font-size:14px;
 }
 
-news h2 a {
+article h2 a {
     color: black;
 }
 
-news h2 a:visited {
+article h2 a:visited {
     color: #999999;
 }
 
-news uparrow, news downarrow {
+article .uparrow, article .downarrow {
     font-size: 16px;
     cursor: pointer;
 }
 
-news uparrow {
+article .uparrow {
     color:#999;
 }
 
-news downarrow {
+article .downarrow {
     color:#ccc;
 }
 
-news p {
+article p {
     font-size:14px;
     color:#999;
     margin-left:20px;
 }
 
-news p a {
+article p a {
     color: #666;
 }
 
-news uparrow.voted {
+article.comment .uparrow.voted, article .uparrow.voted {
     color:#99dd99;
 }
 
-news downarrow.voted {
+article.comment .downarrow.voted, article .downarrow.voted {
     color:#dd9999;
 }
 
-news downarrow.disabled, uparrow.disabled {
+article .downarrow.disabled, .uparrow.disabled {
     visibility: hidden;
+}
+
+article.deleted {
+    padding-left:20px;
+    color:#999;
 }
 
 form textarea {
@@ -153,7 +166,7 @@ form textarea {
     font-size:14px;
 }
 
-comment {
+.comment {
     position:relative;
     width:500px;
     display:block;
@@ -161,7 +174,7 @@ comment {
     min-height:50px;
 }
 
-comment avatar img {
+.comment .avatar img {
     position:absolute;
     top:0px;
     left:0px;
@@ -169,29 +182,35 @@ comment avatar img {
     height:48px;
 }
 
-comment info {
+.comment .info {
     position:relative;
     left:60px;
     font-size:14px;
     color:#999;
 }
 
-comment info a.reply {
+.comment .info a.reply {
     text-decoration:underline;
     padding-left:5px;
 }
 
-comment pre {
+.comment pre {
     width:50em;
     position:relative;
     left:60px;
     top:10px;
     font-family: Courier;
+    font-size: 14px;
     white-space: pre-wrap;       /* css-3 */
     white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
     white-space: -pre-wrap;      /* Opera 4-6 */
     white-space: -o-pre-wrap;    /* Opera 7 */
     word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+article.comment .uparrow, article.comment .downarrow {
+    color:#aaa;
+    font-size:14px;
 }
 
 note {
@@ -200,7 +219,7 @@ note {
     font-size:14px;
 }
 
-comment.deleted {
+.comment.deleted {
     color: #999;
 }
 
@@ -209,27 +228,43 @@ topcomment {
     margin:20px;
 }
 
-userinfo ul li {
+.singlecomment {
+    background-color: #eee;
+    border: 1px dotted #ccc;
+    padding: 15px;
+    margin:10px;
+}
+
+.commentreplies h2 {
+    font-size: 18px;
+    border-bottom: 1px solid #aaa;
+}
+
+.userinfo ul li {
     list-style-type: none;
     margin-bottom:10px;
 }
 
-userinfo p {
+.userinfo pre {
     color: #666;
     font-style: italic;
     margin:20px;
 }
 
-userinfo avatar img {
+.userinfo .avatar img {
     width:48px;
     height:48px;
 }
 
-userinfo h2 {
+.userinfo h2 {
     position:relative;
     left:15px;
     top:-15px;
     display:inline;
     font-size:28px;
     color: #444;
+}
+
+.userinfo a {
+    text-decoration: underline;
 }

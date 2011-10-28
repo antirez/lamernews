@@ -18,16 +18,14 @@ Installation
 ===
 
 Lamer news is a Ruby/Sinatra/Redis/jQuery application.
-You just need Ruby 1.8.7, and run:
+You need to install Redis and Ruby 1.8.7 or 1.9.2 with the following gems:
 
 * redis
 * hiredis
 * sinatra
 * json
-* digest/sha1
-* digest/md5
 * ruby-hmac
-* openssl (not required but suggested to speedup password hashing)
+* openssl (not needed but will speedup the authentication if available).
 
 How to contribute
 ===
@@ -43,6 +41,12 @@ However contributions are welcomed. Just make sure to:
 * Open an issue on github before firing your editor to see if there are good chances that your changes will be merged.
 * If you don't want to follow all this rules, forking the code is *encouraged*! The license is two clause BSD, do with this code what you want. Run your site, turn it into a blog, hack it to the extreme consequences. Have fun :)
 
+Web sites using this code
+===
+
+* http://lamernews.com Programming News.
+* http://echolinux.com Linux News.
+
 Data Layout
 ===
 
@@ -55,7 +59,7 @@ A Redis hash named `user:<user id>` with the following fields:
 
     id -> user ID
     username -> The username
-    password -> Hashed password, SHA1(salt|password) note: | means concatenation
+    password -> Hashed password, PBKDF2(salt|password) note: | means concatenation
     ctime -> Registration time (unix time)
     karma -> User karma, earned visiting the site and posting good stuff
     about -> Some optional info about the user

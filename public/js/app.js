@@ -31,14 +31,19 @@ function submit() {
         text: $("textarea[name=text]").val(),
         apisecret: apisecret
     };
+    var del = $("input[name=del]").length && $("input[name=del]").attr("checked");
     $.ajax({
         type: "POST",
-        url: "/api/submit",
+        url: del ? "/api/delnews" : "/api/submit",
         data: data,
         success: function(reply) {
             var r = jQuery.parseJSON(reply);
             if (r.status == "ok") {
-                window.location.href = "/news/"+r.news_id;
+                if (r.news_id == -1) {
+                    window.location.href = "/";
+                } else {
+                    window.location.href = "/news/"+r.news_id;
+                }
             } else {
                 $("#errormsg").html(r.error)
             }
@@ -50,6 +55,7 @@ function submit() {
 function update_profile() {
     var data = {
         email: $("input[name=email]").val(),
+        password: $("input[name=password]").val(),
         about: $("textarea[name=about]").val(),
         apisecret: apisecret
     };
@@ -102,12 +108,17 @@ function post_comment() {
 }
 
 // Install the onclick event in all news arrows the user did not voted already.
-$(document).ready(function() {
-    $('news').each(function(i,news) {
-        var news_id = news.id;
-        var up_class = news.children[0].getAttribute("class");
-        if (!up_class) {
-            news.children[0].onclick=function() {
+$(function() {
+    $('#newslist article').each(function(i,news) {
+        var news_id = $(news).data("newsId");
+        news = $(news);
+        up = news.find(".uparrow");
+        down = news.find(".downarrow");
+        var voted = up.hasClass("voted") || down.hasClass("voted");
+        if (!voted) {
+            up.click(function(e) {
+                if (typeof(apisecret) == 'undefined') return; // Not logged in
+                e.preventDefault();
                 var data = {
                     news_id: news_id,
                     vote_type: "up",
@@ -120,19 +131,19 @@ $(document).ready(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
-                            n = $("#"+news_id)[0];
-                            n.children[0].setAttribute("class","voted");
-                            n.children[3].setAttribute("class","disabled");
+                            n = $("article[data-news-id="+news_id+"]");
+                            n.find(".uparrow").addClass("voted");
+                            n.find(".downarrow").addClass("disabled");
                         } else {
-                            alert("Vote not registered: "+r.error);
+                            alert(r.error);
                         }
                     }
                 });
-            }
-        }
-        var down_class = news.children[3].getAttribute("class");
-        if (!down_class) {
-            news.children[3].onclick=function() {
+            });
+
+            down.click(function(e) {
+                if (typeof(apisecret) == 'undefined') return; // Not logged in
+                e.preventDefault();
                 var data = {
                     news_id : news_id,
                     vote_type: "down",
@@ -145,15 +156,75 @@ $(document).ready(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
-                            n = $("#"+news_id)[0];
-                            n.children[0].setAttribute("class","disabled");
-                            n.children[3].setAttribute("class","voted");
+                            n = $("article[data-news-id="+news_id+"]");
+                            n.find(".uparrow").addClass("disabled");
+                            n.find(".downarrow").addClass("voted");
                         } else {
-                            alert("Vote not registered: "+r.error);
+                            alert(r.error);
                         }
                     }
                 });
-            }
+            });
+        }
+    });
+});
+
+// Install the onclick event in all comments arrows the user did not
+// voted already.
+$(function() {
+    $('#comments article.comment').each(function(i,comment) {
+        var comment_id = $(comment).data("commentId");
+        comment = $(comment);
+        up = comment.find(".uparrow");
+        down = comment.find(".downarrow");
+        var voted = up.hasClass("voted") || down.hasClass("voted");
+        if (!voted) {
+            up.click(function(e) {
+                if (typeof(apisecret) == 'undefined') return; // Not logged in
+                e.preventDefault();
+                var data = {
+                    comment_id: comment_id,
+                    vote_type: "up",
+                    apisecret: apisecret
+                };
+                $.ajax({
+                    type: "POST",
+                    url: "/api/votecomment",
+                    data: data,
+                    success: function(reply) {
+                        var r = jQuery.parseJSON(reply);
+                        if (r.status == "ok") {
+                            $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("voted")
+                            $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("disabled")
+                        } else {
+                            alert(r.error);
+                        }
+                    }
+                });
+            });
+            down.click(function(e) {
+                if (typeof(apisecret) == 'undefined') return; // Not logged in
+                e.preventDefault();
+                var data = {
+                    comment_id: comment_id,
+                    vote_type: "down",
+                    apisecret: apisecret
+                };
+                $.ajax({
+                    type: "POST",
+                    url: "/api/votecomment",
+                    data: data,
+                    success: function(reply) {
+                        var r = jQuery.parseJSON(reply);
+                        if (r.status == "ok") {
+                            $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("disabled")
+                            $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("voted")
+                        } else {
+                            alert(r.error);
+                        }
+                    }
+                });
+            });
         }
     });
 });

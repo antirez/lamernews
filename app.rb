@@ -644,11 +644,6 @@ def check_params *required
     true
 end
 
-def check_params_or_halt *required
-    return if check_parameters *required
-    halt 500, H.h1{"500"}+H.p{"Missing parameters"}
-end
-
 def check_api_secret
     return false if !$user
     params["apisecret"] and (params["apisecret"] == $user["apisecret"])

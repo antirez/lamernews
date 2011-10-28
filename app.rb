@@ -79,7 +79,7 @@ get '/rss' do
     H.rss(:version => "2.0", "xmlns:atom" => "http://www.w3.org/2005/Atom") {
         H.channel {
             H.title {
-                "Lamer News"
+                "#{SiteName}"
             } + " " +
             H.link {
                 "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"

@@ -145,7 +145,7 @@ get '/submit' do
     H.set_title "Submit a new story - #{SiteName}"
     H.page {
         H.h2 {"Submit a new story"}+
-        H.form(:id => "submitform") {
+        H.div(:id => "submitform") {
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => -1)+
                 H.label(:for => "title") {"title"}+
@@ -311,7 +311,7 @@ get "/editnews/:news_id" do
     H.set_title "Edit news - #{SiteName}"
     H.page {
         news_to_html(news)+
-        H.form(:id => "submitform") {
+        H.div(:id => "submitform") {
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => news['id'])+
                 H.label(:for => "title") {"title"}+
@@ -581,6 +581,9 @@ end
 
 post '/api/updateprofile' do
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    if not check_api_secret
+        return {:status => "err", :error => "Wrong form secret."}.to_json
+    end
     if !check_params(:about, :email, :password)
         return {:status => "err", :error => "Missing parameters."}.to_json
     end
@@ -612,7 +615,7 @@ post '/api/votecomment' do
                                              params["vote_type"] != "down")
         return {
             :status => "err",
-            :error => "Missing news ID or invalid vote type."
+            :error => "Missing comment ID or invalid vote type."
         }.to_json
     end
     # Vote the news
@@ -639,11 +642,6 @@ def check_params *required
         end
     }
     true
-end
-
-def check_params_or_halt *required
-    return if check_parameters *required
-    halt 500, H.h1{"500"}+H.p{"Missing parameters"}
 end
 
 def check_api_secret

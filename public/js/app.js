@@ -135,7 +135,7 @@ $(function() {
                             n.find(".uparrow").addClass("voted");
                             n.find(".downarrow").addClass("disabled");
                         } else {
-                            alert("Vote not registered: "+r.error);
+                            alert(r.error);
                         }
                     }
                 });
@@ -160,7 +160,7 @@ $(function() {
                             n.find(".uparrow").addClass("disabled");
                             n.find(".downarrow").addClass("voted");
                         } else {
-                            alert("Vote not registered: "+r.error);
+                            alert(r.error);
                         }
                     }
                 });
@@ -197,7 +197,7 @@ $(function() {
                             $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("voted")
                             $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("disabled")
                         } else {
-                            alert("Vote not registered: "+r.error);
+                            alert(r.error);
                         }
                     }
                 });
@@ -220,7 +220,7 @@ $(function() {
                             $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("disabled")
                             $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("voted")
                         } else {
-                            alert("Vote not registered: "+r.error);
+                            alert(r.error);
                         }
                     }
                 });

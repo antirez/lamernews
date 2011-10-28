@@ -125,8 +125,9 @@ class HTMLGen
         "<!DOCTYPE html>"+
         self.html {
             H.head {
+                self.meta(:charset => "utf-8")+
                 self.title{H.entities @title}+
-                self.meta(:charset => :utf8)+
+                self.meta(:content => :nofollow, :name => :robots)+
                 self.link(:href => "/css/style.css?v=6", :rel => "stylesheet",
                           :type => "text/css")+
                 self.link(:href => "/images/favicon.png", :rel => "shortcut icon")+

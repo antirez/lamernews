@@ -1186,12 +1186,14 @@ def news_to_html(news)
     domain = news_domain(news)
     news = {}.merge(news) # Copy the object so we can modify it as we wish.
     news["url"] = "/news/#{news["id"]}" if !domain
+    upclass = "uparrow"
+    downclass = "downarrow"
     if news["voted"] == :up
-        upclass = "uparrow voted"
-        downclass = "downarrow disabled"
+        upclass << " voted"
+        downclass << " disabled"
     elsif news["voted"] == :down
-        downclass = "downarrow voted"
-        upclass = "downarrow disabled"
+        downclass << " voted"
+        upclass << " disabled"
     end
     H.article("data-news-id" => news["id"]) {
         H.a(:href => "#up", :class => upclass) {

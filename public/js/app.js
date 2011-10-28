@@ -111,9 +111,12 @@ function post_comment() {
 $(function() {
     $('#newslist article').each(function(i,news) {
         var news_id = $(news).data("newsId");
-        var up_class = news.children[0].getAttribute("class");
-        if (!up_class) {
-            $(news.children[0]).click(function(e) {
+        news = $(news);
+        up = news.find(".uparrow");
+        down = news.find(".downarrow");
+        var voted = up.hasClass("voted") || down.hasClass("voted");
+        if (!voted) {
+            up.click(function(e) {
                 if (typeof(apisecret) == 'undefined') return; // Not logged in
                 e.preventDefault();
                 var data = {
@@ -128,19 +131,17 @@ $(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
-                            n = $("article[data-news-id="+news_id+"]")[0];
-                            n.children[0].setAttribute("class","uparrow voted");
-                            n.children[3].setAttribute("class","disabled");
+                            n = $("article[data-news-id="+news_id+"]");
+                            n.find(".uparrow").addClass("voted");
+                            n.find(".downarrow").addClass("disabled");
                         } else {
                             alert("Vote not registered: "+r.error);
                         }
                     }
                 });
             });
-        }
-        var down_class = news.children[3].getAttribute("class");
-        if (!down_class) {
-            $(news.children[3]).click(function(e) {
+
+            down.click(function(e) {
                 if (typeof(apisecret) == 'undefined') return; // Not logged in
                 e.preventDefault();
                 var data = {
@@ -155,9 +156,9 @@ $(function() {
                     success: function(reply) {
                         var r = jQuery.parseJSON(reply);
                         if (r.status == "ok") {
-                            n = $("article[data-news-id="+news_id+"]")[0];
-                            n.children[0].setAttribute("class","disabled");
-                            n.children[3].setAttribute("class","downarrow voted");
+                            n = $("article[data-news-id="+news_id+"]");
+                            n.find(".uparrow").addClass("disabled");
+                            n.find(".downarrow").addClass("voted");
                         } else {
                             alert("Vote not registered: "+r.error);
                         }

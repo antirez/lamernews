@@ -41,6 +41,12 @@ However contributions are welcomed. Just make sure to:
 * Open an issue on github before firing your editor to see if there are good chances that your changes will be merged.
 * If you don't want to follow all this rules, forking the code is *encouraged*! The license is two clause BSD, do with this code what you want. Run your site, turn it into a blog, hack it to the extreme consequences. Have fun :)
 
+Web sites using this code
+===
+
+* http://lamernews.com Programming News.
+* http://echolinux.com Linux News.
+
 Data Layout
 ===
 

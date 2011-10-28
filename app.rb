@@ -38,7 +38,7 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
-Version = "0.4.1"
+Version = "0.5.0"
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
@@ -541,11 +541,12 @@ post '/api/votenews' do
     end
     # Vote the news
     vote_type = params["vote_type"].to_sym
-    if vote_news(params["news_id"].to_i,$user["id"],vote_type)
+    karma,error = vote_news(params["news_id"].to_i,$user["id"],vote_type)
+    if karma
         return { :status => "ok" }.to_json
     else
         return { :status => "err", 
-                 :error => "Invalid parameters or duplicated vote." }.to_json
+                 :error => error }.to_json
     end
 end
 
@@ -734,9 +735,26 @@ def increment_karma_if_needed
     if $user['karma_incr_time'].to_i < (Time.now.to_i-KarmaIncrementInterval)
         userkey = "user:#{$user['id']}"
         $r.hset(userkey,"karma_incr_time",Time.now.to_i)
-        $r.hincrby(userkey,"karma",KarmaIncrementAmount)
-        $user['karma'] = $user['karma'].to_i + KarmaIncrementAmount
+        increment_user_karma_by($user['id'],KarmaIncrementAmount)
     end
+end
+
+# Increment the user karma by the specified amount and make sure to
+# update $user to reflect the change if it is the same user id.
+def increment_user_karma_by(user_id,increment)
+    userkey = "user:#{user_id}"
+    $r.hincrby(userkey,"karma",increment)
+    if $user and ($user['id'].to_i == user_id.to_i)
+        $user['karma'] = $user['karma'].to_i + increment
+    end
+end
+
+# Return the specified user karma.
+def get_user_karma(user_id)
+    return $user['karma'].to_i if $user and (user_id.to_i == $user['id'].to_i)
+    userkey = "user:#{user_id}"
+    karma = $r.hget(userkey,"karma")
+    karma ? karma.to_i : 0
 end
 
 # Return the hex representation of an unguessable 160 bit random number.
@@ -768,7 +786,7 @@ def create_user(username,password)
         "salt",salt,
         "password",hash_password(password,salt),
         "ctime",Time.now.to_i,
-        "karma",10,
+        "karma",UserInitialKarma,
         "about","",
         "email","",
         "auth",auth_token,
@@ -924,20 +942,34 @@ end
 # 3) That the karma is transfered to the author of the post, if different.
 # 4) That the news score is updaed.
 #
-# Return value: the news rank if the vote was inserted, otherwise
-# if the vote was duplicated, or user_id or news_id don't match any
-# existing user or news, false is returned.
+# Return value: two return values are returned: rank,error
+#
+# If the fucntion is successful rank is not nil, and represents the news karma
+# after the vote was registered. The error is set to nil.
+#
+# On error the returned karma is false, and error is a string describing the
+# error that prevented the vote.
 def vote_news(news_id,user_id,vote_type)
     # Fetch news and user
     user = ($user and $user["id"] == user_id) ? $user : get_user_by_id(user_id)
     news = get_news_by_id(news_id)
-    return false if !news or !user
+    return false,"No such news or user." if !news or !user
 
     # Now it's time to check if the user already voted that news, either
     # up or down. If so return now.
     if $r.zscore("news.up:#{news_id}",user_id) or
        $r.zscore("news.down:#{news_id}",user_id)
-       return false
+       return false,"Duplicated vote."
+    end
+
+    # Check if the user has enough karma to perform this operation
+    if $user['id'] != news['user_id']
+        if (vote_type == :up and
+             (get_user_karma(user_id) < NewsUpvoteMinKarma)) or
+           (vote_type == :down and
+             (get_user_karma(user_id) < NewsDownvoteMinKarma))
+            return false,"You don't have enough karma to vote #{vote_type}"
+        end
     end
 
     # News was not already voted by that user. Add the vote.
@@ -958,7 +990,19 @@ def vote_news(news_id,user_id,vote_type)
         "score",score,
         "rank",rank)
     $r.zadd("news.top",rank,news_id)
-    return rank
+
+    # Remove some karma to the user if needed, and transfer karma to the
+    # news owner in the case of an upvote.
+    if $user['id'] != news['user_id']
+        if vote_type == :up
+            increment_user_karma_by(user_id,-NewsUpvoteKarmaCost)
+            increment_user_karma_by(news['user_id'],NewsUpvoteKarmaTransfered)
+        else
+            increment_user_karma_by(user_id,-NewsDownvoteKarmaCost)
+        end
+    end
+
+    return rank,nil
 end
 
 # Given the news compute its score.
@@ -1024,7 +1068,7 @@ def insert_news(title,url,text,user_id)
         "down", 0,
         "comments", 0)
     # The posting user virtually upvoted the news posting it
-    rank = vote_news(news_id,user_id,:up)
+    rank,error = vote_news(news_id,user_id,:up)
     # Add the news to the user submitted news
     $r.zadd("user.posted:#{user_id}",ctime,news_id)
     # Add the news into the chronological view
@@ -1142,12 +1186,14 @@ def news_to_html(news)
     domain = news_domain(news)
     news = {}.merge(news) # Copy the object so we can modify it as we wish.
     news["url"] = "/news/#{news["id"]}" if !domain
+    upclass = "uparrow"
+    downclass = "downarrow"
     if news["voted"] == :up
-        upclass = "uparrow voted"
-        downclass = "downarrow disabled"
+        upclass << " voted"
+        downclass << " disabled"
     elsif news["voted"] == :down
-        downclass = "downarrow voted"
-        upclass = "downarrow disabled"
+        downclass << " voted"
+        upclass << " disabled"
     end
     H.article("data-news-id" => news["id"]) {
         H.a(:href => "#up", :class => upclass) {
@@ -1311,6 +1357,7 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
             "comment_id" => comment_id,
             "op" => "insert"
         }
+        increment_user_karma_by(user_id,KarmaIncrementComment)
     end
 
     # If we reached this point the next step is either to update or

@@ -15,9 +15,18 @@ CommentMaxLength = 4096
 CommentEditTime = 3600*2
 CommentReplyShift = 60
 
-# User
-KarmaIncrementInterval = 3600*3
+# Karma
+UserIniitalKarma = 1
+KarmaIncrementInterval = 3600
 KarmaIncrementAmount = 1
+NewsDownvoteMinKarma = 30
+NewsDownvoteKarmaCost = 6
+NewsUpvoteMinKarma = 0
+NewsUpvoteKarmaCost = 1
+NewsUpvoteKarmaTransfered = 1
+KarmaIncrementComment = 1
+
+# User
 DeletedUser = {"username" => "deleted_user", "email" => "", "id" => -1}
 
 # News and ranking

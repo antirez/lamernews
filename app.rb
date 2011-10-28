@@ -40,11 +40,14 @@ require 'openssl' if UseOpenSSL
 
 Version = "0.5.0"
 
+configure do
+  set :redis_server, Redis.new(:host => RedisHost, :port => RedisPort)
+end
+
 before do
-    $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
     H = HTMLGen.new if !defined?(H)
     if !defined?(Comments)
-        Comments = RedisComments.new($r,"comment",proc{|c,level|
+        Comments = RedisComments.new(settings.redis_server,"comment",proc{|c,level|
             c.sort {|a,b|
                 ascore = compute_comment_score a
                 bscore = compute_comment_score b
@@ -343,9 +346,9 @@ end
 get "/user/:username" do
     user = get_user_by_username(params[:username])
     halt(404,"Non existing user") if !user
-    posted_news,posted_comments = $r.pipelined {
-        $r.zcard("user.posted:#{user['id']}")
-        $r.zcard("user.comments:#{user['id']}")
+    posted_news,posted_comments = settings.redis_server.pipelined {
+        settings.redis_server.zcard("user.posted:#{user['id']}")
+        settings.redis_server.zcard("user.comments:#{user['id']}")
     }
     H.set_title "#{H.entities user['username']} - #{SiteName}"
     owner = $user && ($user['id'].to_i == user['id'].to_i)
@@ -592,10 +595,10 @@ post '/api/updateprofile' do
                           "Min length: #{PasswordMinLength}"
             }.to_json
         end
-        $r.hmset("user:#{$user['id']}","password",
+        settings.redis_server.hmset("user:#{$user['id']}","password",
             hash_password(params[:password],$user['salt']))
     end
-    $r.hmset("user:#{$user['id']}",
+    settings.redis_server.hmset("user:#{$user['id']}",
         "about", params[:about][0..4095],
         "email", params[:email][0..255])
     return {:status => "ok"}.to_json
@@ -715,9 +718,9 @@ end
 # Return value: none, the function works by side effect.
 def auth_user(auth)
     return if !auth
-    id = $r.get("auth:#{auth}")
+    id = settings.redis_server.get("auth:#{auth}")
     return if !id
-    user = $r.hgetall("user:#{id}")
+    user = settings.redis_server.hgetall("user:#{id}")
     $user = user if user.length > 0
 end
 
@@ -734,7 +737,7 @@ end
 def increment_karma_if_needed
     if $user['karma_incr_time'].to_i < (Time.now.to_i-KarmaIncrementInterval)
         userkey = "user:#{$user['id']}"
-        $r.hset(userkey,"karma_incr_time",Time.now.to_i)
+        settings.redis_server.hset(userkey,"karma_incr_time",Time.now.to_i)
         increment_user_karma_by($user['id'],KarmaIncrementAmount)
     end
 end
@@ -743,7 +746,7 @@ end
 # update $user to reflect the change if it is the same user id.
 def increment_user_karma_by(user_id,increment)
     userkey = "user:#{user_id}"
-    $r.hincrby(userkey,"karma",increment)
+    settings.redis_server.hincrby(userkey,"karma",increment)
     if $user and ($user['id'].to_i == user_id.to_i)
         $user['karma'] = $user['karma'].to_i + increment
     end
@@ -753,7 +756,7 @@ end
 def get_user_karma(user_id)
     return $user['karma'].to_i if $user and (user_id.to_i == $user['id'].to_i)
     userkey = "user:#{user_id}"
-    karma = $r.hget(userkey,"karma")
+    karma = settings.redis_server.hget(userkey,"karma")
     karma ? karma.to_i : 0
 end
 
@@ -771,16 +774,16 @@ end
 #               is nil. The second is the error message if the function
 #               failed (detected testing the first return value).
 def create_user(username,password)
-    if $r.exists("username.to.id:#{username.downcase}")
+    if settings.redis_server.exists("username.to.id:#{username.downcase}")
         return nil, "Username is busy, please try a different one."
     end
     if rate_limit_by_ip(3600*15,"create_user",request.ip)
         return nil, "Please wait some time before creating a new user."
     end
-    id = $r.incr("users.count")
+    id = settings.redis_server.incr("users.count")
     auth_token = get_rand
     salt = get_rand
-    $r.hmset("user:#{id}",
+    settings.redis_server.hmset("user:#{id}",
         "id",id,
         "username",username,
         "salt",salt,
@@ -793,8 +796,8 @@ def create_user(username,password)
         "apisecret",get_rand,
         "flags","",
         "karma_incr_time",Time.new.to_i)
-    $r.set("username.to.id:#{username.downcase}",id)
-    $r.set("auth:#{auth_token}",id)
+    settings.redis_server.set("username.to.id:#{username.downcase}",id)
+    settings.redis_server.set("auth:#{auth_token}",id)
     return auth_token,nil
 end
 
@@ -807,10 +810,10 @@ end
 def update_auth_token(user_id)
     user = get_user_by_id(user_id)
     return nil if !user
-    $r.del("auth:#{user['auth']}")
+    settings.redis_server.del("auth:#{user['auth']}")
     new_auth_token = get_rand
-    $r.hmset("user:#{user_id}","auth",new_auth_token)
-    $r.set("auth:#{new_auth_token}",user_id)
+    settings.redis_server.hmset("user:#{user_id}","auth",new_auth_token)
+    settings.redis_server.set("auth:#{new_auth_token}",user_id)
     return new_auth_token
 end
 
@@ -828,12 +831,12 @@ end
 
 # Return the user from the ID.
 def get_user_by_id(id)
-    $r.hgetall("user:#{id}")
+    settings.redis_server.hgetall("user:#{id}")
 end
 
 # Return the user from the username.
 def get_user_by_username(username)
-    id = $r.get("username.to.id:#{username.downcase}")
+    id = settings.redis_server.get("username.to.id:#{username.downcase}")
     return nil if !id
     get_user_by_id(id)
 end
@@ -854,7 +857,7 @@ end
 
 # Indicates when the user is allowed to submit another story after the last.
 def allowed_to_post_in_seconds
-  $r.ttl("user:#{$user['id']}:submitted_recently")
+  settings.redis_server.ttl("user:#{$user['id']}:submitted_recently")
 end
 
 ################################################################################
@@ -874,9 +877,9 @@ def get_news_by_id(news_ids,opt={})
         opt[:single] = true
         news_ids = [news_ids]
     end
-    news = $r.pipelined {
+    news = settings.redis_server.pipelined {
         news_ids.each{|nid|
-            $r.hgetall("news:#{nid}")
+            settings.redis_server.hgetall("news:#{nid}")
         }
     }
     return [] if !news # Can happen only if news_ids is an empty array.
@@ -888,7 +891,7 @@ def get_news_by_id(news_ids,opt={})
     end
 
     # Get all the news
-    $r.pipelined {
+    settings.redis_server.pipelined {
         news.each{|n|
             # Adjust rank if too different from the real-time value.
             hash = {}
@@ -901,9 +904,9 @@ def get_news_by_id(news_ids,opt={})
     }
 
     # Get the associated users information
-    usernames = $r.pipelined {
+    usernames = settings.redis_server.pipelined {
         result.each{|n|
-            $r.hget("user:#{n["user_id"]}","username")
+            settings.redis_server.hget("user:#{n["user_id"]}","username")
         }
     }
     result.each_with_index{|n,i|
@@ -913,10 +916,10 @@ def get_news_by_id(news_ids,opt={})
     # Load $User vote information if we are in the context of a
     # registered user.
     if $user
-        votes = $r.pipelined {
+        votes = settings.redis_server.pipelined {
             result.each{|n|
-                $r.zscore("news.up:#{n["id"]}",$user["id"])
-                $r.zscore("news.down:#{n["id"]}",$user["id"])
+                settings.redis_server.zscore("news.up:#{n["id"]}",$user["id"])
+                settings.redis_server.zscore("news.down:#{n["id"]}",$user["id"])
             }
         }
         result.each_with_index{|n,i|
@@ -957,8 +960,8 @@ def vote_news(news_id,user_id,vote_type)
 
     # Now it's time to check if the user already voted that news, either
     # up or down. If so return now.
-    if $r.zscore("news.up:#{news_id}",user_id) or
-       $r.zscore("news.down:#{news_id}",user_id)
+    if settings.redis_server.zscore("news.up:#{news_id}",user_id) or
+       settings.redis_server.zscore("news.down:#{news_id}",user_id)
        return false,"Duplicated vote."
     end
 
@@ -977,19 +980,19 @@ def vote_news(news_id,user_id,vote_type)
     # voting from another device/API in the time between the ZSCORE check
     # and the zadd, this will not result in inconsistencies as we will just
     # update the vote time with ZADD.
-    if $r.zadd("news.#{vote_type}:#{news_id}", Time.now.to_i, user_id)
-        $r.hincrby("news:#{news_id}",vote_type,1)
+    if settings.redis_server.zadd("news.#{vote_type}:#{news_id}", Time.now.to_i, user_id)
+        settings.redis_server.hincrby("news:#{news_id}",vote_type,1)
     end
-    $r.zadd("user.saved:#{user_id}", Time.now.to_i, news_id) if vote_type == :up
+    settings.redis_server.zadd("user.saved:#{user_id}", Time.now.to_i, news_id) if vote_type == :up
 
     # Compute the new values of score and karma, updating the news accordingly.
     score = compute_news_score(news)
     news["score"] = score
     rank = compute_news_rank(news)
-    $r.hmset("news:#{news_id}",
+    settings.redis_server.hmset("news:#{news_id}",
         "score",score,
         "rank",rank)
-    $r.zadd("news.top",rank,news_id)
+    settings.redis_server.zadd("news.top",rank,news_id)
 
     # Remove some karma to the user if needed, and transfer karma to the
     # news owner in the case of an upvote.
@@ -1008,8 +1011,8 @@ end
 # Given the news compute its score.
 # No side effects.
 def compute_news_score(news)
-    upvotes = $r.zrange("news.up:#{news["id"]}",0,-1,:withscores => true)
-    downvotes = $r.zrange("news.down:#{news["id"]}",0,-1,:withscores => true)
+    upvotes = settings.redis_server.zrange("news.up:#{news["id"]}",0,-1,:withscores => true)
+    downvotes = settings.redis_server.zrange("news.down:#{news["id"]}",0,-1,:withscores => true)
     # FIXME: For now we are doing a naive sum of votes, without time-based
     # filtering, nor IP filtering.
     # We could use just ZCARD here of course, but I'm using ZRANGE already
@@ -1050,13 +1053,13 @@ def insert_news(title,url,text,user_id)
         url = "text://"+text[0...CommentMaxLength]
     end
     # Check for already posted news with the same URL.
-    if !textpost and (id = $r.get("url:"+url))
+    if !textpost and (id = settings.redis_server.get("url:"+url))
         return id.to_i
     end
     # We can finally insert the news.
     ctime = Time.new.to_i
-    news_id = $r.incr("news.count")
-    $r.hmset("news:#{news_id}",
+    news_id = settings.redis_server.incr("news.count")
+    settings.redis_server.hmset("news:#{news_id}",
         "id", news_id,
         "title", title,
         "url", url,
@@ -1070,15 +1073,15 @@ def insert_news(title,url,text,user_id)
     # The posting user virtually upvoted the news posting it
     rank,error = vote_news(news_id,user_id,:up)
     # Add the news to the user submitted news
-    $r.zadd("user.posted:#{user_id}",ctime,news_id)
+    settings.redis_server.zadd("user.posted:#{user_id}",ctime,news_id)
     # Add the news into the chronological view
-    $r.zadd("news.cron",ctime,news_id)
+    settings.redis_server.zadd("news.cron",ctime,news_id)
     # Add the news into the top view
-    $r.zadd("news.top",rank,news_id)
+    settings.redis_server.zadd("news.top",rank,news_id)
     # Add the news url for some time to avoid reposts in short time
-    $r.setex("url:"+url,PreventRepostTime,news_id) if !textpost
+    settings.redis_server.setex("url:"+url,PreventRepostTime,news_id) if !textpost
     # Set a timeout indicating when the user may post again
-    $r.setex("user:#{$user['id']}:submitted_recently",NewsSubmissionBreak,'1')
+    settings.redis_server.setex("user:#{$user['id']}:submitted_recently",NewsSubmissionBreak,'1')
     return news_id
 end
 
@@ -1103,15 +1106,15 @@ def edit_news(news_id,title,url,text,user_id)
     # Even for edits don't allow to change the URL to the one of a
     # recently posted news.
     if !textpost and url != news['url']
-        return false if $r.get("url:"+url)
+        return false if settings.redis_server.get("url:"+url)
         # No problems with this new url, but the url changed
         # so we unblock the old one and set the block in the new one.
         # Otherwise it is easy to mount a DOS attack.
-        $r.del("url:"+news['url'])
-        $r.setex("url:"+url,PreventRepostTime,news_id) if !textpost
+        settings.redis_server.del("url:"+news['url'])
+        settings.redis_server.setex("url:"+url,PreventRepostTime,news_id) if !textpost
     end
     # Edit the news fields.
-    $r.hmset("news:#{news_id}",
+    settings.redis_server.hmset("news:#{news_id}",
         "title", title,
         "url", url)
     return news_id
@@ -1123,9 +1126,9 @@ def del_news(news_id,user_id)
     return false if !news or news['user_id'].to_i != user_id.to_i
     return false if !(news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
 
-    $r.hmset("news:#{news_id}","del",1)
-    $r.zrem("news.top",news_id)
-    $r.zrem("news.cron",news_id)
+    settings.redis_server.hmset("news:#{news_id}","del",1)
+    settings.redis_server.zrem("news.top",news_id)
+    settings.redis_server.zrem("news.cron",news_id)
     return true
 end
 
@@ -1275,8 +1278,8 @@ end
 def update_news_rank_if_needed(n)
     real_rank = compute_news_rank(n)
     if (real_rank-n["rank"].to_f).abs > 0.001
-        $r.hmset("news:#{n["id"]}","rank",real_rank)
-        $r.zadd("news.top",real_rank,n["id"])
+        settings.redis_server.hmset("news:#{n["id"]}","rank",real_rank)
+        settings.redis_server.zadd("news.top",real_rank,n["id"])
         n["rank"] = real_rank.to_s
     end
 end
@@ -1292,7 +1295,7 @@ end
 # score since this is done incrementally when there are pageviews on the
 # site.
 def get_top_news
-    news_ids = $r.zrevrange("news.top",0,TopNewsPerPage-1)
+    news_ids = settings.redis_server.zrevrange("news.top",0,TopNewsPerPage-1)
     result = get_news_by_id(news_ids,:update_rank => true)
     # Sort by rank before returning, since we adjusted ranks during iteration.
     result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f}
@@ -1300,14 +1303,14 @@ end
 
 # Get news in chronological order.
 def get_latest_news
-    news_ids = $r.zrevrange("news.cron",0,LatestNewsPerPage-1)
+    news_ids = settings.redis_server.zrevrange("news.cron",0,LatestNewsPerPage-1)
     get_news_by_id(news_ids,:update_rank => true)
 end
 
 # Get saved news of current user
 def get_saved_news(user_id,start=0)
-    count = $r.zcard("user.saved:#{user_id}").to_i
-    news_ids = $r.zrevrange("user.saved:#{user_id}",start,start+(SavedNewsPerPage-1))
+    count = settings.redis_server.zcard("user.saved:#{user_id}").to_i
+    news_ids = settings.redis_server.zrevrange("user.saved:#{user_id}",start,start+(SavedNewsPerPage-1))
     return get_news_by_id(news_ids),count
 end
 
@@ -1348,8 +1351,8 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
                    "up" => [user_id.to_i] };
         comment_id = Comments.insert(news_id,comment)
         return false if !comment_id
-        $r.hincrby("news:#{news_id}","comments",1);
-        $r.zadd("user.comments:#{user_id}",
+        settings.redis_server.hincrby("news:#{news_id}","comments",1);
+        settings.redis_server.zadd("user.comments:#{user_id}",
             Time.now.to_i,
             news_id.to_s+"-"+comment_id.to_s);
         return {
@@ -1370,7 +1373,7 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
 
     if body.length == 0
         return false if !Comments.del_comment(news_id,comment_id)
-        $r.hincrby("news:#{news_id}","comments",-1);
+        settings.redis_server.hincrby("news:#{news_id}","comments",-1);
         return {
             "news_id" => news_id,
             "comment_id" => comment_id,
@@ -1503,7 +1506,7 @@ end
 # Generic API limiting function
 def rate_limit_by_ip(delay,*tags)
     key = "limit:"+tags.join(".")
-    return true if $r.exists(key)
-    $r.setex(key,delay,1)
+    return true if settings.redis_server.exists(key)
+    settings.redis_server.setex(key,delay,1)
     return false
 end

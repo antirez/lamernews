@@ -75,6 +75,14 @@ Additionally the user has an additional key:
 
 This is used to lookup users by name.
 
+Frequency of user posting is limited by a key named
+`user:<user_id>:submitted_recently` with TTL 15 minutes. If a user
+attempts to post before that key has expired an error message notifies
+the user of the amount of time until posting is permitted.
+
+Account creation is rate limited by IP address with a key named
+`limit:create_user:<ip_address>` with TTL 15 hours.
+
 Authentication
 ---
 

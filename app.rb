@@ -132,8 +132,8 @@ get '/usercomments/:username/:start' do
             get_user_comments(user['id'],start,count)
         },
         :render => Proc.new {|comment|
-            u = get_user_by_id(comment["user_id"]) or DeletedUser
-            comment_to_html(comment,u,comment['news_id'])
+            u = get_user_by_id(comment["user_id"]) || DeletedUser
+            comment_to_html(comment,u)
         },
         :start => start,
         :perpage => UserCommentsPerPage,
@@ -218,10 +218,11 @@ get "/news/:news_id" do
             "body" => news_text(news),
             "ctime" => news["ctime"],
             "user_id" => news["user_id"],
+            "thread_id" => news["id"],
             "topcomment" => true
         }
-        user = get_user_by_id(news["user_id"]) or DeletedUser
-        top_comment = H.topcomment {comment_to_html(c,user,news['id'])}
+        user = get_user_by_id(news["user_id"]) || DeletedUser
+        top_comment = H.topcomment {comment_to_html(c,user)}
     else
         top_comment = ""
     end
@@ -258,14 +259,19 @@ get "/comment/:news_id/:comment_id" do
     H.page {
         H.section(:id => "newslist") {
             news_to_html(news)
-        }+H.div(:class => "singlecomment") {
-            u = get_user_by_id(comment["user_id"]) or DeletedUser
-            comment_to_html(comment,u,news["news_id"])
-        }+H.div(:class => "commentreplies") {
-            H.h2 {"Replies"}
         }+
-        render_comments_for_news(news["id"],params["comment_id"].to_i)
+        render_comment_subthread(comment)
     }
+end
+
+def render_comment_subthread(comment)
+    H.div(:class => "singlecomment") {
+        u = get_user_by_id(comment["user_id"]) || DeletedUser
+        comment_to_html(comment,u)
+    }+H.div(:class => "commentreplies") {
+        H.h2 {"Replies"}
+    }+
+    render_comments_for_news(comment['thread_id'],params["comment_id"].to_i)
 end
 
 get "/reply/:news_id/:comment_id" do
@@ -274,13 +280,12 @@ get "/reply/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) or DeletedUser
-    comment["id"] = params["comment_id"]
+    user = get_user_by_id(comment["user_id"]) || DeletedUser
 
     H.set_title "Reply to comment - #{SiteName}"
     H.page {
         news_to_html(news)+
-        comment_to_html(comment,user,params["news_id"])+
+        comment_to_html(comment,user)+
         H.form(:name=>"f") {
             H.inputhidden(:name => "news_id", :value => news["id"])+
             H.inputhidden(:name => "comment_id", :value => -1)+
@@ -302,14 +307,13 @@ get "/editcomment/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) or DeletedUser
+    user = get_user_by_id(comment["user_id"]) || DeletedUser
     halt(500,"Permission denied.") if $user['id'].to_i != user['id'].to_i
-    comment["id"] = params["comment_id"]
 
     H.set_title "Edit comment - #{SiteName}"
     H.page {
         news_to_html(news)+
-        comment_to_html(comment,user,params["news_id"])+
+        comment_to_html(comment,user)+
         H.form(:name=>"f") {
             H.inputhidden(:name => "news_id", :value => news["id"])+
             H.inputhidden(:name => "comment_id",:value => params["comment_id"])+
@@ -1457,9 +1461,10 @@ end
 # Render a comment into HTML.
 # 'c' is the comment representation as a Ruby hash.
 # 'u' is the user, obtained from the user_id by the caller.
-def comment_to_html(c,u,news_id)
+def comment_to_html(c,u)
     indent = "margin-left:#{c['level'].to_i*CommentReplyShift}px"
     score = compute_comment_score(c)
+    news_id = c['thread_id']
 
     if c['del'] and c['del'].to_i == 1
         return H.article(:style => indent,:class=>"commented deleted") {
@@ -1529,7 +1534,7 @@ def render_comments_for_news(news_id,root=-1)
         user[c["id"]] = get_user_by_id(c["user_id"]) if !user[c["id"]]
         user[c["id"]] = DeletedUser if !user[c["id"]]
         u = user[c["id"]]
-        html << comment_to_html(c,u,news_id)
+        html << comment_to_html(c,u)
     }
     H.div("id" => "comments") {html}
 end
@@ -1553,11 +1558,7 @@ def get_user_comments(user_id,start,count)
     ids.each{|id|
         news_id,comment_id = id.split('-')
         comment = Comments.fetch(news_id,comment_id)
-        if comment
-            comment['id'] = comment_id
-            comment['news_id'] = news_id
-            comments << comment if comment
-        end
+        comments << comment if comment
     }
     [comments,numitems]
 end

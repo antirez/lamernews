@@ -42,7 +42,11 @@ class RedisComments
     def fetch(thread_id,comment_id)
         key = thread_key(thread_id)
         json = @r.hget(key,comment_id)
-        json ? JSON.parse(json) : nil
+        return nil if !json
+        json = JSON.parse(json)
+        json['thread_id'] = thread_id.to_i
+        json['id'] = comment_id.to_i
+        json
     end
     
     def insert(thread_id,comment)
@@ -84,6 +88,7 @@ class RedisComments
             next if id == "nextid"
             c = JSON.parse(comment)
             c['id'] = id.to_i
+            c['thread_id'] = thread_id.to_i
             parent_id = c['parent_id'].to_i
             byparent[parent_id] = [] if !byparent.has_key?(parent_id)
             byparent[parent_id] << c

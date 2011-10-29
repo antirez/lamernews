@@ -103,17 +103,21 @@ end
 get '/saved/:start' do
     redirect "/login" if !$user
     start = params[:start].to_i
-    start = 0 if start < 0
     H.set_title "Saved news - #{SiteName}"
-    news,count = get_saved_news($user['id'],start)
     paginate = {
+        :get => Proc.new {|start,count|
+            get_saved_news($user['id'],start,count)
+        },
+        :render => Proc.new {|item| news_to_html(item)},
         :start => start,
-        :count => count,
         :perpage => SavedNewsPerPage,
         :link => "/saved/$"
     }
     H.page {
-        H.h2 {"Your saved news"}+news_list_to_html(news,paginate)
+        H.h2 {"Your saved news"}+
+        H.section(:id => "newslist") {
+            list_items(paginate)
+        }
     }
 end
 
@@ -1251,20 +1255,12 @@ end
 # If 'news' is a list of news entries (Ruby hashes with the same fields of
 # the Redis hash representing the news in the DB) this function will render
 # the HTML needed to show this news.
-def news_list_to_html(news,paginate=nil)
+def news_list_to_html(news)
     H.section(:id => "newslist") {
         aux = ""
         news.each{|n|
             aux << news_to_html(n)
         }
-        if paginate
-            last_displayed = paginate[:start]+paginate[:perpage]
-            if last_displayed < paginate[:count]
-                nextpage = paginate[:link].sub("$",
-                           (paginate[:start]+paginate[:perpage]).to_s)
-                aux << H.a(:href => nextpage,:class=> "more") {"[more]"}
-            end
-        end
         aux
     }
 end
@@ -1310,10 +1306,10 @@ def get_latest_news
 end
 
 # Get saved news of current user
-def get_saved_news(user_id,start=0)
-    count = $r.zcard("user.saved:#{user_id}").to_i
-    news_ids = $r.zrevrange("user.saved:#{user_id}",start,start+(SavedNewsPerPage-1))
-    return get_news_by_id(news_ids),count
+def get_saved_news(user_id,start,count)
+    numitems = $r.zcard("user.saved:#{user_id}").to_i
+    news_ids = $r.zrevrange("user.saved:#{user_id}",start,start+(count-1))
+    return get_news_by_id(news_ids),numitems
 end
 
 ###############################################################################
@@ -1512,3 +1508,39 @@ def rate_limit_by_ip(delay,*tags)
     $r.setex(key,delay,1)
     return false
 end
+
+# Show list of items with show-more style pagination.
+#
+# The function sole argument is an hash with the following fields:
+#
+# :get     A function accepinng start/count that will return two values:
+#          1) A list of elements to paginate.
+#          2) The total amount of items of this type.
+#
+# :render  A function that given an element obtained with :get will turn
+#          in into a suitable representation (usually HTML).
+#
+# :start   The current start (probably obtained from URL).
+#
+# :perpage Number of items to show per page.
+#
+# :link    A string that is used to obtain the url of the [more] link
+#          replacing '$' with the right value for the next page.
+#
+# Return value: the current page rendering.
+def list_items(o)
+    aux = ""
+    o[:start] = 0 if o[:start] < 0
+    items,count = o[:get].call(o[:start],o[:perpage])
+    items.each{|n|
+        aux << o[:render].call(n)
+    }
+    last_displayed = o[:start]+o[:perpage]
+    if last_displayed < count
+        nextpage = o[:link].sub("$",
+                   (o[:start]+o[:perpage]).to_s)
+        aux << H.a(:href => nextpage,:class=> "more") {"[more]"}
+    end
+    aux
+end
+

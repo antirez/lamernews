@@ -1528,6 +1528,7 @@ def get_user_comments(user_id,start,count)
         news_id,comment_id = id.split('-')
         comment = Comments.fetch(news_id,comment_id)
         if comment
+            comment['id'] = comment_id
             comment['news_id'] = news_id
             comments << comment if comment
         end

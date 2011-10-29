@@ -1530,7 +1530,7 @@ def get_user_comments(user_id,start,count)
         if comment
             comment['id'] = comment_id
             comment['news_id'] = news_id
-            comments << comment if comment
+            comments << comment
         end
     }
     [comments,numitems]

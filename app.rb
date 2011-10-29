@@ -153,6 +153,7 @@ get '/replies' do
     H.set_title "Your threads - #{SiteName}"
     H.page {
         $r.hset("user:#{$user['id']}","replies",0)
+        H.h2 {"Your threads"}+
         H.div("id" => "comments") {
             aux = ""
             comments.each{|c|

@@ -692,6 +692,21 @@ def check_api_secret
     params["apisecret"] and (params["apisecret"] == $user["apisecret"])
 end
 
+# Return the HTML for the 'replies' link in the main navigation bar.
+# The link is not shown at all if the user is not logged in, while
+# it is shown with a badge showing the number of replies for logged in
+# users.
+def replies_link
+    return "" if !$user
+    count = $user['replies'] || 0
+    H.a(:href => "replies", :class => "replies") {
+        "replies"+
+        if count.to_i > 0
+            H.sup {count}
+        else "" end
+    }
+end
+
 def application_header
     navitems = [    ["top","/"],
                     ["latest","/latest"],
@@ -699,7 +714,7 @@ def application_header
     navbar = H.nav {
         navitems.map{|ni|
             H.a(:href=>ni[1]) {H.entities ni[0]}
-        }.inject{|a,b| a+"\n"+b}
+        }.inject{|a,b| a+"\n"+b}+replies_link
     }
     rnavbar = H.nav(:id => "account") {
         if $user
@@ -1373,6 +1388,10 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
     news = get_news_by_id(news_id)
     return false if !news
     if comment_id == -1
+        if parent_id.to_i != -1
+            p = Comments.fetch(news_id,parent_id)
+            return false if !p
+        end
         comment = {"score" => 0,
                    "body" => body,
                    "parent_id" => parent_id,
@@ -1385,12 +1404,15 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
         $r.zadd("user.comments:#{user_id}",
             Time.now.to_i,
             news_id.to_s+"-"+comment_id.to_s);
+        increment_user_karma_by(user_id,KarmaIncrementComment)
+        if p and $r.exists("user:#{p['user_id']}")
+            $r.hincrby("user:#{p['user_id']}","replies",1)
+        end
         return {
             "news_id" => news_id,
             "comment_id" => comment_id,
             "op" => "insert"
         }
-        increment_user_karma_by(user_id,KarmaIncrementComment)
     end
 
     # If we reached this point the next step is either to update or

@@ -119,9 +119,9 @@ $(function() {
                     newActive = $('article').last();
                 }
             } else if (e.which == 74){
-                newActive = active.next('article');
+                newActive = $($('article').get($('article').index(active)+1));
             } else if (e.which == 75){
-                newActive = active.prev('article');
+                newActive = $($('article').get($('article').index(active)-1));
             }
             if (newActive.length == 0) return;
             active.removeClass('active');

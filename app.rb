@@ -229,8 +229,8 @@ get "/comment/:news_id/:comment_id" do
             comment_to_html(comment,u,news["news_id"])
         }+H.div(:class => "commentreplies") {
             H.h2 {"Replies"}
-        }+
-        render_comments_for_news(news["id"],params["comment_id"].to_i)
+            render_comments_for_news(news["id"],params["comment_id"].to_i)
+        }
     }
 end
 

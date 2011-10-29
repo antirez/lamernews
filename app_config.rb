@@ -3,7 +3,7 @@ SiteName = "Lamer News"
 
 # Redis config
 RedisHost = "127.0.0.1"
-RedisPort = 10000
+RedisPort = ENV["REDIS_PORT"] || 6379
 
 # Security
 PBKDF2Iterations = 1000 # Set this to 5000 to improve security. But it is slow.

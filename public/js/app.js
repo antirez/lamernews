@@ -121,7 +121,9 @@ $(function() {
             } else if (e.which == 74){
                 newActive = $($('article').get($('article').index(active)+1));
             } else if (e.which == 75){
-                newActive = $($('article').get($('article').index(active)-1));
+                var index = $('article').index(active);
+                if (index == 0) return;
+                newActive = $($('article').get(index-1));
             }
             if (newActive.length == 0) return;
             active.removeClass('active');

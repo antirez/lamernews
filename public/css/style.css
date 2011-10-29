@@ -240,6 +240,11 @@ topcomment {
     border-bottom: 1px solid #aaa;
 }
 
+.commentreplies {
+    margin-left:50px;
+    margin-bottom:50px;
+}
+
 .userinfo ul li {
     list-style-type: none;
     margin-bottom:10px;

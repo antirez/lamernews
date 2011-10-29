@@ -149,6 +149,19 @@ end
 
 get '/replies' do
     redirect "/login" if !$user
+    comments,count = get_user_comments($user['id'],0,SubthreadsInRepliesPage)
+    H.set_title "Your threads - #{SiteName}"
+    H.page {
+        $r.hset("user:#{$user['id']}","replies",0)
+        H.div("id" => "comments") {
+            aux = ""
+            comments.each{|c|
+                puts c.inspect
+                aux << render_comment_subthread(c)
+            }
+            aux
+        }
+    }
 end
 
 get '/login' do
@@ -260,18 +273,18 @@ get "/comment/:news_id/:comment_id" do
         H.section(:id => "newslist") {
             news_to_html(news)
         }+
-        render_comment_subthread(comment)
+        render_comment_subthread(comment, H.h2 {"Replies"})
     }
 end
 
-def render_comment_subthread(comment)
+def render_comment_subthread(comment,sep="")
     H.div(:class => "singlecomment") {
         u = get_user_by_id(comment["user_id"]) || DeletedUser
         comment_to_html(comment,u)
     }+H.div(:class => "commentreplies") {
-        H.h2 {"Replies"}
-    }+
-    render_comments_for_news(comment['thread_id'],params["comment_id"].to_i)
+        sep+
+        render_comments_for_news(comment['thread_id'],comment["id"].to_i)
+    }
 end
 
 get "/reply/:news_id/:comment_id" do

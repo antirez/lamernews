@@ -122,6 +122,10 @@ hours and set to the news ID of a recently posted news having this url.
 So if another user will try to post a given content again within 48 hours the
 system will simply redirect it to the previous news.
 
+News is never deleted, but just marked as deleted adding the "del"
+field with value 1 to the news object. However when the post is
+rendered into HTML, it is displayed as [deleted news] text.
+
 News votes
 ---
 

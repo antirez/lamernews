@@ -68,6 +68,7 @@ A Redis hash named `user:<user id>` with the following fields:
     apisecret -> api POST requests secret code, to prevent CSRF attacks.
     flags -> flags used to mark users as admins and so forth
     karma_incr_time -> last time karma was incremented
+    replies -> number of unread replies
 
 Additionally the user has an additional key:
 

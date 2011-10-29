@@ -147,6 +147,10 @@ get '/usercomments/:username/:start' do
     }
 end
 
+get '/replies' do
+    redirect "/login" if !$user
+end
+
 get '/login' do
     H.set_title "Login - #{SiteName}"
     H.page {
@@ -699,7 +703,7 @@ end
 def replies_link
     return "" if !$user
     count = $user['replies'] || 0
-    H.a(:href => "replies", :class => "replies") {
+    H.a(:href => "/replies", :class => "replies") {
         "replies"+
         if count.to_i > 0
             H.sup {count}

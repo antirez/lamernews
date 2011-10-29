@@ -156,7 +156,6 @@ get '/replies' do
         H.div("id" => "comments") {
             aux = ""
             comments.each{|c|
-                puts c.inspect
                 aux << render_comment_subthread(c)
             }
             aux

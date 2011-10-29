@@ -15,6 +15,7 @@ CommentMaxLength = 4096
 CommentEditTime = 3600*2
 CommentReplyShift = 60
 UserCommentsPerPage = 10
+SubthreadsInRepliesPage = 10
 
 # Karma
 UserInitialKarma = 1

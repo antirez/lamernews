@@ -38,7 +38,7 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
-Version = "0.6.1"
+Version = "0.7.0"
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
@@ -132,8 +132,8 @@ get '/usercomments/:username/:start' do
             get_user_comments(user['id'],start,count)
         },
         :render => Proc.new {|comment|
-            u = get_user_by_id(comment["user_id"]) or DeletedUser
-            comment_to_html(comment,u,comment['news_id'])
+            u = get_user_by_id(comment["user_id"]) || DeletedUser
+            comment_to_html(comment,u)
         },
         :start => start,
         :perpage => UserCommentsPerPage,
@@ -143,6 +143,23 @@ get '/usercomments/:username/:start' do
         H.h2 {"#{H.entities user['username']} comments"}+
         H.div("id" => "comments") {
             list_items(paginate)
+        }
+    }
+end
+
+get '/replies' do
+    redirect "/login" if !$user
+    comments,count = get_user_comments($user['id'],0,SubthreadsInRepliesPage)
+    H.set_title "Your threads - #{SiteName}"
+    H.page {
+        $r.hset("user:#{$user['id']}","replies",0)
+        H.h2 {"Your threads"}+
+        H.div("id" => "comments") {
+            aux = ""
+            comments.each{|c|
+                aux << render_comment_subthread(c)
+            }
+            aux
         }
     }
 end
@@ -214,10 +231,11 @@ get "/news/:news_id" do
             "body" => news_text(news),
             "ctime" => news["ctime"],
             "user_id" => news["user_id"],
+            "thread_id" => news["id"],
             "topcomment" => true
         }
-        user = get_user_by_id(news["user_id"]) or DeletedUser
-        top_comment = H.topcomment {comment_to_html(c,user,news['id'])}
+        user = get_user_by_id(news["user_id"]) || DeletedUser
+        top_comment = H.topcomment {comment_to_html(c,user)}
     else
         top_comment = ""
     end
@@ -254,13 +272,18 @@ get "/comment/:news_id/:comment_id" do
     H.page {
         H.section(:id => "newslist") {
             news_to_html(news)
-        }+H.div(:class => "singlecomment") {
-            u = get_user_by_id(comment["user_id"]) or DeletedUser
-            comment_to_html(comment,u,news["news_id"])
-        }+H.div(:class => "commentreplies") {
-            H.h2 {"Replies"}
         }+
-        render_comments_for_news(news["id"],params["comment_id"].to_i)
+        render_comment_subthread(comment, H.h2 {"Replies"})
+    }
+end
+
+def render_comment_subthread(comment,sep="")
+    H.div(:class => "singlecomment") {
+        u = get_user_by_id(comment["user_id"]) || DeletedUser
+        comment_to_html(comment,u)
+    }+H.div(:class => "commentreplies") {
+        sep+
+        render_comments_for_news(comment['thread_id'],comment["id"].to_i)
     }
 end
 
@@ -270,13 +293,12 @@ get "/reply/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) or DeletedUser
-    comment["id"] = params["comment_id"]
+    user = get_user_by_id(comment["user_id"]) || DeletedUser
 
     H.set_title "Reply to comment - #{SiteName}"
     H.page {
         news_to_html(news)+
-        comment_to_html(comment,user,params["news_id"])+
+        comment_to_html(comment,user)+
         H.form(:name=>"f") {
             H.inputhidden(:name => "news_id", :value => news["id"])+
             H.inputhidden(:name => "comment_id", :value => -1)+
@@ -298,14 +320,13 @@ get "/editcomment/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) or DeletedUser
+    user = get_user_by_id(comment["user_id"]) || DeletedUser
     halt(500,"Permission denied.") if $user['id'].to_i != user['id'].to_i
-    comment["id"] = params["comment_id"]
 
     H.set_title "Edit comment - #{SiteName}"
     H.page {
         news_to_html(news)+
-        comment_to_html(comment,user,params["news_id"])+
+        comment_to_html(comment,user)+
         H.form(:name=>"f") {
             H.inputhidden(:name => "news_id", :value => news["id"])+
             H.inputhidden(:name => "comment_id",:value => params["comment_id"])+
@@ -692,6 +713,21 @@ def check_api_secret
     params["apisecret"] and (params["apisecret"] == $user["apisecret"])
 end
 
+# Return the HTML for the 'replies' link in the main navigation bar.
+# The link is not shown at all if the user is not logged in, while
+# it is shown with a badge showing the number of replies for logged in
+# users.
+def replies_link
+    return "" if !$user
+    count = $user['replies'] || 0
+    H.a(:href => "/replies", :class => "replies") {
+        "replies"+
+        if count.to_i > 0
+            H.sup {count}
+        else "" end
+    }
+end
+
 def application_header
     navitems = [    ["top","/"],
                     ["latest","/latest"],
@@ -699,7 +735,7 @@ def application_header
     navbar = H.nav {
         navitems.map{|ni|
             H.a(:href=>ni[1]) {H.entities ni[0]}
-        }.inject{|a,b| a+"\n"+b}
+        }.inject{|a,b| a+"\n"+b}+replies_link
     }
     rnavbar = H.nav(:id => "account") {
         if $user
@@ -1373,6 +1409,10 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
     news = get_news_by_id(news_id)
     return false if !news
     if comment_id == -1
+        if parent_id.to_i != -1
+            p = Comments.fetch(news_id,parent_id)
+            return false if !p
+        end
         comment = {"score" => 0,
                    "body" => body,
                    "parent_id" => parent_id,
@@ -1385,12 +1425,15 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
         $r.zadd("user.comments:#{user_id}",
             Time.now.to_i,
             news_id.to_s+"-"+comment_id.to_s);
+        increment_user_karma_by(user_id,KarmaIncrementComment)
+        if p and $r.exists("user:#{p['user_id']}")
+            $r.hincrby("user:#{p['user_id']}","replies",1)
+        end
         return {
             "news_id" => news_id,
             "comment_id" => comment_id,
             "op" => "insert"
         }
-        increment_user_karma_by(user_id,KarmaIncrementComment)
     end
 
     # If we reached this point the next step is either to update or
@@ -1431,9 +1474,10 @@ end
 # Render a comment into HTML.
 # 'c' is the comment representation as a Ruby hash.
 # 'u' is the user, obtained from the user_id by the caller.
-def comment_to_html(c,u,news_id)
+def comment_to_html(c,u)
     indent = "margin-left:#{c['level'].to_i*CommentReplyShift}px"
     score = compute_comment_score(c)
+    news_id = c['thread_id']
 
     if c['del'] and c['del'].to_i == 1
         return H.article(:style => indent,:class=>"commented deleted") {
@@ -1503,7 +1547,7 @@ def render_comments_for_news(news_id,root=-1)
         user[c["id"]] = get_user_by_id(c["user_id"]) if !user[c["id"]]
         user[c["id"]] = DeletedUser if !user[c["id"]]
         u = user[c["id"]]
-        html << comment_to_html(c,u,news_id)
+        html << comment_to_html(c,u)
     }
     H.div("id" => "comments") {html}
 end
@@ -1527,11 +1571,7 @@ def get_user_comments(user_id,start,count)
     ids.each{|id|
         news_id,comment_id = id.split('-')
         comment = Comments.fetch(news_id,comment_id)
-        if comment
-            comment['id'] = comment_id
-            comment['news_id'] = news_id
-            comments << comment
-        end
+        comments << comment if comment
     }
     [comments,numitems]
 end

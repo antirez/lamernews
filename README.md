@@ -70,6 +70,7 @@ A Redis hash named `user:<user id>` with the following fields:
     flags -> user flags. "a" enables administrative privileges.
     karma_incr_time -> last time karma was incremented
     pwd_reset -> unix time of the last password reset requested.
+    replies -> number of unread replies
 
 Additionally for every user there is the following key:
 

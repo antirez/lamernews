@@ -124,15 +124,13 @@ get '/login' do
     H.set_title "Login - #{SiteName}"
     H.page {
         H.div(:id => "login") {
-            H.form(:name=>"f") {
-                H.label(:for => "username") {"username"}+
-                H.inputtext(:id => "username", :name => "username")+
-                H.label(:for => "password") {"password"}+
-                H.inputpass(:id => "password", :name => "password")+H.br+
-                H.checkbox(:name => "register", :value => "1")+
-                "create account"+H.br+
-                H.button(:name => "do_login", :value => "Login")
-            }
+            H.label(:for => "username") {"username"}+
+            H.inputtext(:id => "username", :name => "username")+
+            H.label(:for => "password") {"password"}+
+            H.inputpass(:id => "password", :name => "password")+H.br+
+            H.checkbox(:name => "register", :value => "1")+
+            "create account"+H.br+
+            H.button(:name => "do_login", :value => "Login")
         }+
         H.div(:id => "errormsg"){}+
         H.script() {'
@@ -315,24 +313,22 @@ get "/editnews/:news_id" do
     H.page {
         news_to_html(news)+
         H.form(:id => "submitform") {
-            H.form(:name=>"f") {
-                H.inputhidden(:name => "news_id", :value => news['id'])+
-                H.label(:for => "title") {"title"}+
-                H.inputtext(:id => "title", :name => "title", :size => 80,
-                            :value => H.entities(news['title']))+H.br+
-                H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:id => "url", :name => "url", :size => 60,
-                            :value => H.entities(news['url']))+H.br+
-                "or if you don't have an url type some text"+
-                H.br+
-                H.label(:for => "text") {"text"}+
-                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {
-                    H.entities(text)
-                }+H.br+
-                H.checkbox(:name => "del", :value => "1")+
-                "delete this news"+H.br+
-                H.button(:name => "edit_news", :value => "Edit")
-            }
+            H.inputhidden(:name => "news_id", :value => news['id'])+
+            H.label(:for => "title") {"title"}+
+            H.inputtext(:id => "title", :name => "title", :size => 80,
+                        :value => H.entities(news['title']))+H.br+
+            H.label(:for => "url") {"url"}+H.br+
+            H.inputtext(:id => "url", :name => "url", :size => 60,
+                        :value => H.entities(news['url']))+H.br+
+            "or if you don't have an url type some text"+
+            H.br+
+            H.label(:for => "text") {"text"}+
+            H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {
+                H.entities(text)
+            }+H.br+
+            H.checkbox(:name => "del", :value => "1")+
+            "delete this news"+H.br+
+            H.button(:name => "edit_news", :value => "Edit")
         }+
         H.div(:id => "errormsg"){}+
         H.script() {'

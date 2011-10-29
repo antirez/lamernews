@@ -128,13 +128,13 @@ get '/login' do
                 H.inputpass(:id => "password", :name => "password")+H.br+
                 H.checkbox(:name => "register", :value => "1")+
                 "create account"+H.br+
-                H.button(:name => "do_login", :value => "Login")
+                H.submit(:name => "do_login", :value => "Login")
             }
         }+
         H.div(:id => "errormsg"){}+
         H.script() {'
             $(function() {
-                $("input[name=do_login]").click(login);
+                $("form[name=f]").submit(login);
             });
         '}
     }

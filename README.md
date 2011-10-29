@@ -130,7 +130,7 @@ News votes
 Every news has a sorted set with user upvotes and downvotes. The keys are named
 respectively `news.up:<news id>` and `news.down:<news id>`.
 
-In the sorted sets the the score is the unix time of the vote, the element is
+In the sorted sets the score is the unix time of the vote, the element is
 the user ID of the voting user.
 
 Posting a news is equivalent to upvoting it.

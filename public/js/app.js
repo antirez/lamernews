@@ -107,50 +107,53 @@ function post_comment() {
     return false;
 }
 
-$(function() {
-    $(document).keyup(function(e) {
-        var active = $('article.active');
-        if (e.which == 74 || e.which == 75) {
-            var newActive;
-            if (active.length == 0) {
-                if (e.which == 74) {
-                    newActive = $('article').first();
-                } else {
-                    newActive = $('article').last();
-                }
-            } else if (e.which == 74){
-                newActive = $($('article').get($('article').index(active)+1));
-            } else if (e.which == 75){
-                var index = $('article').index(active);
-                if (index == 0) return;
-                newActive = $($('article').get(index-1));
-            }
-            if (newActive.length == 0) return;
-            active.removeClass('active');
-            newActive.addClass('active');
-            if ($(window).scrollTop() > newActive.offset().top)
-                $('html, body').animate({ scrollTop: newActive.offset().top - 10 }, 100);
-            if ($(window).scrollTop() + $(window).height() < newActive.offset().top)
-                $('html, body').animate({ scrollTop: newActive.offset().top - $(window).height() + newActive.height() + 10 }, 100);
-        }
-        if (e.which == 13 && active.length > 0) {
-            location.href = active.find('h2 a').attr('href');
-        }
-        if (e.which == 65 && active.length > 0) {
-            active.find('.uparrow').click();
-        }
-        if (e.which == 90 && active.length > 0) {
-            active.find('.downarrow').click();
-        }
-    });
-    $('#newslist article').each(function(i,news) {
-        $(news).click(function() {
+function setKeyboardNavigation() {
+    $(function() {
+        $(document).keyup(function(e) {
             var active = $('article.active');
-            active.removeClass('active');
-            $(news).addClass('active');
+            if (e.which == 74 || e.which == 75) {
+                var newActive;
+                if (active.length == 0) {
+                    if (e.which == 74) {
+                        newActive = $('article').first();
+                    } else {
+                        newActive = $('article').last();
+                    }
+                } else if (e.which == 74){
+                    newActive = $($('article').get($('article').index(active)+1));
+                } else if (e.which == 75){
+                    var index = $('article').index(active);
+                    if (index == 0) return;
+                    newActive = $($('article').get(index-1));
+                }
+                if (newActive.length == 0) return;
+                active.removeClass('active');
+                newActive.addClass('active');
+                if ($(window).scrollTop() > newActive.offset().top)
+                    $('html, body').animate({ scrollTop: newActive.offset().top - 10 }, 100);
+                if ($(window).scrollTop() + $(window).height() < newActive.offset().top)
+                    $('html, body').animate({ scrollTop: newActive.offset().top - $(window).height() + newActive.height() + 10 }, 100);
+            }
+            if (e.which == 13 && active.length > 0) {
+                location.href = active.find('h2 a').attr('href');
+            }
+            if (e.which == 65 && active.length > 0) {
+                active.find('.uparrow').click();
+            }
+            if (e.which == 90 && active.length > 0) {
+                active.find('.downarrow').click();
+            }
+        });
+        $('#newslist article').each(function(i,news) {
+            $(news).click(function() {
+                var active = $('article.active');
+                active.removeClass('active');
+                $(news).addClass('active');
+            });
         });
     });
-});
+}
+
 // Install the onclick event in all news arrows the user did not voted already.
 $(function() {
     $('#newslist article').each(function(i,news) {

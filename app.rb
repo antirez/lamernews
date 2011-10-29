@@ -730,6 +730,13 @@ def application_footer
     else
         apisecret = ""
     end
+    if KeyboardNavigation == 1
+        keyboardnavigation = H.script() {
+            "setKeyboardNavigation();"
+        }
+    else
+        keyboardnavigation = ""
+    end
     H.footer {
         links = [
             ["source code", "http://github.com/antirez/lamernews"],
@@ -741,7 +748,7 @@ def application_footer
             H.a(:href => l[1]) {H.entities l[0]} :
             nil
         }.select{|l| l}.join(" | ")
-    }+apisecret
+    }+apisecret+keyboardnavigation
 end
 
 ################################################################################

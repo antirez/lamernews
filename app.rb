@@ -38,7 +38,7 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
-Version = "0.5.1"
+Version = "0.6.1"
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
@@ -116,6 +116,32 @@ get '/saved/:start' do
     H.page {
         H.h2 {"Your saved news"}+
         H.section(:id => "newslist") {
+            list_items(paginate)
+        }
+    }
+end
+
+get '/usercomments/:username/:start' do
+    start = params[:start].to_i
+    user = get_user_by_username(params[:username])
+    halt(404,"Non existing user") if !user
+
+    H.set_title "#{H.entities user['username']} comments - #{SiteName}"
+    paginate = {
+        :get => Proc.new {|start,count|
+            get_user_comments(user['id'],start,count)
+        },
+        :render => Proc.new {|comment|
+            u = get_user_by_id(comment["user_id"]) or DeletedUser
+            comment_to_html(comment,u,comment['news_id'])
+        },
+        :start => start,
+        :perpage => UserCommentsPerPage,
+        :link => "/usercomments/#{H.urlencode user['username']}/$"
+    }
+    H.page {
+        H.h2 {"#{H.entities user['username']} comments"}+
+        H.div("id" => "comments") {
             list_items(paginate)
         }
     }
@@ -374,7 +400,13 @@ get "/user/:username" do
                 H.li {H.b {"posted comments "}+posted_comments.to_s}+
                 if owner
                     H.li {H.a(:href=>"/saved/0") {"saved news"}}
-                else "" end
+                else "" end+
+                H.li {
+                    H.a(:href=>"/usercomments/"+H.urlencode(user['username'])+
+                               "/0") {
+                        "user comments"
+                    }
+                }
             }
         }+if owner
             H.br+H.form(:name=>"f") {
@@ -1484,6 +1516,24 @@ def vote_comment(news_id,comment_id,user_id,vote_type)
     return false if varray.index(user_id)
     varray << user_id
     return Comments.edit(news_id,comment_id,{vote_type.to_s => varray})
+end
+
+# Get comments in chronological order for the specified user in the
+# specified range.
+def get_user_comments(user_id,start,count)
+    numitems = $r.zcard("user.comments:#{user_id}").to_i
+    ids = $r.zrevrange("user.comments:#{user_id}",start,start+(count-1))
+    comments = []
+    ids.each{|id|
+        news_id,comment_id = id.split('-')
+        comment = Comments.fetch(news_id,comment_id)
+        if comment
+            comment['id'] = comment_id
+            comment['news_id'] = news_id
+            comments << comment if comment
+        end
+    }
+    [comments,numitems]
 end
 
 ###############################################################################

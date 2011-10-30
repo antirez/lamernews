@@ -75,7 +75,7 @@ end
 
 get '/rss' do
     content_type 'text/xml', :charset => 'utf-8'
-    news = get_latest_news
+    news,count = get_latest_news
     H.rss(:version => "2.0", "xmlns:atom" => "http://www.w3.org/2005/Atom") {
         H.channel {
             H.title {
@@ -93,10 +93,26 @@ get '/rss' do
 end
 
 get '/latest' do
+    redirect '/latest/0'
+end
+
+get '/latest/:start' do
+    start = params[:start].to_i
     H.set_title "Latest news - #{SiteName}"
-    news = get_latest_news
+    paginate = {
+        :get => Proc.new {|start,count|
+            get_latest_news(start,count)
+        },
+        :render => Proc.new {|item| news_to_html(item)},
+        :start => start,
+        :perpage => LatestNewsPerPage,
+        :link => "/latest/$"
+    }
     H.page {
-        H.h2 {"Latest news"}+news_list_to_html(news)
+        H.h2 {"Latest news"}
+        H.section(:id => "newslist") {
+            list_items(paginate)
+        }
     }
 end
 
@@ -730,7 +746,7 @@ end
 
 def application_header
     navitems = [    ["top","/"],
-                    ["latest","/latest"],
+                    ["latest","/latest/0"],
                     ["submit","/submit"]]
     navbar = H.nav {
         navitems.map{|ni|
@@ -1406,9 +1422,10 @@ def get_top_news
 end
 
 # Get news in chronological order.
-def get_latest_news
-    news_ids = $r.zrevrange("news.cron",0,LatestNewsPerPage-1)
-    get_news_by_id(news_ids,:update_rank => true)
+def get_latest_news(start=0,count=LatestNewsPerPage)
+    numitems = $r.zcard("news.cron")
+    news_ids = $r.zrevrange("news.cron",start,start+(count-1))
+    return get_news_by_id(news_ids,:update_rank => true),numitems
 end
 
 # Get saved news of current user

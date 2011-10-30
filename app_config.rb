@@ -46,3 +46,6 @@ SavedNewsPerPage = 10
 # Footer links
 FooterTwitterLink = false
 FooterGoogleGroupLink = false
+
+# API
+APIMaxNewsCount = 32

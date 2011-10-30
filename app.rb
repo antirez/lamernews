@@ -67,7 +67,7 @@ end
 
 get '/' do
     H.set_title "Top News - #{SiteName}"
-    news = get_top_news
+    news,numitems = get_top_news
     H.page {
         H.h2 {"Top news"}+news_list_to_html(news)
     }
@@ -708,6 +708,24 @@ post '/api/votecomment' do
     end
 end
 
+get  '/api/getnews/:sort/:start/:count' do
+    sort = params[:sort].to_sym
+    start = params[:start].to_i
+    count = params[:count].to_i
+    if not [:latest,:top].index(sort)
+        return {:status => "err", :error => "Invalid sort parameter"}.to_json
+    end
+    return {:status => "err", :error => "Count is too big"}.to_json if count > APIMaxNewsCount
+
+    start = 0 if start < 0
+    getfunc = method((sort == :latest) ? :get_latest_news : :get_top_news)
+    news,numitems = getfunc.call(start,count)
+    news.each{|n|
+        ['rank','score','user_id'].each{|field| n.delete(field)}
+    }
+    return { :status => "ok", :news => news, :count => numitems }.to_json
+end
+
 # Check that the list of parameters specified exist.
 # If at least one is missing false is returned, otherwise true is returned.
 #
@@ -728,6 +746,10 @@ def check_api_secret
     return false if !$user
     params["apisecret"] and (params["apisecret"] == $user["apisecret"])
 end
+
+###############################################################################
+# Navigation, header and footer.
+###############################################################################
 
 # Return the HTML for the 'replies' link in the main navigation bar.
 # The link is not shown at all if the user is not logged in, while
@@ -1414,11 +1436,12 @@ end
 # This way we can completely avoid having a cron job adjusting our news
 # score since this is done incrementally when there are pageviews on the
 # site.
-def get_top_news
-    news_ids = $r.zrevrange("news.top",0,TopNewsPerPage-1)
+def get_top_news(start=0,count=TopNewsPerPage)
+    numitems = $r.zcard("news.top")
+    news_ids = $r.zrevrange("news.top",start,start+(count-1))
     result = get_news_by_id(news_ids,:update_rank => true)
     # Sort by rank before returning, since we adjusted ranks during iteration.
-    result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f}
+    return result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f},numitems
 end
 
 # Get news in chronological order.

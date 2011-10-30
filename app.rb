@@ -1031,7 +1031,7 @@ end
 # 'n'   Open links to new windows.
 #
 def user_add_flags(user_id,flags)
-    uesr = get_user_by_id(user_id)
+    user = get_user_by_id(user_id)
     return false if !user
     newflags = user['flags']
     flags.each_char{|flag|

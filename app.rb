@@ -1526,6 +1526,21 @@ def compute_comment_score(c)
     upcount-downcount
 end
 
+# Given a string returns the same string with all the urls converted into
+# HTML links. We try to handle the case of an url that is followed by a period
+# Like in "I suggest http://google.com." excluding the final dot from the link.
+def urls_to_links(s)
+    urls = /((https?:\/\/|www\.)([-\w\.]+)+(:\d+)?(\/([\w\/_\.]*(\?\S+)?)?)?)/
+    s.gsub(urls) {
+        if $1[-1..-1] == '.'
+            url = $1.chop
+            '<a href="'+url+'">'+url+'</a>.'
+        else
+            '<a href="'+$1+'">'+$1+'</a>'
+        end
+    }
+end
+
 # Render a comment into HTML.
 # 'c' is the comment representation as a Ruby hash.
 # 'u' is the user, obtained from the user_id by the caller.
@@ -1590,7 +1605,7 @@ def comment_to_html(c,u)
                     } minutes left)"
             else "" end
         }+H.pre {
-            H.entities(c["body"].strip)
+            urls_to_links H.entities(c["body"].strip)
         }
     }
 end

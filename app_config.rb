@@ -1,5 +1,6 @@
 # General
 SiteName = "Lamer News"
+SiteUrl = "http://lamernews.com"
 
 # Redis config
 RedisHost = "127.0.0.1"

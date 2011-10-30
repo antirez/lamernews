@@ -38,7 +38,7 @@ require 'comments'
 require 'pbkdf2'
 require 'openssl' if UseOpenSSL
 
-Version = "0.6.1"
+Version = "0.9.2"
 
 before do
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
@@ -67,7 +67,7 @@ end
 
 get '/' do
     H.set_title "Top News - #{SiteName}"
-    news = get_top_news
+    news,numitems = get_top_news
     H.page {
         H.h2 {"Top news"}+news_list_to_html(news)
     }
@@ -75,7 +75,7 @@ end
 
 get '/rss' do
     content_type 'text/xml', :charset => 'utf-8'
-    news = get_latest_news
+    news,count = get_latest_news
     H.rss(:version => "2.0", "xmlns:atom" => "http://www.w3.org/2005/Atom") {
         H.channel {
             H.title {
@@ -93,10 +93,26 @@ get '/rss' do
 end
 
 get '/latest' do
+    redirect '/latest/0'
+end
+
+get '/latest/:start' do
+    start = params[:start].to_i
     H.set_title "Latest news - #{SiteName}"
-    news = get_latest_news
+    paginate = {
+        :get => Proc.new {|start,count|
+            get_latest_news(start,count)
+        },
+        :render => Proc.new {|item| news_to_html(item)},
+        :start => start,
+        :perpage => LatestNewsPerPage,
+        :link => "/latest/$"
+    }
     H.page {
-        H.h2 {"Latest news"}+news_list_to_html(news)
+        H.h2 {"Latest news"}
+        H.section(:id => "newslist") {
+            list_items(paginate)
+        }
     }
 end
 
@@ -132,8 +148,8 @@ get '/usercomments/:username/:start' do
             get_user_comments(user['id'],start,count)
         },
         :render => Proc.new {|comment|
-            u = get_user_by_id(comment["user_id"]) or DeletedUser
-            comment_to_html(comment,u,comment['news_id'])
+            u = get_user_by_id(comment["user_id"]) || DeletedUser
+            comment_to_html(comment,u)
         },
         :start => start,
         :perpage => UserCommentsPerPage,
@@ -143,6 +159,23 @@ get '/usercomments/:username/:start' do
         H.h2 {"#{H.entities user['username']} comments"}+
         H.div("id" => "comments") {
             list_items(paginate)
+        }
+    }
+end
+
+get '/replies' do
+    redirect "/login" if !$user
+    comments,count = get_user_comments($user['id'],0,SubthreadsInRepliesPage)
+    H.set_title "Your threads - #{SiteName}"
+    H.page {
+        $r.hset("user:#{$user['id']}","replies",0)
+        H.h2 {"Your threads"}+
+        H.div("id" => "comments") {
+            aux = ""
+            comments.each{|c|
+                aux << render_comment_subthread(c)
+            }
+            aux
         }
     }
 end
@@ -179,9 +212,9 @@ get '/submit' do
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => -1)+
                 H.label(:for => "title") {"title"}+
-                H.inputtext(:id => "title", :name => "title", :size => 80)+H.br+
+                H.inputtext(:id => "title", :name => "title", :size => 80, :value => (params[:t] ? H.entities(params[:t]) : ""))+H.br+
                 H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:id => "url", :name => "url", :size => 60)+H.br+
+                H.inputtext(:id => "url", :name => "url", :size => 60, :value => (params[:u] ? H.entities(params[:u]) : ""))+H.br+
                 "or if you don't have an url type some text"+
                 H.br+
                 H.label(:for => "text") {"text"}+
@@ -190,6 +223,14 @@ get '/submit' do
             }
         }+
         H.div(:id => "errormsg"){}+
+        H.p {
+            bl = "javascript:window.location=%22#{SiteUrl}/submit?u=%22+encodeURIComponent(document.location)+%22&t=%22+encodeURIComponent(document.title)"
+            "Submitting news is simpler using the "+
+            H.a(:href => bl) {
+                "bookmarklet"
+            }+
+            " (drag the link to your browser toolbar)"
+        }+
         H.script() {'
             $(function() {
                 $("input[name=do_submit]").click(submit);
@@ -214,10 +255,11 @@ get "/news/:news_id" do
             "body" => news_text(news),
             "ctime" => news["ctime"],
             "user_id" => news["user_id"],
+            "thread_id" => news["id"],
             "topcomment" => true
         }
-        user = get_user_by_id(news["user_id"]) or DeletedUser
-        top_comment = H.topcomment {comment_to_html(c,user,news['id'])}
+        user = get_user_by_id(news["user_id"]) || DeletedUser
+        top_comment = H.topcomment {comment_to_html(c,user)}
     else
         top_comment = ""
     end
@@ -254,13 +296,18 @@ get "/comment/:news_id/:comment_id" do
     H.page {
         H.section(:id => "newslist") {
             news_to_html(news)
-        }+H.div(:class => "singlecomment") {
-            u = get_user_by_id(comment["user_id"]) or DeletedUser
-            comment_to_html(comment,u,news["news_id"])
-        }+H.div(:class => "commentreplies") {
-            H.h2 {"Replies"}
         }+
-        render_comments_for_news(news["id"],params["comment_id"].to_i)
+        render_comment_subthread(comment, H.h2 {"Replies"})
+    }
+end
+
+def render_comment_subthread(comment,sep="")
+    H.div(:class => "singlecomment") {
+        u = get_user_by_id(comment["user_id"]) || DeletedUser
+        comment_to_html(comment,u)
+    }+H.div(:class => "commentreplies") {
+        sep+
+        render_comments_for_news(comment['thread_id'],comment["id"].to_i)
     }
 end
 
@@ -270,13 +317,12 @@ get "/reply/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) or DeletedUser
-    comment["id"] = params["comment_id"]
+    user = get_user_by_id(comment["user_id"]) || DeletedUser
 
     H.set_title "Reply to comment - #{SiteName}"
     H.page {
         news_to_html(news)+
-        comment_to_html(comment,user,params["news_id"])+
+        comment_to_html(comment,user)+
         H.form(:name=>"f") {
             H.inputhidden(:name => "news_id", :value => news["id"])+
             H.inputhidden(:name => "comment_id", :value => -1)+
@@ -298,14 +344,13 @@ get "/editcomment/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) or DeletedUser
+    user = get_user_by_id(comment["user_id"]) || DeletedUser
     halt(500,"Permission denied.") if $user['id'].to_i != user['id'].to_i
-    comment["id"] = params["comment_id"]
 
     H.set_title "Edit comment - #{SiteName}"
     H.page {
         news_to_html(news)+
-        comment_to_html(comment,user,params["news_id"])+
+        comment_to_html(comment,user)+
         H.form(:name=>"f") {
             H.inputhidden(:name => "news_id", :value => news["id"])+
             H.inputhidden(:name => "comment_id",:value => params["comment_id"])+
@@ -440,6 +485,7 @@ end
 ###############################################################################
 
 post '/api/logout' do
+    content_type 'application/json'
     if $user and check_api_secret
         update_auth_token($user["id"])
         return {:status => "ok"}.to_json
@@ -452,6 +498,7 @@ post '/api/logout' do
 end
 
 get '/api/login' do
+    content_type 'application/json'
     if (!check_params "username","password")
         return {
             :status => "err",
@@ -475,6 +522,7 @@ get '/api/login' do
 end
 
 post '/api/create_account' do
+    content_type 'application/json'
     if (!check_params "username","password")
         return {
             :status => "err",
@@ -499,6 +547,7 @@ post '/api/create_account' do
 end
 
 post '/api/submit' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -552,6 +601,7 @@ post '/api/submit' do
 end
 
 post '/api/delnews' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -569,6 +619,7 @@ post '/api/delnews' do
 end
 
 post '/api/votenews' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -593,6 +644,7 @@ post '/api/votenews' do
 end
 
 post '/api/postcomment' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -622,6 +674,7 @@ post '/api/postcomment' do
 end
 
 post '/api/updateprofile' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -647,6 +700,7 @@ post '/api/updateprofile' do
 end
 
 post '/api/votecomment' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -671,6 +725,57 @@ post '/api/votecomment' do
     end
 end
 
+get  '/api/getnews/:sort/:start/:count' do
+    content_type 'application/json'
+    sort = params[:sort].to_sym
+    start = params[:start].to_i
+    count = params[:count].to_i
+    if not [:latest,:top].index(sort)
+        return {:status => "err", :error => "Invalid sort parameter"}.to_json
+    end
+    return {:status => "err", :error => "Count is too big"}.to_json if count > APIMaxNewsCount
+
+    start = 0 if start < 0
+    getfunc = method((sort == :latest) ? :get_latest_news : :get_top_news)
+    news,numitems = getfunc.call(start,count)
+    news.each{|n|
+        ['rank','score','user_id'].each{|field| n.delete(field)}
+    }
+    return { :status => "ok", :news => news, :count => numitems }.to_json
+end
+
+get  '/api/getcomments/:news_id' do
+    content_type 'application/json'
+    return {
+        :status => "err",
+        :error => "Wrong news ID."
+    }.to_json if not get_news_by_id(params[:news_id])
+    thread = Comments.fetch_thread(params[:news_id])
+    top_comments = []
+    thread.each{|parent,replies|
+        if parent.to_i == -1
+            top_comments = replies
+        end
+        replies.each{|r|
+            user = get_user_by_id(r['user_id']) || DeletedUser
+            r['username'] = user['username']
+            r['replies'] = thread[r['id']] || []
+            if r['up']
+                r['voted'] = :up if $user && r['up'].index($user['id'].to_i)
+                r['up'] = r['up'].length
+            end
+            if r['down']
+                r['voted'] = :down if $user && r['down'].index($user['id'].to_i)
+                r['down'] = r['down'].length
+            end
+            ['id','thread_id','score','parent_id','user_id'].each{|f|
+                r.delete(f)
+            }
+        }
+    }
+    return { :status => "ok", :comments => top_comments }.to_json
+end
+
 # Check that the list of parameters specified exist.
 # If at least one is missing false is returned, otherwise true is returned.
 #
@@ -692,14 +797,33 @@ def check_api_secret
     params["apisecret"] and (params["apisecret"] == $user["apisecret"])
 end
 
+###############################################################################
+# Navigation, header and footer.
+###############################################################################
+
+# Return the HTML for the 'replies' link in the main navigation bar.
+# The link is not shown at all if the user is not logged in, while
+# it is shown with a badge showing the number of replies for logged in
+# users.
+def replies_link
+    return "" if !$user
+    count = $user['replies'] || 0
+    H.a(:href => "/replies", :class => "replies") {
+        "replies"+
+        if count.to_i > 0
+            H.sup {count}
+        else "" end
+    }
+end
+
 def application_header
     navitems = [    ["top","/"],
-                    ["latest","/latest"],
+                    ["latest","/latest/0"],
                     ["submit","/submit"]]
     navbar = H.nav {
         navitems.map{|ni|
             H.a(:href=>ni[1]) {H.entities ni[0]}
-        }.inject{|a,b| a+"\n"+b}
+        }.inject{|a,b| a+"\n"+b}+replies_link
     }
     rnavbar = H.nav(:id => "account") {
         if $user
@@ -897,12 +1021,46 @@ end
 
 # Has the user submitted a news story in the last `NewsSubmissionBreak` seconds?
 def submitted_recently
-  allowed_to_post_in_seconds > 0
+    allowed_to_post_in_seconds > 0
 end
 
 # Indicates when the user is allowed to submit another story after the last.
 def allowed_to_post_in_seconds
-  $r.ttl("user:#{$user['id']}:submitted_recently")
+    $r.ttl("user:#{$user['id']}:submitted_recently")
+end
+
+# Add the specified set of flags to the user.
+# Returns false on error (non existing user), otherwise true is returned.
+#
+# Current flags:
+# 'a'   Administrator.
+# 'k'   Karma source, can transfer more karma than owned.
+# 'n'   Open links to new windows.
+#
+def user_add_flags(user_id,flags)
+    uesr = get_user_by_id(user_id)
+    return false if !user
+    newflags = user['flags']
+    flags.each_char{|flag|
+        newflags << flag if not user_has_flags?(user,flag)
+    }
+    # Note: race condition here if somebody touched the same field
+    # at the same time: very unlkely and not critical so not using WATCH.
+    $r.hset("user:#{user['id']}","flags",newflags)
+    true
+end
+
+# Check if the user has all the specified flags at the same time.
+# Returns true or false.
+def user_has_flags?(user,flags)
+    flags.each_char {|flag|
+        return false if not user['flags'].index(flag)
+    }
+    true
+end
+
+def user_is_admin?(user)
+    user_has_flags?(user,"a")
 end
 
 ################################################################################
@@ -1276,7 +1434,11 @@ def news_to_html(news)
             H.a(:href => "/news/#{news["id"]}") {
                 news["comments"]+" comments"
             }
-        }#+"score: "+news["score"].to_s+" old rank:"+news["rank"].to_s+" new rank:"+compute_news_rank(news).to_s
+        }+
+        if params and params[:debug] and $user and user_is_admin?($user)
+            "score: "+news["score"].to_s+" "+
+            "rank: "+compute_news_rank(news).to_s
+        else "" end
     }+"\n"
 end
 
@@ -1331,17 +1493,19 @@ end
 # This way we can completely avoid having a cron job adjusting our news
 # score since this is done incrementally when there are pageviews on the
 # site.
-def get_top_news
-    news_ids = $r.zrevrange("news.top",0,TopNewsPerPage-1)
+def get_top_news(start=0,count=TopNewsPerPage)
+    numitems = $r.zcard("news.top")
+    news_ids = $r.zrevrange("news.top",start,start+(count-1))
     result = get_news_by_id(news_ids,:update_rank => true)
     # Sort by rank before returning, since we adjusted ranks during iteration.
-    result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f}
+    return result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f},numitems
 end
 
 # Get news in chronological order.
-def get_latest_news
-    news_ids = $r.zrevrange("news.cron",0,LatestNewsPerPage-1)
-    get_news_by_id(news_ids,:update_rank => true)
+def get_latest_news(start=0,count=LatestNewsPerPage)
+    numitems = $r.zcard("news.cron")
+    news_ids = $r.zrevrange("news.cron",start,start+(count-1))
+    return get_news_by_id(news_ids,:update_rank => true),numitems
 end
 
 # Get saved news of current user
@@ -1380,6 +1544,10 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
     news = get_news_by_id(news_id)
     return false if !news
     if comment_id == -1
+        if parent_id.to_i != -1
+            p = Comments.fetch(news_id,parent_id)
+            return false if !p
+        end
         comment = {"score" => 0,
                    "body" => body,
                    "parent_id" => parent_id,
@@ -1392,12 +1560,15 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
         $r.zadd("user.comments:#{user_id}",
             Time.now.to_i,
             news_id.to_s+"-"+comment_id.to_s);
+        # increment_user_karma_by(user_id,KarmaIncrementComment)
+        if p and $r.exists("user:#{p['user_id']}")
+            $r.hincrby("user:#{p['user_id']}","replies",1)
+        end
         return {
             "news_id" => news_id,
             "comment_id" => comment_id,
             "op" => "insert"
         }
-        increment_user_karma_by(user_id,KarmaIncrementComment)
     end
 
     # If we reached this point the next step is either to update or
@@ -1435,12 +1606,28 @@ def compute_comment_score(c)
     upcount-downcount
 end
 
+# Given a string returns the same string with all the urls converted into
+# HTML links. We try to handle the case of an url that is followed by a period
+# Like in "I suggest http://google.com." excluding the final dot from the link.
+def urls_to_links(s)
+    urls = /((https?:\/\/|www\.)([-\w\.]+)+(:\d+)?(\/([\w\/_\.\-\%]*(\?\S+)?)?)?)/
+    s.gsub(urls) {
+        if $1[-1..-1] == '.'
+            url = $1.chop
+            '<a href="'+url+'">'+url+'</a>.'
+        else
+            '<a href="'+$1+'">'+$1+'</a>'
+        end
+    }
+end
+
 # Render a comment into HTML.
 # 'c' is the comment representation as a Ruby hash.
 # 'u' is the user, obtained from the user_id by the caller.
-def comment_to_html(c,u,news_id)
+def comment_to_html(c,u)
     indent = "margin-left:#{c['level'].to_i*CommentReplyShift}px"
     score = compute_comment_score(c)
+    news_id = c['thread_id']
 
     if c['del'] and c['del'].to_i == 1
         return H.article(:style => indent,:class=>"commented deleted") {
@@ -1451,7 +1638,9 @@ def comment_to_html(c,u,news_id)
                 ($user && ($user['id'].to_i == c['user_id'].to_i)) &&
                 (c['ctime'].to_i > (Time.now.to_i - CommentEditTime))
 
-    H.article(:class => "comment", :style=>indent, "data-comment-id"=>"#{news_id}-#{c['id']}") {
+    comment_id = "#{news_id}-#{c['id']}"
+    H.article(:class => "comment", :style => indent,
+              "data-comment-id" => comment_id, :id => comment_id) {
         H.span(:class => "avatar") {
             email = u["email"] || ""
             digest = Digest::MD5.hexdigest(email)
@@ -1498,7 +1687,7 @@ def comment_to_html(c,u,news_id)
                     } minutes left)"
             else "" end
         }+H.pre {
-            H.entities(c["body"].strip)
+            urls_to_links H.entities(c["body"].strip)
         }
     }
 end
@@ -1510,7 +1699,7 @@ def render_comments_for_news(news_id,root=-1)
         user[c["id"]] = get_user_by_id(c["user_id"]) if !user[c["id"]]
         user[c["id"]] = DeletedUser if !user[c["id"]]
         u = user[c["id"]]
-        html << comment_to_html(c,u,news_id)
+        html << comment_to_html(c,u)
     }
     H.div("id" => "comments") {html}
 end
@@ -1534,11 +1723,7 @@ def get_user_comments(user_id,start,count)
     ids.each{|id|
         news_id,comment_id = id.split('-')
         comment = Comments.fetch(news_id,comment_id)
-        if comment
-            comment['id'] = comment_id
-            comment['news_id'] = news_id
-            comments << comment if comment
-        end
+        comments << comment if comment
     }
     [comments,numitems]
 end

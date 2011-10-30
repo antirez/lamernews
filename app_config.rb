@@ -1,5 +1,6 @@
 # General
 SiteName = "Lamer News"
+SiteUrl = "http://lamernews.com"
 
 # Redis config
 RedisHost = "127.0.0.1"
@@ -15,6 +16,7 @@ CommentMaxLength = 4096
 CommentEditTime = 3600*2
 CommentReplyShift = 60
 UserCommentsPerPage = 10
+SubthreadsInRepliesPage = 10
 
 # Karma
 UserInitialKarma = 1
@@ -40,7 +42,7 @@ LatestNewsPerPage = 100
 NewsEditTime = 60*15
 NewsScoreLogStart = 10
 NewsScoreLogBooster = 2
-RankAgingFactor = 1.6
+RankAgingFactor = 2.2
 PreventRepostTime = 3600*48
 NewsSubmissionBreak = 60*15
 SavedNewsPerPage = 10
@@ -48,3 +50,6 @@ SavedNewsPerPage = 10
 # Footer links
 FooterTwitterLink = false
 FooterGoogleGroupLink = false
+
+# API
+APIMaxNewsCount = 32

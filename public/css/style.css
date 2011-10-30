@@ -173,10 +173,10 @@ form textarea {
 
 .comment {
     position:relative;
-    width:500px;
     display:block;
     margin-bottom:40px;
     min-height:50px;
+    min-width:50em;
 }
 
 .comment .avatar img {
@@ -203,7 +203,7 @@ form textarea {
     width:50em;
     position:relative;
     left:60px;
-    top:10px;
+    margin-top:10px;
     font-family: Courier;
     font-size: 14px;
     white-space: pre-wrap;       /* css-3 */

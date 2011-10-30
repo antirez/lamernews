@@ -1480,7 +1480,7 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
         $r.zadd("user.comments:#{user_id}",
             Time.now.to_i,
             news_id.to_s+"-"+comment_id.to_s);
-        increment_user_karma_by(user_id,KarmaIncrementComment)
+        # increment_user_karma_by(user_id,KarmaIncrementComment)
         if p and $r.exists("user:#{p['user_id']}")
             $r.hincrby("user:#{p['user_id']}","replies",1)
         end

@@ -485,6 +485,7 @@ end
 ###############################################################################
 
 post '/api/logout' do
+    content_type 'application/json'
     if $user and check_api_secret
         update_auth_token($user["id"])
         return {:status => "ok"}.to_json
@@ -497,6 +498,7 @@ post '/api/logout' do
 end
 
 get '/api/login' do
+    content_type 'application/json'
     if (!check_params "username","password")
         return {
             :status => "err",
@@ -520,6 +522,7 @@ get '/api/login' do
 end
 
 post '/api/create_account' do
+    content_type 'application/json'
     if (!check_params "username","password")
         return {
             :status => "err",
@@ -544,6 +547,7 @@ post '/api/create_account' do
 end
 
 post '/api/submit' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -597,6 +601,7 @@ post '/api/submit' do
 end
 
 post '/api/delnews' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -614,6 +619,7 @@ post '/api/delnews' do
 end
 
 post '/api/votenews' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -638,6 +644,7 @@ post '/api/votenews' do
 end
 
 post '/api/postcomment' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -667,6 +674,7 @@ post '/api/postcomment' do
 end
 
 post '/api/updateprofile' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -692,6 +700,7 @@ post '/api/updateprofile' do
 end
 
 post '/api/votecomment' do
+    content_type 'application/json'
     return {:status => "err", :error => "Not authenticated."}.to_json if !$user
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
@@ -717,6 +726,7 @@ post '/api/votecomment' do
 end
 
 get  '/api/getnews/:sort/:start/:count' do
+    content_type 'application/json'
     sort = params[:sort].to_sym
     start = params[:start].to_i
     count = params[:count].to_i
@@ -735,6 +745,7 @@ get  '/api/getnews/:sort/:start/:count' do
 end
 
 get  '/api/getcomments/:news_id' do
+    content_type 'application/json'
     return {
         :status => "err",
         :error => "Wrong news ID."

@@ -8,8 +8,7 @@ function login() {
         type: register ? "POST" : "GET",
         url: register ? "/api/create_account" : "/api/login",
         data: data,
-        success: function(reply) {
-            var r = jQuery.parseJSON(reply);
+        success: function(r) {
             if (r.status == "ok") {
                 document.cookie =
                     'auth='+r.auth+
@@ -36,8 +35,7 @@ function submit() {
         type: "POST",
         url: del ? "/api/delnews" : "/api/submit",
         data: data,
-        success: function(reply) {
-            var r = jQuery.parseJSON(reply);
+        success: function(r) {
             if (r.status == "ok") {
                 if (r.news_id == -1) {
                     window.location.href = "/";
@@ -63,8 +61,7 @@ function update_profile() {
         type: "POST",
         url: "/api/updateprofile",
         data: data,
-        success: function(reply) {
-            var r = jQuery.parseJSON(reply);
+        success: function(r) {
             if (r.status == "ok") {
                 window.location.reload();
             } else {
@@ -87,8 +84,7 @@ function post_comment() {
         type: "POST",
         url: "/api/postcomment",
         data: data,
-        success: function(reply) {
-            var r = jQuery.parseJSON(reply);
+        success: function(r) {
             if (r.status == "ok") {
                 if (r.op == "insert") {
                     window.location.href = "/news/"+r.news_id+"?r="+Math.random()+"#"+
@@ -128,8 +124,7 @@ $(function() {
                     type: "POST",
                     url: "/api/votenews",
                     data: data,
-                    success: function(reply) {
-                        var r = jQuery.parseJSON(reply);
+                    success: function(r) {
                         if (r.status == "ok") {
                             n = $("article[data-news-id="+news_id+"]");
                             n.find(".uparrow").addClass("voted");
@@ -153,8 +148,7 @@ $(function() {
                     type: "POST",
                     url: "/api/votenews",
                     data: data,
-                    success: function(reply) {
-                        var r = jQuery.parseJSON(reply);
+                    success: function(r) {
                         if (r.status == "ok") {
                             n = $("article[data-news-id="+news_id+"]");
                             n.find(".uparrow").addClass("disabled");
@@ -191,8 +185,7 @@ $(function() {
                     type: "POST",
                     url: "/api/votecomment",
                     data: data,
-                    success: function(reply) {
-                        var r = jQuery.parseJSON(reply);
+                    success: function(r) {
                         if (r.status == "ok") {
                             $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("voted")
                             $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("disabled")
@@ -214,8 +207,7 @@ $(function() {
                     type: "POST",
                     url: "/api/votecomment",
                     data: data,
-                    success: function(reply) {
-                        var r = jQuery.parseJSON(reply);
+                    success: function(r) {
                         if (r.status == "ok") {
                             $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("disabled")
                             $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("voted")

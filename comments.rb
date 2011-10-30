@@ -82,7 +82,7 @@ class RedisComments
         self.edit(thread_id,comment_id,{"del" => 1})
     end
 
-    def render_comments(thread_id,root=-1,&block)
+    def fetch_thread(thread_id)
         byparent = {}
         @r.hgetall(thread_key(thread_id)).each{|id,comment|
             next if id == "nextid"
@@ -93,6 +93,11 @@ class RedisComments
             byparent[parent_id] = [] if !byparent.has_key?(parent_id)
             byparent[parent_id] << c
         }
+        byparent
+    end
+
+    def render_comments(thread_id,root=-1,&block)
+        byparent = fetch_thread(thread_id)
         render_comments_rec(byparent,root,0,block) if byparent[-1]
     end
 

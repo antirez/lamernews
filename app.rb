@@ -726,6 +726,37 @@ get  '/api/getnews/:sort/:start/:count' do
     return { :status => "ok", :news => news, :count => numitems }.to_json
 end
 
+get  '/api/getcomments/:news_id' do
+    return {
+        :status => "err",
+        :error => "Wrong news ID."
+    }.to_json if not get_news_by_id(params[:news_id])
+    thread = Comments.fetch_thread(params[:news_id])
+    top_comments = []
+    thread.each{|parent,replies|
+        if parent.to_i == -1
+            top_comments = replies
+        end
+        replies.each{|r|
+            user = get_user_by_id(r['user_id']) || DeletedUser
+            r['username'] = user['username']
+            r['replies'] = thread[r['id']] || []
+            if r['up']
+                r['voted'] = :up if $user && r['up'].index($user['id'].to_i)
+                r['up'] = r['up'].length
+            end
+            if r['down']
+                r['voted'] = :down if $user && r['down'].index($user['id'].to_i)
+                r['down'] = r['down'].length
+            end
+            ['id','thread_id','score','parent_id','user_id'].each{|f|
+                r.delete(f)
+            }
+        }
+    }
+    return { :status => "ok", :comments => top_comments }.to_json
+end
+
 # Check that the list of parameters specified exist.
 # If at least one is missing false is returned, otherwise true is returned.
 #

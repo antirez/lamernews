@@ -1530,7 +1530,7 @@ end
 # HTML links. We try to handle the case of an url that is followed by a period
 # Like in "I suggest http://google.com." excluding the final dot from the link.
 def urls_to_links(s)
-    urls = /((https?:\/\/|www\.)([-\w\.]+)+(:\d+)?(\/([\w\/_\.]*(\?\S+)?)?)?)/
+    urls = /((https?:\/\/|www\.)([-\w\.]+)+(:\d+)?(\/([\w\/_\.\-\%]*(\?\S+)?)?)?)/
     s.gsub(urls) {
         if $1[-1..-1] == '.'
             url = $1.chop

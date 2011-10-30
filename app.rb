@@ -1631,7 +1631,9 @@ def comment_to_html(c,u)
                 ($user && ($user['id'].to_i == c['user_id'].to_i)) &&
                 (c['ctime'].to_i > (Time.now.to_i - CommentEditTime))
 
-    H.article(:class => "comment", :style=>indent, "data-comment-id"=>"#{news_id}-#{c['id']}") {
+    comment_id = "#{news_id}-#{c['id']}"
+    H.article(:class => "comment", :style => indent,
+              "data-comment-id" => comment_id, :id => comment_id) {
         H.span(:class => "avatar") {
             email = u["email"] || ""
             digest = Digest::MD5.hexdigest(email)

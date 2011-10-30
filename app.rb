@@ -926,12 +926,46 @@ end
 
 # Has the user submitted a news story in the last `NewsSubmissionBreak` seconds?
 def submitted_recently
-  allowed_to_post_in_seconds > 0
+    allowed_to_post_in_seconds > 0
 end
 
 # Indicates when the user is allowed to submit another story after the last.
 def allowed_to_post_in_seconds
-  $r.ttl("user:#{$user['id']}:submitted_recently")
+    $r.ttl("user:#{$user['id']}:submitted_recently")
+end
+
+# Add the specified set of flags to the user.
+# Returns false on error (non existing user), otherwise true is returned.
+#
+# Current flags:
+# 'a'   Administrator.
+# 'k'   Karma source, can transfer more karma than owned.
+# 'n'   Open links to new windows.
+#
+def user_add_flags(user_id,flags)
+    uesr = get_user_by_id(user_id)
+    return false if !user
+    newflags = user['flags']
+    flags.each_char{|flag|
+        newflags << flag if not user_has_flags?(user,flag)
+    }
+    # Note: race condition here if somebody touched the same field
+    # at the same time: very unlkely and not critical so not using WATCH.
+    $r.hset("user:#{user['id']}","flags",newflags)
+    true
+end
+
+# Check if the user has all the specified flags at the same time.
+# Returns true or false.
+def user_has_flags?(user,flags)
+    flags.each_char {|flag|
+        return false if not user['flags'].index(flag)
+    }
+    true
+end
+
+def user_is_admin?(user)
+    user_has_flags?(user,"a")
 end
 
 ################################################################################
@@ -1305,7 +1339,11 @@ def news_to_html(news)
             H.a(:href => "/news/#{news["id"]}") {
                 news["comments"]+" comments"
             }
-        }#+"score: "+news["score"].to_s+" old rank:"+news["rank"].to_s+" new rank:"+compute_news_rank(news).to_s
+        }+
+        if params and params[:debug] and $user and user_is_admin?($user)
+            "score: "+news["score"].to_s+" "+
+            "rank: "+compute_news_rank(news).to_s
+        else "" end
     }+"\n"
 end
 

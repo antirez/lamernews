@@ -106,11 +106,13 @@ function post_comment() {
 function setKeyboardNavigation() {
     $(function() {
         $(document).keypress(function(e) {
+            if ($(':focus').length > 0) return;
             if (e.which == 63) { // for some reason in keyup the '?' is returning 0, along with other keys
                 $('#keyboard-help').show();
             }
         });
         $(document).keyup(function(e) {
+            if ($(':focus').length > 0) return;
             var active = $('article.active');
             if (e.which == 74 || e.which == 75) {
                 var newActive;

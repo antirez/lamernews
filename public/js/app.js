@@ -125,6 +125,11 @@ function post_comment() {
 
 function setKeyboardNavigation() {
     $(function() {
+        $(document).keypress(function(e) {
+            if (e.which == 63) { // for some reason in keyup the '?' is returning 0, along with other keys
+                $('#keyboard-help').show();
+            }
+        });
         $(document).keyup(function(e) {
             var active = $('article.active');
             if (e.which == 74 || e.which == 75) {
@@ -158,6 +163,9 @@ function setKeyboardNavigation() {
             }
             if (e.which == 90 && active.length > 0) {
                 active.find('.downarrow').click();
+            }
+            if (e.which == 27) {
+                $('#keyboard-help').hide();
             }
         });
         $('#newslist article').each(function(i,news) {

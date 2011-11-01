@@ -181,7 +181,7 @@ $(function() {
     });
 });
 
-function handle_vote(item_type,vote_type,item_id) {
+function handle_vote(item_type,vote_type,item_id,callback) {
     var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
     var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
 
@@ -202,6 +202,9 @@ function handle_vote(item_type,vote_type,item_id) {
                     var article = $('article[data-'+item_type+'-id="'+item_id+'"]');
                     article.find(".uparrow").addClass(uparrowClass);
                     article.find(".downarrow").addClass(downarrowClass);
+                    if (typeof(callback) == 'function') {
+                        callback(article,vote_type);
+                    }
                 } else {
                     alert(r.error);
                 }

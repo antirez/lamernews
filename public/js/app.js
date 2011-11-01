@@ -159,13 +159,13 @@ $(function() {
         down = news.find(".downarrow");
         var voted = up.hasClass("voted") || down.hasClass("voted");
         if (!voted) {
-            up.click(handle_news_vote('up',news_id,apisecret));
-            down.click(handle_news_vote('down',news_id,apisecret));
+            up.click(handle_news_vote('up',news_id));
+            down.click(handle_news_vote('down',news_id));
         }
     });
 });
 
-function handle_news_vote(vote_type,news_id,apisecret) {
+function handle_news_vote(vote_type,news_id) {
     var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
     var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
 
@@ -204,13 +204,13 @@ $(function() {
         down = comment.find(".downarrow");
         var voted = up.hasClass("voted") || down.hasClass("voted");
         if (!voted) {
-            up.click(handle_comment_vote('up',comment_id,apisecret));
-            down.click(handle_comment_vote('down',comment_id,apisecret));
+            up.click(handle_comment_vote('up',comment_id));
+            down.click(handle_comment_vote('down',comment_id));
         }
     });
 });
 
-function handle_comment_vote(vote_type,comment_id,apisecret) {
+function handle_comment_vote(vote_type,comment_id) {
     var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
     var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
 

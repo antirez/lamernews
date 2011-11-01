@@ -159,40 +159,11 @@ $(function() {
         down = news.find(".downarrow");
         var voted = up.hasClass("voted") || down.hasClass("voted");
         if (!voted) {
-            up.click(handle_news_vote('up',news_id));
-            down.click(handle_news_vote('down',news_id));
+            up.click(handle_vote('news','up',news_id));
+            down.click(handle_vote('news','down',news_id));
         }
     });
 });
-
-function handle_news_vote(vote_type,news_id) {
-    var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
-    var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
-
-    return function(e) {
-        if (typeof(apisecret) == 'undefined') return; // Not logged in
-        e.preventDefault();
-        var data = {
-            news_id: news_id,
-            vote_type: vote_type,
-            apisecret: apisecret
-        };
-        $.ajax({
-            type: "POST",
-            url: "/api/votenews",
-            data: data,
-            success: function(r) {
-                if (r.status == "ok") {
-                    var n = $("article[data-news-id="+news_id+"]");
-                    n.find(".uparrow").addClass(uparrowClass);
-                    n.find(".downarrow").addClass(downarrowClass);
-                } else {
-                    alert(r.error);
-                }
-            }
-        });
-    }
-}
 
 // Install the onclick event in all comments arrows the user did not
 // voted already.
@@ -204,13 +175,13 @@ $(function() {
         down = comment.find(".downarrow");
         var voted = up.hasClass("voted") || down.hasClass("voted");
         if (!voted) {
-            up.click(handle_comment_vote('up',comment_id));
-            down.click(handle_comment_vote('down',comment_id));
+            up.click(handle_vote('comment','up',comment_id));
+            down.click(handle_vote('comment','down',comment_id));
         }
     });
 });
 
-function handle_comment_vote(vote_type,comment_id) {
+function handle_vote(item_type,vote_type,item_id) {
     var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
     var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
 
@@ -218,19 +189,19 @@ function handle_comment_vote(vote_type,comment_id) {
         if (typeof(apisecret) == 'undefined') return; // Not logged in
         e.preventDefault();
         var data = {
-            comment_id: comment_id,
             vote_type: vote_type,
             apisecret: apisecret
         };
+        data[item_type+'_id'] = item_id;
         $.ajax({
             type: "POST",
-            url: "/api/votecomment",
+            url: "/api/vote"+item_type,
             data: data,
             success: function(r) {
                 if (r.status == "ok") {
-                    var c = $('article[data-comment-id="'+r.comment_id+'"]');
-                    c.find(".uparrow").addClass(uparrowClass);
-                    c.find(".downarrow").addClass(downarrowClass);
+                    var article = $('article[data-'+item_type+'-id="'+item_id+'"]');
+                    article.find(".uparrow").addClass(uparrowClass);
+                    article.find(".downarrow").addClass(downarrowClass);
                 } else {
                     alert(r.error);
                 }

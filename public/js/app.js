@@ -197,7 +197,7 @@ function handle_news_vote(vote_type,news_id,apisecret) {
 // Install the onclick event in all comments arrows the user did not
 // voted already.
 $(function() {
-    $('#comments article.comment').each(function(i,comment) {
+    $('#comments article.comment, .singlecomment article.comment').each(function(i,comment) {
         var comment_id = $(comment).data("commentId");
         comment = $(comment);
         up = comment.find(".uparrow");

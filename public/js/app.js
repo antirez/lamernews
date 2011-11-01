@@ -153,15 +153,7 @@ function setKeyboardNavigation() {
 // Install the onclick event in all news arrows the user did not voted already.
 $(function() {
     $('#newslist article').each(function(i,news) {
-        var news_id = $(news).data("newsId");
-        news = $(news);
-        up = news.find(".uparrow");
-        down = news.find(".downarrow");
-        var voted = up.hasClass("voted") || down.hasClass("voted");
-        if (!voted) {
-            up.click(handle_vote('news','up',news_id));
-            down.click(handle_vote('news','down',news_id));
-        }
+        attach_voting_handlers(news,'news');
     });
 });
 
@@ -169,19 +161,23 @@ $(function() {
 // voted already.
 $(function() {
     $('#comments article.comment, .singlecomment article.comment').each(function(i,comment) {
-        var comment_id = $(comment).data("commentId");
-        comment = $(comment);
-        up = comment.find(".uparrow");
-        down = comment.find(".downarrow");
-        var voted = up.hasClass("voted") || down.hasClass("voted");
-        if (!voted) {
-            up.click(handle_vote('comment','up',comment_id));
-            down.click(handle_vote('comment','down',comment_id));
-        }
+        attach_voting_handlers(comment,'comment');
     });
 });
 
-function handle_vote(item_type,vote_type,item_id,callback) {
+function attach_voting_handlers(element,item_type,on_success) {
+    element = $(element);
+    var item_id = element.data(item_type+"Id");
+    var up = element.find(".uparrow");
+    var down = element.find(".downarrow");
+    var voted = up.hasClass("voted") || down.hasClass("voted");
+    if (!voted) {
+        up.click(handle_voting(item_type,'up',item_id,on_success));
+        down.click(handle_voting(item_type,'down',item_id,on_success));
+    }
+}
+
+function handle_voting(item_type,vote_type,item_id,callback) {
     var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
     var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
 

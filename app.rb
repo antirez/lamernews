@@ -508,7 +508,7 @@ get "/user/:username" do
             H.ul {
                 H.li {
                     H.b {"created "}+
-                    "#{(Time.now.to_i-user['ctime'].to_i)/(3600*24)} days ago"
+                    str_elapsed(user['ctime'].to_i)
                 }+
                 H.li {H.b {"karma "}+ "#{user['karma']} points"}+
                 H.li {H.b {"posted news "}+posted_news.to_s}+
@@ -1927,10 +1927,14 @@ end
 def str_elapsed(t)
     seconds = Time.now.to_i - t
     return "now" if seconds <= 1
-    return "#{seconds} seconds ago" if seconds < 60
-    return "#{seconds/60} minutes ago" if seconds < 60*60
-    return "#{seconds/60/60} hours ago" if seconds < 60*60*24
-    return "#{seconds/60/60/24} days ago"
+
+    length,label = time_lengths.select{|length,label| seconds >= length }.first
+    units = seconds/length
+    "#{units} #{label}#{'s' if units > 1} ago"
+end
+
+def time_lengths
+    [[86400, "day"], [3600, "hour"], [60, "minute"], [1, "second"]]
 end
 
 # Generic API limiting function

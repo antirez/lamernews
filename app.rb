@@ -828,7 +828,7 @@ def application_header
     rnavbar = H.nav(:id => "account") {
         if $user
             H.a(:href => "/user/"+H.urlencode($user['username'])) { 
-                $user['username']+" (#{$user['karma']})"
+                H.entities $user['username']+" (#{$user['karma']})"
             }+" | "+
             H.a(:href =>
                 "/logout?apisecret=#{$user['apisecret']}") {

@@ -773,7 +773,14 @@ get  '/api/getcomments/:news_id' do
             }
         }
     }
-    return { :status => "ok", :comments => top_comments }.to_json
+    result = { :status => "ok", :comments => top_comments }.to_json
+    if jsonp = params[:jsonp] 
+      content_type 'text/javascript'
+      return "#{jsonp}(#{result})"
+    else
+      content_type 'application/json'
+      return result
+    end
 end
 
 # Check that the list of parameters specified exist.

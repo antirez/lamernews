@@ -109,7 +109,7 @@ get '/latest/:start' do
         :link => "/latest/$"
     }
     H.page {
-        H.h2 {"Latest news"}
+        H.h2 {"Latest news"}+
         H.section(:id => "newslist") {
             list_items(paginate)
         }

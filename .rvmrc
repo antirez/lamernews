@@ -1,0 +1,10 @@
+# create the gemset if it does not exist
+rvm_gemset_create_on_use_flag=1
+# switch to default ruby version when exiting directory
+rvm_project_rvmrc_default=1
+# use ruby 1.8.7 with a specific gemset
+rvm ruby-1.9.2-p290@lamernews
+
+# execute following commands to setup this project
+# % gem install bundler
+# % bundle

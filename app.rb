@@ -25,17 +25,17 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Salvatore Sanfilippo.
 
-require 'app_config'
-require 'rubygems'
+
 require 'hiredis'
 require 'redis'
-require 'page'
 require 'sinatra'
 require 'json'
 require 'digest/sha1'
 require 'digest/md5'
-require 'comments'
-require 'pbkdf2'
+require File.join(File.dirname(__FILE__), 'app_config')
+require File.join(File.dirname(__FILE__), 'page')
+require File.join(File.dirname(__FILE__), 'comments')
+require File.join(File.dirname(__FILE__), 'pbkdf2')
 require 'openssl' if UseOpenSSL
 
 Version = "0.9.2"

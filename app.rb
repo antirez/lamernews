@@ -41,6 +41,10 @@ require 'openssl' if UseOpenSSL
 Version = "0.9.2"
 
 before do
+    if ENV["REDISTOGO_URL"]
+        uri = URI.parse(ENV["REDISTOGO_URL"])
+        $r = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
+    end
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
     H = HTMLGen.new if !defined?(H)
     if !defined?(Comments)

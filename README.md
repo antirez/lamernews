@@ -27,6 +27,16 @@ You need to install Redis and Ruby 1.8.7 with the following gems:
 * ruby-hmac
 * openssl (not needed but will speedup the authentication if available).
 
+Deploy to Heroku
+===
+
+From inside the application directory:
+
+    $ heroku create {appname} --stack cedar  # fix the URL in the app_config.rb
+    $ heroku addons:add redistogo:nano       # check with 'heroku config'
+    $ heroku scale web=1                     # check with 'heroku ps'
+    $ heroku restart                         # (optional) also 'heroku logs'
+
 How to contribute
 ===
 

@@ -32,10 +32,8 @@ require 'sinatra'
 require 'json'
 require 'digest/sha1'
 require 'digest/md5'
-require File.join(File.dirname(__FILE__), 'app_config')
-require File.join(File.dirname(__FILE__), 'page')
-require File.join(File.dirname(__FILE__), 'comments')
-require File.join(File.dirname(__FILE__), 'pbkdf2')
+%w{ app_config page comments pbkdf2 }.each { |f| 
+  require File.join(File.dirname(__FILE__), f) }
 require 'openssl' if UseOpenSSL
 
 Version = "0.9.2"

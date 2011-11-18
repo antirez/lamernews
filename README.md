@@ -35,6 +35,7 @@ From inside the application directory:
 
     $ heroku create {appname} --stack cedar  # fix the URL in the app_config.rb
     $ heroku addons:add redistogo:nano       # check with 'heroku config'
+    $ git push heroku {your_branch}:master   # by default - master:master
     $ heroku scale web=1                     # check with 'heroku ps'
     $ heroku restart                         # (optional) also 'heroku logs'
 

@@ -12,6 +12,13 @@ describe "LamerNews App" do
       last_response.status.should == 404
     end
 
+    it "redirect to the first page" do
+      get '/latest'
+      follow_redirect!
+      last_request.url.should == "http://example.org/latest/0"
+      last_response.should be_ok, last_response.body
+    end
+
     it "return the correct content-type when viewing RSS" do
       get '/rss'
       last_response.headers["Content-Type"].should == "text/xml;charset=utf-8"

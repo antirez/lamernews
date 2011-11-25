@@ -1,17 +1,35 @@
 GEM
   remote: http://rubygems.org/
   specs:
+    awesome_print (0.4.0)
     daemons (1.1.4)
+    diff-lcs (1.1.3)
     eventmachine (0.12.10)
     hiredis (0.4.1)
     json (1.6.1)
     kgio (2.6.0)
+    multi_json (1.0.3)
+    nokogiri (1.5.0)
     rack (1.3.5)
     rack-protection (1.1.4)
       rack
+    rack-test (0.6.1)
+      rack (>= 1.0)
     raindrops (0.8.0)
     redis (2.2.2)
+    rspec (2.7.0)
+      rspec-core (~> 2.7.0)
+      rspec-expectations (~> 2.7.0)
+      rspec-mocks (~> 2.7.0)
+    rspec-core (2.7.1)
+    rspec-expectations (2.7.0)
+      diff-lcs (~> 1.1.2)
+    rspec-mocks (2.7.0)
     ruby-hmac (0.4.0)
+    simplecov (0.5.4)
+      multi_json (~> 1.0.3)
+      simplecov-html (~> 0.5.3)
+    simplecov-html (0.5.3)
     sinatra (1.3.1)
       rack (~> 1.3, >= 1.3.4)
       rack-protection (~> 1.1, >= 1.1.2)
@@ -30,10 +48,15 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  awesome_print
   hiredis
   json
+  nokogiri
+  rack-test
   redis
+  rspec (>= 2.4.0)
   ruby-hmac
+  simplecov (>= 0.4.0)
   sinatra
   thin
   unicorn

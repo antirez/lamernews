@@ -1,4 +1,4 @@
-require '../pbkdf2.rb'
+require File.expand_path(File.dirname(__FILE__) + '/../pbkdf2')
 
 describe PBKDF2, "when deriving keys" do
   # see http://www.rfc-archive.org/getrfc.php?rfc=3962

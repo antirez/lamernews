@@ -1,5 +1,6 @@
 source :rubygems
 
+gem 'rake'
 gem 'redis'
 gem 'hiredis'
 gem 'sinatra'

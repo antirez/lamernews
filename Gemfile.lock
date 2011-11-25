@@ -16,6 +16,7 @@ GEM
     rack-test (0.6.1)
       rack (>= 1.0)
     raindrops (0.8.0)
+    rake (0.8.7)
     redis (2.2.2)
     rspec (2.7.0)
       rspec-core (~> 2.7.0)
@@ -53,6 +54,7 @@ DEPENDENCIES
   json
   nokogiri
   rack-test
+  rake
   redis
   rspec (>= 2.4.0)
   ruby-hmac

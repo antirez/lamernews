@@ -568,9 +568,9 @@ post '/api/create_account' do
             :error => "Password is too short. Min length: #{PasswordMinLength}"
         }.to_json
     end
-    auth,errmsg = create_user(params[:username],params[:password])
+    auth,apisecret,errmsg = create_user(params[:username],params[:password])
     if auth 
-        return {:status => "ok", :auth => auth}.to_json
+        return {:status => "ok", :auth => auth, :apisecret => apisecret}.to_json
     else
         return {
             :status => "err",
@@ -977,13 +977,14 @@ end
 #               failed (detected testing the first return value).
 def create_user(username,password)
     if $r.exists("username.to.id:#{username.downcase}")
-        return nil, "Username is busy, please try a different one."
+        return nil, nil, "Username is busy, please try a different one."
     end
     if rate_limit_by_ip(3600*15,"create_user",request.ip)
-        return nil, "Please wait some time before creating a new user."
+        return nil, nil, "Please wait some time before creating a new user."
     end
     id = $r.incr("users.count")
     auth_token = get_rand
+    apisecret = get_rand
     salt = get_rand
     $r.hmset("user:#{id}",
         "id",id,
@@ -995,12 +996,12 @@ def create_user(username,password)
         "about","",
         "email","",
         "auth",auth_token,
-        "apisecret",get_rand,
+        "apisecret",apisecret,
         "flags","",
         "karma_incr_time",Time.new.to_i)
     $r.set("username.to.id:#{username.downcase}",id)
     $r.set("auth:#{auth_token}",id)
-    return auth_token,nil
+    return auth_token,apisecret,nil
 end
 
 # Update the specified user authentication token with a random generated

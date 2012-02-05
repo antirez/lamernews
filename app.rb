@@ -1406,7 +1406,7 @@ def news_to_html(news)
             "&#9650;"
         }+" "+
         H.h2 {
-            H.a(:href=>news["url"]) {
+            H.a(:href=>news["url"], :rel => "nofollow") {
                 H.entities news["title"]
             }
         }+" "+
@@ -1614,9 +1614,9 @@ def urls_to_links(s)
     s.gsub(urls) {
         if $1[-1..-1] == '.'
             url = $1.chop
-            '<a href="'+url+'">'+url+'</a>.'
+            '<a rel="nofollow" href="'+url+'">'+url+'</a>.'
         else
-            '<a href="'+$1+'">'+$1+'</a>'
+            '<a rel="nofollow" href="'+$1+'">'+$1+'</a>'
         end
     }
 end

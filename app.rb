@@ -1236,7 +1236,8 @@ end
 # The general forumla is RANK = SCORE / (AGE ^ AGING_FACTOR)
 def compute_news_rank(news)
     age = (Time.now.to_i - news["ctime"].to_i)+NewsAgePadding
-    return (news["score"].to_f)/((age+3600)**RankAgingFactor)
+    return 0 if (age > TopNewsAgeLimit)
+    return ((news["score"].to_f-1)*1000000)/((age+NewsAgePadding)**RankAgingFactor)
 end
 
 # Add a news with the specified url or text.
@@ -1436,8 +1437,10 @@ def news_to_html(news)
             }
         }+
         if params and params[:debug] and $user and user_is_admin?($user)
+            "id: "+news["id"].to_s+" "+
             "score: "+news["score"].to_s+" "+
-            "rank: "+compute_news_rank(news).to_s
+            "rank: "+compute_news_rank(news).to_s+" "+
+            "zset_rank: "+$r.zscore("news.top",news["id"]).to_s
         else "" end
     }+"\n"
 end
@@ -1476,7 +1479,8 @@ end
 # Note: this function can be called in the context of redis.pipelined {...}
 def update_news_rank_if_needed(n)
     real_rank = compute_news_rank(n)
-    if (real_rank-n["rank"].to_f).abs > 0.001
+    delta_rank = (real_rank-n["rank"].to_f).abs
+    if delta_rank > 0.000001
         $r.hmset("news:#{n["id"]}","rank",real_rank)
         $r.zadd("news.top",real_rank,n["id"])
         n["rank"] = real_rank.to_s

@@ -1236,7 +1236,7 @@ end
 # The general forumla is RANK = SCORE / (AGE ^ AGING_FACTOR)
 def compute_news_rank(news)
     age = (Time.now.to_i - news["ctime"].to_i)+NewsAgePadding
-    return (news["score"].to_f)/((age/3600)**RankAgingFactor)
+    return (news["score"].to_f)/((age+3600)**RankAgingFactor)
 end
 
 # Add a news with the specified url or text.

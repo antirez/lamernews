@@ -25,22 +25,24 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Salvatore Sanfilippo.
 
-require 'app_config'
-require 'rubygems'
+
 require 'hiredis'
 require 'redis'
-require 'page'
 require 'sinatra'
 require 'json'
 require 'digest/sha1'
 require 'digest/md5'
-require 'comments'
-require 'pbkdf2'
+%w{ app_config page comments pbkdf2 }.each { |f| 
+  require File.join(File.dirname(__FILE__), f) }
 require 'openssl' if UseOpenSSL
 
 Version = "0.9.3"
 
 before do
+    if ENV["REDISTOGO_URL"]
+        uri = URI.parse(ENV["REDISTOGO_URL"])
+        $r = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password)
+    end
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
     H = HTMLGen.new if !defined?(H)
     if !defined?(Comments)
@@ -66,7 +68,7 @@ before do
 end
 
 get '/' do
-    H.set_title "Top News - #{SiteName}"
+    H.set_title "Top news - #{SiteName}"
     news,numitems = get_top_news
     H.page {
         H.h2 {"Top news"}+news_list_to_html(news)
@@ -109,7 +111,7 @@ get '/latest/:start' do
         :link => "/latest/$"
     }
     H.page {
-        H.h2 {"Latest news"}
+        H.h2 {"Latest news"}+
         H.section(:id => "newslist") {
             list_items(paginate)
         }
@@ -131,6 +133,31 @@ get '/saved/:start' do
     }
     H.page {
         H.h2 {"Your saved news"}+
+        H.section(:id => "newslist") {
+            list_items(paginate)
+        }
+    }
+end
+
+get '/usernews/:username/:start' do
+    start = params[:start].to_i
+    user = get_user_by_username(params[:username])
+    halt(404,"Non existing user") if !user
+
+    page_title = "News posted by #{H.entities user['username']}"
+
+    H.set_title "#{page_title} - #{SiteName}"
+    paginate = {
+        :get => Proc.new {|start,count|
+            get_posted_news(user['id'],start,count)
+        },
+        :render => Proc.new {|item| news_to_html(item)},
+        :start => start,
+        :perpage => SavedNewsPerPage,
+        :link => "/usernews/#{H.urlencode user['username']}/$"
+    }
+    H.page {
+        H.h2 {page_title}+
         H.section(:id => "newslist") {
             list_items(paginate)
         }
@@ -241,7 +268,7 @@ end
 
 get '/logout' do
     if $user and check_api_secret
-        update_auth_token($user["id"])
+        update_auth_token($user)
     end
     redirect "/"
 end
@@ -263,7 +290,7 @@ get "/news/:news_id" do
     else
         top_comment = ""
     end
-    H.set_title "#{H.entities news["title"]} - #{SiteName}"
+    H.set_title "#{news["title"]} - #{SiteName}"
     H.page {
         H.section(:id => "newslist") {
             news_to_html(news)
@@ -451,6 +478,12 @@ get "/user/:username" do
                                "/0") {
                         "user comments"
                     }
+                }+
+                H.li {
+                    H.a(:href=>"/usernews/"+H.urlencode(user['username'])+
+                               "/0") {
+                        "user news"
+                    }
                 }
             }
         }+if owner
@@ -487,7 +520,7 @@ end
 post '/api/logout' do
     content_type 'application/json'
     if $user and check_api_secret
-        update_auth_token($user["id"])
+        update_auth_token($user)
         return {:status => "ok"}.to_json
     else
         return {
@@ -535,9 +568,9 @@ post '/api/create_account' do
             :error => "Password is too short. Min length: #{PasswordMinLength}"
         }.to_json
     end
-    auth,errmsg = create_user(params[:username],params[:password])
+    auth,apisecret,errmsg = create_user(params[:username],params[:password])
     if auth 
-        return {:status => "ok", :auth => auth}.to_json
+        return {:status => "ok", :auth => auth, :apisecret => apisecret}.to_json
     else
         return {
             :status => "err",
@@ -944,13 +977,14 @@ end
 #               failed (detected testing the first return value).
 def create_user(username,password)
     if $r.exists("username.to.id:#{username.downcase}")
-        return nil, "Username is busy, please try a different one."
+        return nil, nil, "Username is busy, please try a different one."
     end
     if rate_limit_by_ip(3600*15,"create_user",request.ip)
-        return nil, "Please wait some time before creating a new user."
+        return nil, nil, "Please wait some time before creating a new user."
     end
     id = $r.incr("users.count")
     auth_token = get_rand
+    apisecret = get_rand
     salt = get_rand
     $r.hmset("user:#{id}",
         "id",id,
@@ -962,12 +996,12 @@ def create_user(username,password)
         "about","",
         "email","",
         "auth",auth_token,
-        "apisecret",get_rand,
+        "apisecret",apisecret,
         "flags","",
         "karma_incr_time",Time.new.to_i)
     $r.set("username.to.id:#{username.downcase}",id)
     $r.set("auth:#{auth_token}",id)
-    return auth_token,nil
+    return auth_token,apisecret,nil
 end
 
 # Update the specified user authentication token with a random generated
@@ -976,13 +1010,11 @@ end
 #
 # Return value: on success the new token is returned. Otherwise nil.
 # Side effect: the auth token is modified.
-def update_auth_token(user_id)
-    user = get_user_by_id(user_id)
-    return nil if !user
+def update_auth_token(user)
     $r.del("auth:#{user['auth']}")
     new_auth_token = get_rand
-    $r.hmset("user:#{user_id}","auth",new_auth_token)
-    $r.set("auth:#{new_auth_token}",user_id)
+    $r.hmset("user:#{user['id']}","auth",new_auth_token)
+    $r.set("auth:#{new_auth_token}",user['id'])
     return new_auth_token
 end
 
@@ -1517,6 +1549,13 @@ end
 def get_saved_news(user_id,start,count)
     numitems = $r.zcard("user.saved:#{user_id}").to_i
     news_ids = $r.zrevrange("user.saved:#{user_id}",start,start+(count-1))
+    return get_news_by_id(news_ids),numitems
+end
+
+# Get news posted by the specified user
+def get_posted_news(user_id,start,count)
+    numitems = $r.zcard("user.posted:#{user_id}").to_i
+    news_ids = $r.zrevrange("user.posted:#{user_id}",start,start+(count-1))
     return get_news_by_id(news_ids),numitems
 end
 

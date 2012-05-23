@@ -18,14 +18,30 @@ Installation
 ===
 
 Lamer news is a Ruby/Sinatra/Redis/jQuery application.
-You need to install Redis and Ruby 1.8.7 with the following gems:
+You need to install Redis and Ruby (tested on REE, -1.9.2 or -head) 
+with the following gems:
 
 * redis
 * hiredis
 * sinatra
 * json
 * ruby-hmac
+* unicorn
 * openssl (not needed but will speedup the authentication if available).
+
+Results from running the test suite (RSpec), againce several Ruby versions
+can be seen on URL http://travis-ci.org/#!/zh/lamernews .
+
+Deployment to Heroku
+===
+
+From inside the application directory:
+
+    $ heroku create {appname} --stack cedar  # fix the URL in the app_config.rb
+    $ heroku addons:add redistogo:nano       # check with 'heroku config'
+    $ git push heroku {your_branch}:master   # by default - master:master
+    $ heroku scale web=1                     # check with 'heroku ps'
+    $ heroku restart                         # (optional) also 'heroku logs'
 
 How to contribute
 ===
@@ -46,6 +62,7 @@ Web sites using this code
 
 * http://lamernews.com Programming News.
 * http://echolinux.com Linux News.
+* http://hotlinks.herokuapp.com LamerNews, deployed on Heroku.
 
 Data Layout
 ===

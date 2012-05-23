@@ -173,10 +173,10 @@ form textarea {
 
 .comment {
     position:relative;
-    width:500px;
     display:block;
     margin-bottom:40px;
     min-height:50px;
+    min-width:50em;
 }
 
 .comment .avatar img {
@@ -203,7 +203,7 @@ form textarea {
     width:50em;
     position:relative;
     left:60px;
-    top:10px;
+    margin-top:10px;
     font-family: Courier;
     font-size: 14px;
     white-space: pre-wrap;       /* css-3 */
@@ -291,4 +291,66 @@ topcomment {
     top:-7px;
     left:-5px;
     opacity:0.7
+}
+
+.keyboard-help-banner {
+    left: 5%;
+    top: 5%;
+    width: 90%;
+    height: 10em;
+    color: #FFFFFF;
+    margin: 0;
+    padding: 1em;
+    position: absolute;
+    text-align: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.banner-foreground {
+    text-shadow: 1px 1px 7px #000000;
+    z-index: 1002;
+}
+
+.banner-background {
+    background: none repeat scroll 0 0 #000000;
+    border-radius: 10px 10px 10px 10px;
+    opacity: 0.8;
+    overflow: auto;
+    z-index: 1001;
+}
+
+.banner .primary-message, .banner .secondary-message {
+    font-family: sans-serif;
+    font-weight: bold;
+    margin: 0;
+}
+
+.banner .primary-message {
+    font-size: 200%;
+}
+
+.banner .secondary-message {
+    border-top: 1px solid #999999;
+    font-size: 150%;
+    padding-top: 0.5em;
+    margin: 0;
+}
+
+#keyboard-help .secondary-message div {
+    float: left;
+}
+
+#keyboard-help .key {
+    font-weight: bold;
+    padding-right: 0.25em;
+    text-align: right;
+    white-space: nowrap;
+    width: 50%;
+    clear: left;
+}
+
+#keyboard-help .desc {
+    font-weight: normal;
+    text-align: left;
 }

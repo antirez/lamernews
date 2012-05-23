@@ -105,7 +105,14 @@ function post_comment() {
 
 function setKeyboardNavigation() {
     $(function() {
+        $(document).keypress(function(e) {
+            if ($(':focus').length > 0) return;
+            if (e.which == 63) { // for some reason in keyup the '?' is returning 0, along with other keys
+                $('#keyboard-help').show();
+            }
+        });
         $(document).keyup(function(e) {
+            if ($(':focus').length > 0) return;
             var active = $('article.active');
             if (e.which == 74 || e.which == 75) {
                 var newActive;
@@ -131,6 +138,7 @@ function setKeyboardNavigation() {
                     $('html, body').animate({ scrollTop: newActive.offset().top - $(window).height() + newActive.height() + 10 }, 100);
             }
             if (e.which == 13 && active.length > 0) {
+                if (active.find('h2 a').length == 0) return;
                 location.href = active.find('h2 a').attr('href');
             }
             if (e.which == 65 && active.length > 0) {
@@ -138,6 +146,9 @@ function setKeyboardNavigation() {
             }
             if (e.which == 90 && active.length > 0) {
                 active.find('.downarrow').click();
+            }
+            if (e.which == 27) {
+                $('#keyboard-help').hide();
             }
         });
         $('#newslist article').each(function(i,news) {

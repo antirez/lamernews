@@ -857,6 +857,32 @@ def application_footer
     if KeyboardNavigation == 1
         keyboardnavigation = H.script() {
             "setKeyboardNavigation();"
+        } + " " +
+        H.div(:id => "keyboard-help", :style => "display: none;") {
+            H.div(:class => "keyboard-help-banner banner-background banner") {
+            } + " " +
+            H.div(:class => "keyboard-help-banner banner-foreground banner") {
+                H.div(:class => "primary-message") {
+                    "Keyboard shortcuts"
+                } + " " +
+                H.div(:class => "secondary-message") {
+                    H.div(:class => "key") {
+                        "j/k:"
+                    } + H.div(:class => "desc") {
+                        "next/previous item"
+                    } + " " +
+                    H.div(:class => "key") {
+                        "enter:"
+                    } + H.div(:class => "desc") {
+                        "open link"
+                    } + " " +
+                    H.div(:class => "key") {
+                        "a/z:"
+                    } + H.div(:class => "desc") {
+                        "up/down vote item"
+                    }
+                }
+            }
         }
     else
         keyboardnavigation = ""

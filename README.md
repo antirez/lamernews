@@ -68,12 +68,21 @@ A Redis hash named `user:<user id>` with the following fields:
     apisecret -> api POST requests secret code, to prevent CSRF attacks.
     flags -> flags used to mark users as admins and so forth
     karma_incr_time -> last time karma was incremented
+    replies -> number of unread replies
 
 Additionally the user has an additional key:
 
     `username.to.id:<lowercase_username>` -> User ID
 
 This is used to lookup users by name.
+
+Frequency of user posting is limited by a key named
+`user:<user_id>:submitted_recently` with TTL 15 minutes. If a user
+attempts to post before that key has expired an error message notifies
+the user of the amount of time until posting is permitted.
+
+Account creation is rate limited by IP address with a key named
+`limit:create_user:<ip_address>` with TTL 15 hours.
 
 Authentication
 ---
@@ -111,13 +120,17 @@ hours and set to the news ID of a recently posted news having this url.
 So if another user will try to post a given content again within 48 hours the
 system will simply redirect it to the previous news.
 
+News is never deleted, but just marked as deleted adding the "del"
+field with value 1 to the news object. However when the post is
+rendered into HTML, it is displayed as [deleted news] text.
+
 News votes
 ---
 
 Every news has a sorted set with user upvotes and downvotes. The keys are named
 respectively `news.up:<news id>` and `news.down:<news id>`.
 
-In the sorted sets the the score is the unix time of the vote, the element is
+In the sorted sets the score is the unix time of the vote, the element is
 the user ID of the voting user.
 
 Posting a news is equivalent to upvoting it.

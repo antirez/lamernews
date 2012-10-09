@@ -480,6 +480,25 @@ get "/user/:username" do
     }
 end
 
+get '/recompute' do
+    if $user and user_is_admin?($user)
+        $r.zrange("news.cron",0,-1).each{|news_id|
+            news = get_news_by_id(news_id)
+            score = compute_news_score(news)
+            rank = compute_news_rank(news)
+            $r.hmset("news:#{news_id}",
+                "score",score,
+                "rank",rank)
+            $r.zadd("news.top",rank,news_id)
+        }
+        H.page {
+            H.p {"Done."}
+        }
+    else
+        redirect "/"
+    end
+end
+
 ###############################################################################
 # API implementation
 ###############################################################################

@@ -963,7 +963,7 @@ end
 #               failed (detected testing the first return value).
 def create_user(username,password)
     if $r.exists("username.to.id:#{username.downcase}")
-        return nil, "Username is busy, please try a different one."
+        return nil, "Username is already taken, please try a different one."
     end
     if rate_limit_by_ip(3600*15,"create_user",request.ip)
         return nil, "Please wait some time before creating a new user."
@@ -1423,7 +1423,7 @@ def news_to_html(news)
             "&#9650;"
         }+" "+
         H.h2 {
-            H.a(:href=>news["url"]) {
+            H.a(:href=>news["url"], :rel => "nofollow") {
                 H.entities news["title"]
             }
         }+" "+
@@ -1630,13 +1630,13 @@ end
 # HTML links. We try to handle the case of an url that is followed by a period
 # Like in "I suggest http://google.com." excluding the final dot from the link.
 def urls_to_links(s)
-    urls = /((https?:\/\/|www\.)([-\w\.]+)+(:\d+)?(\/([\w\/_\.\-\%]*(\?\S+)?)?)?)/
+    urls = /((https?:\/\/|www\.)([-\w\.]+)+(:\d+)?(\/([\w\/_#\.\-\%]*(\?\S+)?)?)?)/
     s.gsub(urls) {
         if $1[-1..-1] == '.'
             url = $1.chop
-            '<a href="'+url+'">'+url+'</a>.'
+            '<a rel="nofollow" href="'+url+'">'+url+'</a>.'
         else
-            '<a href="'+$1+'">'+$1+'</a>'
+            '<a rel="nofollow" href="'+$1+'">'+$1+'</a>'
         end
     }
 end

@@ -131,8 +131,7 @@ class HTMLGen
                 self.link(:href => "/css/style.css?v=8", :rel => "stylesheet",
                           :type => "text/css")+
                 self.link(:href => "/images/favicon.png", :rel => "shortcut icon")+
-                self.script(:src =>
-                    "//ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js"){}+
+                self.script(:src => "/js/jquery.1.6.4.min.js"){}+
                 self.script(:src => "/js/app.js?v=8"){}
             }+
             self.body {

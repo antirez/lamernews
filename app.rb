@@ -1097,12 +1097,8 @@ def get_news_by_id(news_ids,opt={})
     $r.pipelined {
         news.each{|n|
             # Adjust rank if too different from the real-time value.
-            hash = {}
-            n.each_slice(2) {|k,v|
-                hash[k] = v
-            }
-            update_news_rank_if_needed(hash) if opt[:update_rank]
-            result << hash
+            update_news_rank_if_needed(n) if opt[:update_rank]
+            result << n
         }
     }
 
@@ -1220,7 +1216,7 @@ def compute_news_score(news)
     # filtering, nor IP filtering.
     # We could use just ZCARD here of course, but I'm using ZRANGE already
     # since this is what is needed in the long term for vote analysis.
-    score = (upvotes.length/2) - (downvotes.length/2)
+    score = upvotes.length-downvotes.length
     # Now let's add the logarithm of the sum of all the votes, since
     # something with 5 up and 5 down is less interesting than something
     # with 50 up and 50 donw.

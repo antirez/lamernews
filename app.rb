@@ -1251,8 +1251,8 @@ end
 # The general forumla is RANK = SCORE / (AGE ^ AGING_FACTOR)
 def compute_news_rank(news)
     age = (Time.now.to_i - news["ctime"].to_i)
-    rank = ((news["score"].to_f-1)*1000000)/((age+NewsAgePadding)**RankAgingFactor)
-    rank = rank-1000 if (age > TopNewsAgeLimit)
+    rank = ((news["score"].to_f)*1000000)/((age+NewsAgePadding)**RankAgingFactor)
+    rank = -age if (age > TopNewsAgeLimit)
     return rank
 end
 

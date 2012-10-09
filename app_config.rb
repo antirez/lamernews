@@ -42,11 +42,11 @@ LatestNewsPerPage = 100
 NewsEditTime = 60*15
 NewsScoreLogStart = 10
 NewsScoreLogBooster = 2
-RankAgingFactor = 1.5
+RankAgingFactor = 1.1
 PreventRepostTime = 3600*48
 NewsSubmissionBreak = 60*15
 SavedNewsPerPage = 10
-TopNewsAgeLimit = 3600*48
+TopNewsAgeLimit = 3600*24*30
 
 # Footer links
 FooterTwitterLink = false

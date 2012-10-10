@@ -504,6 +504,8 @@ get '/admin' do
     H.page {
         H.div(:id => "adminlinks") {
             H.h2 {"Admin"}+
+            H.h3 {"Site stats"}+
+            generate_site_stats+
             H.h3 {"Developer tools"}+
             H.ul {
                 H.li {
@@ -1778,6 +1780,18 @@ def get_user_comments(user_id,start,count)
         comments << comment if comment
     }
     [comments,numitems]
+end
+
+###############################################################################
+# Admin section & stats
+###############################################################################
+
+def generate_site_stats
+    H.ul {
+        H.li {"#{$r.get("users.count")} users"} +
+        H.li {"#{$r.zcard("news.cron")} news posted"} +
+        H.li {"#{$r.info['used_memory_human']} of used memory"}
+    }
 end
 
 ###############################################################################

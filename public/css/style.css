@@ -300,3 +300,9 @@ topcomment {
     list-style-type: disc;
     margin-left:20px;
 }
+
+#adminlinks h3 {
+    margin-top:20px;
+    margin-bottom:5px;
+    font-weight: bold;
+}

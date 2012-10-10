@@ -1015,6 +1015,9 @@ def create_user(username,password)
         "karma_incr_time",Time.new.to_i)
     $r.set("username.to.id:#{username.downcase}",id)
     $r.set("auth:#{auth_token}",id)
+
+    # First user ever created (id = 1) is an admin
+    $r.hmset("user:#{id}","flags","a") if id.to_i == 1
     return auth_token,nil
 end
 

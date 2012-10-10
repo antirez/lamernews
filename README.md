@@ -46,6 +46,7 @@ Web sites using this code
 
 * http://lamernews.com Programming News.
 * http://echolinux.com Linux News.
+* http://echojs.com JavaScript News.
 
 Data Layout
 ===

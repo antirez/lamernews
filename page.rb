@@ -128,7 +128,7 @@ class HTMLGen
                 self.meta(:charset => "utf-8")+
                 self.title{H.entities @title}+
                 self.meta(:content => :index, :name => :robots)+
-                self.link(:href => "/css/style.css?v=8", :rel => "stylesheet",
+                self.link(:href => "/css/style.css?v=9", :rel => "stylesheet",
                           :type => "text/css")+
                 self.link(:href => "/images/favicon.png", :rel => "shortcut icon")+
                 self.script(:src => "/js/jquery.1.6.4.min.js"){}+

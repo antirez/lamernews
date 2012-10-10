@@ -499,6 +499,28 @@ get '/recompute' do
     end
 end
 
+get '/admin' do
+    redirect "/" if !$user || !user_is_admin?($user)
+    H.page {
+        H.div(:id => "adminlinks") {
+            H.h2 {"Admin"}+
+            H.h3 {"Developer tools"}+
+            H.ul {
+                H.li {
+                    H.a(:href=>"/recompute") {
+                        "Recompute news score and rank (may be slow!)"
+                    }
+                }+
+                H.li {
+                    H.a(:href=>"/?debug=1") {
+                        "Show annotated home page"
+                    }
+                }
+            }
+        }
+    }
+end
+
 ###############################################################################
 # API implementation
 ###############################################################################
@@ -824,7 +846,7 @@ end
 # The link is not shown at all if the user is not logged in, while
 # it is shown with a badge showing the number of replies for logged in
 # users.
-def replies_link
+def navbar_replies_link
     return "" if !$user
     count = $user['replies'] || 0
     H.a(:href => "/replies", :class => "replies") {
@@ -835,6 +857,13 @@ def replies_link
     }
 end
 
+def navbar_admin_link
+    return "" if !$user || !user_is_admin?($user)
+    H.b {
+        H.a(:href => "/admin") {"admin"}
+    }
+end
+
 def application_header
     navitems = [    ["top","/"],
                     ["latest","/latest/0"],
@@ -842,7 +871,7 @@ def application_header
     navbar = H.nav {
         navitems.map{|ni|
             H.a(:href=>ni[1]) {H.entities ni[0]}
-        }.inject{|a,b| a+"\n"+b}+replies_link
+        }.inject{|a,b| a+"\n"+b}+navbar_replies_link+navbar_admin_link
     }
     rnavbar = H.nav(:id => "account") {
         if $user

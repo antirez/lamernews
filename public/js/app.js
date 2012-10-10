@@ -22,6 +22,26 @@ function login() {
     return false;
 }
 
+function reset_password() {
+    var data = {
+        username: $("input[name=username]").val(),
+        email: $("input[name=email]").val(),
+    };
+    $.ajax({
+        type: "GET",
+        url: "/api/reset-password",
+        data: data,
+        success: function(r) {
+            if (r.status == "ok") {
+                window.location.href = "/reset-password-ok";
+            } else {
+                $("#errormsg").html(r.error)
+            }
+        }
+    });
+    return false;
+}
+
 function submit() {
     var data = {
         news_id: $("input[name=news_id]").val(),

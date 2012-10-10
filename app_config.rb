@@ -34,6 +34,7 @@ KeyboardNavigation = 1
 
 # User
 DeletedUser = {"username" => "deleted_user", "email" => "", "id" => -1}
+PasswordResetDelay = 3600*24
 
 # News and ranking
 NewsAgePadding = 3600*8
@@ -54,3 +55,8 @@ FooterGoogleGroupLink = false
 
 # API
 APIMaxNewsCount = 32
+
+# Email service. Set MailRelay to false to disable this functionality
+# (this will prevent users from recovery accounts if the password gets lost).
+MailRelay = "localhost"
+MailFrom = "noreply@example.com"

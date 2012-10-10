@@ -36,6 +36,7 @@ require 'digest/sha1'
 require 'digest/md5'
 require 'comments'
 require 'pbkdf2'
+require 'mail'
 require 'openssl' if UseOpenSSL
 
 Version = "0.10.0"
@@ -195,12 +196,81 @@ get '/login' do
             }
         }+
         H.div(:id => "errormsg"){}+
+        H.a(:href=>"/reset-password") {"reset password"}+
         H.script() {'
             $(function() {
                 $("form[name=f]").submit(login);
             });
         '}
     }
+end
+
+get '/reset-password' do
+    H.set_title "Reset Password - #{SiteName}"
+    H.page {
+        H.p {
+            "Welcome to the password reset procedure. Please specify the username and the email address you used to register to the site. "+H.br+
+            H.b {"Note that if you did not specified an email it is impossible for you to recover your password."}
+        }+
+        H.div(:id => "login") {
+            H.form(:name=>"f") {
+                H.label(:for => "username") {"username"}+
+                H.inputtext(:id => "username", :name => "username")+
+                H.label(:for => "password") {"email"}+
+                H.inputtext(:id => "email", :name => "email")+H.br+
+                H.submit(:name => "do_reset", :value => "Reset password")
+            }
+        }+
+        H.div(:id => "errormsg"){}+
+        H.script() {'
+            $(function() {
+                $("form[name=f]").submit(reset_password);
+            });
+        '}
+    }
+end
+
+get '/reset-password-ok' do
+    H.set_title "Reset link sent to your inbox"
+    H.page {
+        H.p {
+            "We sent an email to your inbox with a link that will let you reset your password."
+        }+
+        H.p {
+            "Please make sure to check the spam folder if the email will not appear in your inbox in a few minutes."
+        }+
+        H.p {
+            "The email contains a link that will automatically log into your account where you can set a new password in the account preferences."
+        }
+    }
+end
+
+get '/set-new-password' do
+    redirect '/' if (!check_params "user","auth")
+    user = get_user_by_username(params[:user])
+    if !user || user['auth'] != params[:auth]
+        H.page {
+            H.p {
+                "Link invalid or expired."
+            }
+        }
+    else
+        # Login the user and bring him to preferences to set a new password.
+        # Note that we update the auth token so this reset link will not
+        # work again.
+        update_auth_token(user["id"])
+        user = get_user_by_id(user["id"])
+        H.page {
+            H.script() {"
+                $(function() {
+                    document.cookie =
+                        'auth=#{user['auth']}'+
+                        '; expires=Thu, 1 Aug 2030 20:00:00 UTC; path=/';
+                    window.location.href = '/user/#{user['username']}';
+                });
+            "}
+        }
+    end
 end
 
 get '/submit' do
@@ -560,6 +630,47 @@ get '/api/login' do
         return {
             :status => "err",
             :error => "No match for the specified username / password pair."
+        }.to_json
+    end
+end
+
+get '/api/reset-password' do
+    content_type 'application/json'
+    if (!check_params "username","email")
+        return {
+            :status => "err",
+            :error => "Username and email are two required fields."
+        }.to_json
+    end
+
+    user = get_user_by_username(params[:username])
+    if user && user['email'] && user['email'] == params[:email]
+        id = user['id']
+        # Rate limit password reset attempts.
+        if (user['pwd_reset'] &&
+            (Time.now.to_i - user['pwd_reset'].to_i) < PasswordResetDelay)
+            return {
+                :status => "err",
+                :error => "Sorry, not enough time elapsed since last password reset request."
+            }.to_json
+        end
+
+        if send_reset_password_email(user)
+            # All fine, set the last password reset time to the current time
+            # for rate limiting purposes, and send the email with the reset
+            # link.
+            $r.hset("user:#{id}","pwd_reset",Time.now.to_i)
+            return {:status => "ok"}.to_json
+        else
+            return {
+                :status => "err",
+                :error => "Problem sending the email, please contact the site admin."
+            }.to_json
+        end
+    else
+        return {
+            :status => "err",
+            :error => "No match for the specified username / email pair."
         }.to_json
     end
 end
@@ -1114,6 +1225,19 @@ end
 
 def user_is_admin?(user)
     user_has_flags?(user,"a")
+end
+
+def send_reset_password_email(user)
+    return false if !MailRelay || !MailFrom
+    aux = request.url.split("/")
+    return false if aux.length < 3
+    current_domain = aux[0]+"//"+aux[2]
+
+    reset_link = "#{current_domain}/set-new-password?user=#{H.urlencode(user['username'])}&auth=#{H.urlencode(user['auth'])}"
+
+    subject = "#{aux[2]} password reset"
+    message = "You can reset your password here: #{reset_link}"
+    return mail(MailRelay,MailFrom,user['email'],subject,message)
 end
 
 ################################################################################

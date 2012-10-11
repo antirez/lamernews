@@ -143,7 +143,7 @@ get '/usernews/:username/:start' do
     user = get_user_by_username(params[:username])
     halt(404,"Non existing user") if !user
 
-    page_title = "News posted by #{H.entities user['username']}"
+    page_title = "News posted by #{user['username']}"
 
     H.set_title "#{page_title} - #{SiteName}"
     paginate = {
@@ -168,7 +168,7 @@ get '/usercomments/:username/:start' do
     user = get_user_by_username(params[:username])
     halt(404,"Non existing user") if !user
 
-    H.set_title "#{H.entities user['username']} comments - #{SiteName}"
+    H.set_title "#{user['username']} comments - #{SiteName}"
     paginate = {
         :get => Proc.new {|start,count|
             get_user_comments(user['id'],start,count)
@@ -517,7 +517,7 @@ get "/user/:username" do
         $r.zcard("user.posted:#{user['id']}")
         $r.zcard("user.comments:#{user['id']}")
     }
-    H.set_title "#{H.entities user['username']} - #{SiteName}"
+    H.set_title "#{user['username']} - #{SiteName}"
     owner = $user && ($user['id'].to_i == user['id'].to_i)
     H.page {
         H.div(:class => "userinfo") {

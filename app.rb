@@ -138,6 +138,31 @@ get '/saved/:start' do
     }
 end
 
+get '/usernews/:username/:start' do
+    start = params[:start].to_i
+    user = get_user_by_username(params[:username])
+    halt(404,"Non existing user") if !user
+
+    page_title = "News posted by #{H.entities user['username']}"
+
+    H.set_title "#{page_title} - #{SiteName}"
+    paginate = {
+        :get => Proc.new {|start,count|
+            get_posted_news(user['id'],start,count)
+        },
+        :render => Proc.new {|item| news_to_html(item)},
+        :start => start,
+        :perpage => SavedNewsPerPage,
+        :link => "/usernews/#{H.urlencode user['username']}/$"
+    }
+    H.page {
+        H.h2 {page_title}+
+        H.section(:id => "newslist") {
+            list_items(paginate)
+        }
+    }
+end
+
 get '/usercomments/:username/:start' do
     start = params[:start].to_i
     user = get_user_by_username(params[:username])
@@ -333,7 +358,7 @@ get "/news/:news_id" do
     else
         top_comment = ""
     end
-    H.set_title "#{H.entities news["title"]} - #{SiteName}"
+    H.set_title "#{news["title"]} - #{SiteName}"
     H.page {
         H.section(:id => "newslist") {
             news_to_html(news)
@@ -520,6 +545,12 @@ get "/user/:username" do
                     H.a(:href=>"/usercomments/"+H.urlencode(user['username'])+
                                "/0") {
                         "user comments"
+                    }
+                }+
+                H.li {
+                    H.a(:href=>"/usernews/"+H.urlencode(user['username'])+
+                               "/0") {
+                        "user news"
                     }
                 }
             }
@@ -1690,6 +1721,13 @@ end
 def get_saved_news(user_id,start,count)
     numitems = $r.zcard("user.saved:#{user_id}").to_i
     news_ids = $r.zrevrange("user.saved:#{user_id}",start,start+(count-1))
+    return get_news_by_id(news_ids),numitems
+end
+
+# Get news posted by the specified user
+def get_posted_news(user_id,start,count)
+    numitems = $r.zcard("user.posted:#{user_id}").to_i
+    news_ids = $r.zrevrange("user.posted:#{user_id}",start,start+(count-1))
     return get_news_by_id(news_ids),numitems
 end
 

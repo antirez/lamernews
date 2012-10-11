@@ -358,7 +358,7 @@ get "/news/:news_id" do
     else
         top_comment = ""
     end
-    H.set_title "#{H.entities news["title"]} - #{SiteName}"
+    H.set_title "#{news["title"]} - #{SiteName}"
     H.page {
         H.section(:id => "newslist") {
             news_to_html(news)

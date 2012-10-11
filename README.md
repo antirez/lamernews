@@ -20,11 +20,12 @@ Installation
 Lamer news is a Ruby/Sinatra/Redis/jQuery application.
 You need to install Redis and Ruby 1.8.7 with the following gems:
 
-* redis
+* redis 3.0 or greater
 * hiredis
 * sinatra
 * json
 * ruby-hmac
+* net/smtp
 * openssl (not needed but will speedup the authentication if available).
 
 How to contribute
@@ -67,10 +68,11 @@ A Redis hash named `user:<user id>` with the following fields:
     email -> Optional, used to show gravatars
     auth -> authentication token
     apisecret -> api POST requests secret code, to prevent CSRF attacks.
-    flags -> flags used to mark users as admins and so forth
+    flags -> user flags. "a" enables administrative privileges.
     karma_incr_time -> last time karma was incremented
+    pwd_reset -> unix time of the last password reset requested.
 
-Additionally the user has an additional key:
+Additionally for every user there is the following key:
 
     `username.to.id:<lowercase_username>` -> User ID
 
@@ -118,10 +120,11 @@ News votes
 Every news has a sorted set with user upvotes and downvotes. The keys are named
 respectively `news.up:<news id>` and `news.down:<news id>`.
 
-In the sorted sets the the score is the unix time of the vote, the element is
-the user ID of the voting user.
+In the sorted sets the score is the unix time of the vote creation, the element
+is the user ID of the voting user.
 
-Posting a news is equivalent to upvoting it.
+Posting a news will automatically register an up vote from the user posting
+the news.
 
 Saved news
 ---
@@ -161,11 +164,11 @@ single comment:
 * The hash field is the comment ID.
 * The hash value is a JSON representation of the "comment object".
 
-The comment object has many fields, like ctime (creation time), body,
-user_id, and so forth. In order to render all the comments for a thread
+The comment object has many fields, like `ctime` (creation time), `body`,
+`user_id`, and so forth. In order to render all the comments for a thread
 we simply do an HGETALL to fetch everything. Then we run the list of
 returned comments and build a graph of comments, calling a recursive
-function against it.
+function with this graph as input.
 
 Comments are never deleted, but just marked as deleted adding the "del"
 field with value 1 to the comment object. However when the thread is
@@ -179,3 +182,5 @@ User comments
 
 All the comments posted by a given user are also taken into a sorted set
 of comments, keyed by creation time. The key name is: `user.comments:<userid>`.
+
+In this sorted set the score is the unix time and the value is a string composed in this way: `<newsid>-<commentid>`. So a unique comment is referenced by the news id and the id of the comment inside the hash of comments for this news. Example of an actual comment pointer: `882-15`.

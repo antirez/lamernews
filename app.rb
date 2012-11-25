@@ -1638,7 +1638,12 @@ def news_to_html(news)
                 }
             }+" "+str_elapsed(news["ctime"].to_i)+" "+
             H.a(:href => "/news/#{news["id"]}") {
-                news["comments"]+" comments"
+                comments_number = news["comments"].to_i
+                if comments_number != 0
+                    "#{news["comments"] + ' comment'}" + "#{'s' if comments_number>1}"
+                else
+                    "discuss"
+                end
             }
         }+
         if params and params[:debug] and $user and user_is_admin?($user)

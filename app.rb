@@ -67,7 +67,7 @@ before do
 end
 
 get '/' do
-    H.set_title "Top news - #{SiteName}"
+    H.set_title "#{SiteName} - #{SiteDescription}"
     news,numitems = get_top_news
     H.page {
         H.h2 {"Top news"}+news_list_to_html(news)

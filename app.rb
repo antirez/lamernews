@@ -1887,7 +1887,7 @@ def comment_to_html(c,u)
                     downclass << " voted"
                     upclass << " disabled"
                 end
-                "#{score} points "+
+                "#{score} point"+"#{'s' if score.to_i.abs>1}"+" "+
                 H.a(:href => "#up", :class => upclass) {
                     "&#9650;"
                 }+" "+

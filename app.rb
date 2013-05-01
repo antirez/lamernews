@@ -235,7 +235,7 @@ get '/reset-password' do
     H.page {
         H.p {
             "Welcome to the password reset procedure. Please specify the username and the email address you used to register to the site. "+H.br+
-            H.b {"Note that if you did not specified an email it is impossible for you to recover your password."}
+            H.b {"Note that if you did not specify an email it is impossible for you to recover your password."}
         }+
         H.div(:id => "login") {
             H.form(:name=>"f") {
@@ -262,7 +262,7 @@ get '/reset-password-ok' do
             "We sent an email to your inbox with a link that will let you reset your password."
         }+
         H.p {
-            "Please make sure to check the spam folder if the email will not appear in your inbox in a few minutes."
+            "Please make sure to check the spam folder if the email does not appear in your inbox in a few minutes."
         }+
         H.p {
             "The email contains a link that will automatically log into your account where you can set a new password in the account preferences."
@@ -456,7 +456,7 @@ get "/editcomment/:news_id/:comment_id" do
             H.button(:name => "post_comment", :value => "Edit")
         }+H.div(:id => "errormsg"){}+
         H.note {
-            "Note: to remove the comment remove all the text and press Edit."
+            "Note: to remove the comment, remove all the text and press Edit."
         }+
         H.script() {'
             $(function() {

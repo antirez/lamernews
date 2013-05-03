@@ -67,7 +67,7 @@ before do
 end
 
 get '/' do
-    H.set_title "Top news - #{SiteName}"
+    H.set_title "#{SiteName} - #{SiteDescription}"
     news,numitems = get_top_news
     H.page {
         H.h2 {"Top news"}+news_list_to_html(news)
@@ -1664,7 +1664,12 @@ def news_to_html(news)
                 }
             }+" "+str_elapsed(news["ctime"].to_i)+" "+
             H.a(:href => "/news/#{news["id"]}") {
-                news["comments"]+" comments"
+                comments_number = news["comments"].to_i
+                if comments_number != 0
+                    "#{news["comments"] + ' comment'}" + "#{'s' if comments_number>1}"
+                else
+                    "discuss"
+                end
             }
         }+
         if params and params[:debug] and $user and user_is_admin?($user)
@@ -1913,7 +1918,7 @@ def comment_to_html(c,u)
                     downclass << " voted"
                     upclass << " disabled"
                 end
-                "#{score} points "+
+                "#{score} point"+"#{'s' if score.to_i.abs>1}"+" "+
                 H.a(:href => "#up", :class => upclass) {
                     "&#9650;"
                 }+" "+

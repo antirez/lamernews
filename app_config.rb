@@ -1,6 +1,7 @@
 # General
 SiteName = "Lamer News"
 SiteUrl = "http://lamernews.com"
+SiteDescription = "Programming News"
 
 # Redis config
 RedisHost = "127.0.0.1"
@@ -24,7 +25,7 @@ KarmaIncrementInterval = 3600
 KarmaIncrementAmount = 1
 NewsDownvoteMinKarma = 30
 NewsDownvoteKarmaCost = 6
-NewsUpvoteMinKarma = 0
+NewsUpvoteMinKarma = 1
 NewsUpvoteKarmaCost = 1
 NewsUpvoteKarmaTransfered = 1
 KarmaIncrementComment = 1

@@ -190,111 +190,82 @@ $(function() {
         down = news.find(".downarrow");
         var voted = up.hasClass("voted") || down.hasClass("voted");
         if (!voted) {
-            up.click(function(e) {
-                if (typeof(apisecret) == 'undefined') return; // Not logged in
-                e.preventDefault();
-                var data = {
-                    news_id: news_id,
-                    vote_type: "up",
-                    apisecret: apisecret
-                };
-                $.ajax({
-                    type: "POST",
-                    url: "/api/votenews",
-                    data: data,
-                    success: function(r) {
-                        if (r.status == "ok") {
-                            n = $("article[data-news-id="+news_id+"]");
-                            n.find(".uparrow").addClass("voted");
-                            n.find(".downarrow").addClass("disabled");
-                        } else {
-                            alert(r.error);
-                        }
-                    }
-                });
-            });
-
-            down.click(function(e) {
-                if (typeof(apisecret) == 'undefined') return; // Not logged in
-                e.preventDefault();
-                var data = {
-                    news_id : news_id,
-                    vote_type: "down",
-                    apisecret: apisecret
-                };
-                $.ajax({
-                    type: "POST",
-                    url: "/api/votenews",
-                    data: data,
-                    success: function(r) {
-                        if (r.status == "ok") {
-                            n = $("article[data-news-id="+news_id+"]");
-                            n.find(".uparrow").addClass("disabled");
-                            n.find(".downarrow").addClass("voted");
-                        } else {
-                            alert(r.error);
-                        }
-                    }
-                });
-            });
+            up.click(handle_news_vote('up',news_id));
+            down.click(handle_news_vote('down',news_id));
         }
     });
 });
 
+function handle_news_vote(vote_type,news_id) {
+    var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
+    var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
+
+    return function(e) {
+        if (typeof(apisecret) == 'undefined') return; // Not logged in
+        e.preventDefault();
+        var data = {
+            news_id: news_id,
+            vote_type: vote_type,
+            apisecret: apisecret
+        };
+        $.ajax({
+            type: "POST",
+            url: "/api/votenews",
+            data: data,
+            success: function(r) {
+                if (r.status == "ok") {
+                    var n = $("article[data-news-id="+news_id+"]");
+                    n.find(".uparrow").addClass(uparrowClass);
+                    n.find(".downarrow").addClass(downarrowClass);
+                } else {
+                    alert(r.error);
+                }
+            }
+        });
+    }
+}
+
 // Install the onclick event in all comments arrows the user did not
 // voted already.
 $(function() {
-    $('#comments article.comment').each(function(i,comment) {
+    $('#comments article.comment, .singlecomment article.comment').each(function(i,comment) {
         var comment_id = $(comment).data("commentId");
         comment = $(comment);
         up = comment.find(".uparrow");
         down = comment.find(".downarrow");
         var voted = up.hasClass("voted") || down.hasClass("voted");
         if (!voted) {
-            up.click(function(e) {
-                if (typeof(apisecret) == 'undefined') return; // Not logged in
-                e.preventDefault();
-                var data = {
-                    comment_id: comment_id,
-                    vote_type: "up",
-                    apisecret: apisecret
-                };
-                $.ajax({
-                    type: "POST",
-                    url: "/api/votecomment",
-                    data: data,
-                    success: function(r) {
-                        if (r.status == "ok") {
-                            $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("voted")
-                            $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("disabled")
-                        } else {
-                            alert(r.error);
-                        }
-                    }
-                });
-            });
-            down.click(function(e) {
-                if (typeof(apisecret) == 'undefined') return; // Not logged in
-                e.preventDefault();
-                var data = {
-                    comment_id: comment_id,
-                    vote_type: "down",
-                    apisecret: apisecret
-                };
-                $.ajax({
-                    type: "POST",
-                    url: "/api/votecomment",
-                    data: data,
-                    success: function(r) {
-                        if (r.status == "ok") {
-                            $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("disabled")
-                            $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("voted")
-                        } else {
-                            alert(r.error);
-                        }
-                    }
-                });
-            });
+            up.click(handle_comment_vote('up',comment_id));
+            down.click(handle_comment_vote('down',comment_id));
         }
     });
 });
+
+function handle_comment_vote(vote_type,comment_id) {
+    var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
+    var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
+
+    return function(e) {
+        if (typeof(apisecret) == 'undefined') return; // Not logged in
+        e.preventDefault();
+        var data = {
+            comment_id: comment_id,
+            vote_type: vote_type,
+            apisecret: apisecret
+        };
+        $.ajax({
+            type: "POST",
+            url: "/api/votecomment",
+            data: data,
+            success: function(r) {
+                if (r.status == "ok") {
+                    var c = $('article[data-comment-id="'+r.comment_id+'"]');
+                    c.find(".uparrow").addClass(uparrowClass);
+                    c.find(".downarrow").addClass(downarrowClass);
+                } else {
+                    alert(r.error);
+                }
+            }
+        });
+    }
+}

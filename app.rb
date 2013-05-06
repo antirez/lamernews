@@ -1030,11 +1030,12 @@ def application_header
             H.a(:href => "/login") {"login / register"}
         end
     }
+    menu_mobile = H.a(:href => "#", :id => "link-menu-mobile"){"<~>"}
     H.header {
         H.h1 {
             H.a(:href => "/") {H.entities SiteName}+" "+
             H.small {Version}
-        }+navbar+" "+rnavbar
+        }+navbar+" "+rnavbar+" "+menu_mobile
     }
 end
 

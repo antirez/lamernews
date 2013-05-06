@@ -184,117 +184,58 @@ function setKeyboardNavigation() {
 // Install the onclick event in all news arrows the user did not voted already.
 $(function() {
     $('#newslist article').each(function(i,news) {
-        var news_id = $(news).data("newsId");
-        news = $(news);
-        up = news.find(".uparrow");
-        down = news.find(".downarrow");
-        var voted = up.hasClass("voted") || down.hasClass("voted");
-        if (!voted) {
-            up.click(function(e) {
-                if (typeof(apisecret) == 'undefined') return; // Not logged in
-                e.preventDefault();
-                var data = {
-                    news_id: news_id,
-                    vote_type: "up",
-                    apisecret: apisecret
-                };
-                $.ajax({
-                    type: "POST",
-                    url: "/api/votenews",
-                    data: data,
-                    success: function(r) {
-                        if (r.status == "ok") {
-                            n = $("article[data-news-id="+news_id+"]");
-                            n.find(".uparrow").addClass("voted");
-                            n.find(".downarrow").addClass("disabled");
-                        } else {
-                            alert(r.error);
-                        }
-                    }
-                });
-            });
-
-            down.click(function(e) {
-                if (typeof(apisecret) == 'undefined') return; // Not logged in
-                e.preventDefault();
-                var data = {
-                    news_id : news_id,
-                    vote_type: "down",
-                    apisecret: apisecret
-                };
-                $.ajax({
-                    type: "POST",
-                    url: "/api/votenews",
-                    data: data,
-                    success: function(r) {
-                        if (r.status == "ok") {
-                            n = $("article[data-news-id="+news_id+"]");
-                            n.find(".uparrow").addClass("disabled");
-                            n.find(".downarrow").addClass("voted");
-                        } else {
-                            alert(r.error);
-                        }
-                    }
-                });
-            });
-        }
+        attach_voting_handlers(news,'news');
     });
 });
 
 // Install the onclick event in all comments arrows the user did not
 // voted already.
 $(function() {
-    $('#comments article.comment').each(function(i,comment) {
-        var comment_id = $(comment).data("commentId");
-        comment = $(comment);
-        up = comment.find(".uparrow");
-        down = comment.find(".downarrow");
-        var voted = up.hasClass("voted") || down.hasClass("voted");
-        if (!voted) {
-            up.click(function(e) {
-                if (typeof(apisecret) == 'undefined') return; // Not logged in
-                e.preventDefault();
-                var data = {
-                    comment_id: comment_id,
-                    vote_type: "up",
-                    apisecret: apisecret
-                };
-                $.ajax({
-                    type: "POST",
-                    url: "/api/votecomment",
-                    data: data,
-                    success: function(r) {
-                        if (r.status == "ok") {
-                            $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("voted")
-                            $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("disabled")
-                        } else {
-                            alert(r.error);
-                        }
-                    }
-                });
-            });
-            down.click(function(e) {
-                if (typeof(apisecret) == 'undefined') return; // Not logged in
-                e.preventDefault();
-                var data = {
-                    comment_id: comment_id,
-                    vote_type: "down",
-                    apisecret: apisecret
-                };
-                $.ajax({
-                    type: "POST",
-                    url: "/api/votecomment",
-                    data: data,
-                    success: function(r) {
-                        if (r.status == "ok") {
-                            $('article[data-comment-id="'+r.comment_id+'"]').find(".uparrow").addClass("disabled")
-                            $('article[data-comment-id="'+r.comment_id+'"]').find(".downarrow").addClass("voted")
-                        } else {
-                            alert(r.error);
-                        }
-                    }
-                });
-            });
-        }
+    $('#comments article.comment, .singlecomment article.comment').each(function(i,comment) {
+        attach_voting_handlers(comment,'comment');
     });
 });
+
+function attach_voting_handlers(element,item_type,on_success) {
+    element = $(element);
+    var item_id = element.data(item_type+"Id");
+    var up = element.find(".uparrow");
+    var down = element.find(".downarrow");
+    var voted = up.hasClass("voted") || down.hasClass("voted");
+    if (!voted) {
+        up.click(handle_voting(item_type,'up',item_id,on_success));
+        down.click(handle_voting(item_type,'down',item_id,on_success));
+    }
+}
+
+function handle_voting(item_type,vote_type,item_id,callback) {
+    var uparrowClass = vote_type == 'up' ? 'voted' : 'disabled';
+    var downarrowClass = vote_type == 'down' ? 'voted' : 'disabled';
+
+    return function(e) {
+        if (typeof(apisecret) == 'undefined') return; // Not logged in
+        e.preventDefault();
+        var data = {
+            vote_type: vote_type,
+            apisecret: apisecret
+        };
+        data[item_type+'_id'] = item_id;
+        $.ajax({
+            type: "POST",
+            url: "/api/vote"+item_type,
+            data: data,
+            success: function(r) {
+                if (r.status == "ok") {
+                    var article = $('article[data-'+item_type+'-id="'+item_id+'"]');
+                    article.find(".uparrow").addClass(uparrowClass);
+                    article.find(".downarrow").addClass(downarrowClass);
+                    if (typeof(callback) == 'function') {
+                        callback(article,vote_type);
+                    }
+                } else {
+                    alert(r.error);
+                }
+            }
+        });
+    }
+}

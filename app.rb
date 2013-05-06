@@ -1247,6 +1247,7 @@ end
 
 # Indicates when the user is allowed to submit another story after the last.
 def allowed_to_post_in_seconds
+    return 0 if user_is_admin?($user)
     $r.ttl("user:#{$user['id']}:submitted_recently")
 end
 

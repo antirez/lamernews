@@ -368,3 +368,38 @@ topcomment {
     font-weight: normal;
     text-align: left;
 }
+
+#link-menu-mobile {
+    color: #aaa;
+    position: absolute;
+    top: 20px;
+    right: 10px;
+    font-weight: bold;
+    font-size: 14px;
+    display: none;
+}
+
+@media only screen and (max-width: 760px),
+(min-device-width: 768px) and (max-device-width: 1024px) {
+
+    table, thead, tbody, th, td, tr {
+        display: block;
+    }
+
+    header nav{
+        display: none;
+        position: relative !important;
+    }
+
+    header nav.active {
+        display: block;
+    }
+    header nav a{
+        display: block;
+    }
+
+    #link-menu-mobile{
+        display:block;
+    }
+
+}

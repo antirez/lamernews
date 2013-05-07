@@ -46,7 +46,8 @@ Web sites using this code
 ===
 
 * http://lamernews.com Programming News.
-* http://echojs.com JavaScript News.
+* http://hackingitalia.com Programming and Startup News (In Italian).
+* http://www.echojs.com JavaScript News.
 
 Data Layout
 ===

@@ -1861,11 +1861,14 @@ end
 def urls_to_links(s)
     urls = /((https?:\/\/|www\.)([-\w\.]+)+(:\d+)?(\/([\w\/_#\.\-\%]*(\?\S+)?)?)?)/
     s.gsub(urls) {
+        url = text = $1
+        url = "http://#{url}" if $2 == 'www.'
         if $1[-1..-1] == '.'
-            url = $1.chop
-            '<a rel="nofollow" href="'+url+'">'+url+'</a>.'
+            url = url.chop
+            text = text.chop
+            '<a rel="nofollow" href="'+url+'">'+text+'</a>.'
         else
-            '<a rel="nofollow" href="'+$1+'">'+$1+'</a>'
+            '<a rel="nofollow" href="'+url+'">'+text+'</a>'
         end
     }
 end

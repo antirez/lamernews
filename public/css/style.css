@@ -7,7 +7,7 @@ body {
 
 a {
     text-decoration:none;
-    color:#666;
+    color:#333;
 }
 
 h2 {
@@ -23,8 +23,9 @@ li {
 header {
     display:block;
     position:relative;
-    padding: 15px 0px 0px 15px;
-    background-color:#eee;
+    padding: 5px;
+    line-height:1.2em;
+    background-color:#4c4;
     border-bottom: 1px #ccc solid;
 }
 
@@ -60,12 +61,14 @@ footer {
 }
 
 nav {
-    margin-bottom:15px;
     display: inline;
 }
 
 nav a {
     margin-left: 20px;
+    font-weight: bold;
+    font-size: 14px;
+    margin-left: 20px;    
 }
 
 #account {

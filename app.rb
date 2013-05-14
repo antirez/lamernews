@@ -2,14 +2,14 @@
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #    1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 #    2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY SALVATORE SANFILIPPO ''AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
 # OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
@@ -20,23 +20,23 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Salvatore Sanfilippo.
 
-require 'app_config'
 require 'rubygems'
-require 'hiredis'
-require 'redis'
-require 'page'
-require 'sinatra'
+require 'bundler/setup'
+
+Bundler.require
+
+require_relative 'app_config'
+require_relative 'page'
+require_relative 'comments'
+
 require 'json'
 require 'digest/sha1'
 require 'digest/md5'
-require 'comments'
-require 'pbkdf2'
-require 'mail'
 require 'openssl' if UseOpenSSL
 
 Version = "0.11.0"
@@ -651,7 +651,7 @@ get '/api/login' do
     end
     auth,apisecret = check_user_credentials(params[:username],
                                             params[:password])
-    if auth 
+    if auth
         return {
             :status => "ok",
             :auth => auth,
@@ -721,7 +721,7 @@ post '/api/create_account' do
         }.to_json
     end
     auth,errmsg = create_user(params[:username],params[:password])
-    if auth 
+    if auth
         return {:status => "ok", :auth => auth}.to_json
     else
         return {
@@ -823,7 +823,7 @@ post '/api/votenews' do
     if karma
         return { :status => "ok" }.to_json
     else
-        return { :status => "err", 
+        return { :status => "err",
                  :error => error }.to_json
     end
 end
@@ -905,7 +905,7 @@ post '/api/votecomment' do
     if vote_comment(news_id.to_i,comment_id.to_i,$user["id"],vote_type)
         return { :status => "ok", :comment_id => params["comment_id"] }.to_json
     else
-        return { :status => "err", 
+        return { :status => "err",
                  :error => "Invalid parameters or duplicated vote." }.to_json
     end
 end
@@ -1019,7 +1019,7 @@ def application_header
     }
     rnavbar = H.nav(:id => "account") {
         if $user
-            H.a(:href => "/user/"+H.urlencode($user['username'])) { 
+            H.a(:href => "/user/"+H.urlencode($user['username'])) {
                 H.entities $user['username']+" (#{$user['karma']})"
             }+" | "+
             H.a(:href =>
@@ -1164,9 +1164,6 @@ end
 def create_user(username,password)
     if $r.exists("username.to.id:#{username.downcase}")
         return nil, "Username is already taken, please try a different one."
-    end
-    if rate_limit_by_ip(3600*15,"create_user",request.ip)
-        return nil, "Please wait some time before creating a new user."
     end
     id = $r.incr("users.count")
     auth_token = get_rand
@@ -1373,7 +1370,7 @@ end
 
 # Vote the specified news in the context of a given user.
 # type is either :up or :down
-# 
+#
 # The function takes care of the following:
 # 1) The vote is not duplicated.
 # 2) That the karma is decreased from voting user, accordingly to vote type.
@@ -1727,7 +1724,7 @@ end
 
 # Generate the main page of the web site, the one where news are ordered by
 # rank.
-# 
+#
 # As a side effect thsi function take care of checking if the rank stored
 # in the DB is no longer correct (as time is passing) and updates it if
 # needed.

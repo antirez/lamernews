@@ -624,6 +624,17 @@ get '/admin' do
     }
 end
 
+get '/random' do
+    counter = $r.get("news.count")
+    random = 1 + rand(counter)
+
+    if $r.exists("news:#{random}")
+        redirect "/news/#{random}"
+    else
+        redirect "/news/#{counter}"
+    end
+end
+
 ###############################################################################
 # API implementation
 ###############################################################################
@@ -1011,6 +1022,7 @@ end
 def application_header
     navitems = [    ["top","/"],
                     ["latest","/latest/0"],
+                    ["random","/random"],                    
                     ["submit","/submit"]]
     navbar = H.nav {
         navitems.map{|ni|

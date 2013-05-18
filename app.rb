@@ -399,7 +399,7 @@ end
 def render_comment_subthread(comment,sep="")
     H.div(:class => "singlecomment") {
         u = get_user_by_id(comment["user_id"]) || DeletedUser
-        comment_to_html(comment,u)
+        comment_to_html(comment,u,true)
     }+H.div(:class => "commentreplies") {
         sep+
         render_comments_for_news(comment['thread_id'],comment["id"].to_i)
@@ -1876,7 +1876,8 @@ end
 # Render a comment into HTML.
 # 'c' is the comment representation as a Ruby hash.
 # 'u' is the user, obtained from the user_id by the caller.
-def comment_to_html(c,u)
+# 'show_parent' flag to show link to parent comment.
+def comment_to_html(c,u,show_parent = false)
     indent = "margin-left:#{c['level'].to_i*CommentReplyShift}px"
     score = compute_comment_score(c)
     news_id = c['thread_id']
@@ -1906,6 +1907,11 @@ def comment_to_html(c,u)
             if !c['topcomment']
                 H.a(:href=>"/comment/#{news_id}/#{c["id"]}", :class=>"reply") {
                     "link"
+                }+" "
+            else "" end +
+            if show_parent && c["parent_id"] > -1
+                H.a(:href=>"/comment/#{news_id}/#{c["parent_id"]}", :class=>"reply") {
+                    "parent"
                 }+" "
             else "" end +
             if $user and !c['topcomment']

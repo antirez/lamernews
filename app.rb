@@ -1684,7 +1684,10 @@ def news_to_html(news)
                 else
                     "discuss"
                 end
-            }
+            }+
+            if $user and user_is_admin?($user)
+                " - "+H.a(:href => "/editnews/#{news["id"]}") { "edit" }+" - "+H.a(:href => "http://twitter.com/intent/tweet?url=#{SiteUrl}/news/#{news["id"]}&text="+H.urlencode(news["title"])+" - ") { "tweet" }
+            else "" end
         }+
         if params and params[:debug] and $user and user_is_admin?($user)
             "id: "+news["id"].to_s+" "+

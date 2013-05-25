@@ -470,7 +470,7 @@ get "/editnews/:news_id" do
     redirect "/login" if !$user
     news = get_news_by_id(params["news_id"])
     halt(404,"404 - This news does not exist.") if !news
-    halt(500,"Permission denied.") if $user['id'].to_i != news['user_id'].to_i
+    halt(500,"Permission denied.") if $user['id'].to_i != news['user_id'].to_i and !user_is_admin?($user)
 
     if news_domain(news)
         text = ""
@@ -1542,8 +1542,8 @@ end
 #             the specified user_id) false is returned.
 def edit_news(news_id,title,url,text,user_id)
     news = get_news_by_id(news_id)
-    return false if !news or news['user_id'].to_i != user_id.to_i
-    return false if !(news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
+    return false if !news or news['user_id'].to_i != user_id.to_i and !user_is_admin?($user)
+    return false if !(news['ctime'].to_i > (Time.now.to_i - NewsEditTime)) and !user_is_admin?($user)
 
     # If we don't have an url but a comment, we turn the url into
     # text://....first comment..., so it is just a special case of
@@ -1572,8 +1572,8 @@ end
 # Mark an existing news as removed.
 def del_news(news_id,user_id)
     news = get_news_by_id(news_id)
-    return false if !news or news['user_id'].to_i != user_id.to_i
-    return false if !(news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
+    return false if !news or news['user_id'].to_i != user_id.to_i and !user_is_admin?($user)
+    return false if !(news['ctime'].to_i > (Time.now.to_i - NewsEditTime)) and !user_is_admin?($user)
 
     $r.hmset("news:#{news_id}","del",1)
     $r.zrem("news.top",news_id)

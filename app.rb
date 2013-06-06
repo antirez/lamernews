@@ -345,7 +345,7 @@ get "/news/:news_id" do
     news = get_news_by_id(params["news_id"])
     halt(404,"404 - This news does not exist.") if !news
     # Show the news text if it is a news without URL.
-    if !news_domain(news)
+    if !news_domain(news) and !news["del"]
         c = {
             "body" => news_text(news),
             "ctime" => news["ctime"],
@@ -363,7 +363,7 @@ get "/news/:news_id" do
         H.section(:id => "newslist") {
             news_to_html(news)
         }+top_comment+
-        if $user
+        if $user and !news["del"]
             H.form(:name=>"f") {
                 H.inputhidden(:name => "news_id", :value => news["id"])+
                 H.inputhidden(:name => "comment_id", :value => -1)+

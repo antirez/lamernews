@@ -336,7 +336,7 @@ end
 
 get '/logout' do
     if $user and check_api_secret
-        update_auth_token($user["id"])
+        update_auth_token($user)
     end
     redirect "/"
 end
@@ -642,7 +642,7 @@ end
 post '/api/logout' do
     content_type 'application/json'
     if $user and check_api_secret
-        update_auth_token($user["id"])
+        update_auth_token($user)
         return {:status => "ok"}.to_json
     else
         return {
@@ -1210,13 +1210,11 @@ end
 #
 # Return value: on success the new token is returned. Otherwise nil.
 # Side effect: the auth token is modified.
-def update_auth_token(user_id)
-    user = get_user_by_id(user_id)
-    return nil if !user
+def update_auth_token(user)
     $r.del("auth:#{user['auth']}")
     new_auth_token = get_rand
-    $r.hmset("user:#{user_id}","auth",new_auth_token)
-    $r.set("auth:#{new_auth_token}",user_id)
+    $r.hmset("user:#{user['id']}","auth",new_auth_token)
+    $r.set("auth:#{new_auth_token}",user['id'])
     return new_auth_token
 end
 

@@ -83,7 +83,7 @@ get '/rss' do
                 "#{SiteName}"
             } + " " +
             H.link {
-                "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}"
+                "#{SiteUrl}"
             } + " " +
             H.description {
                 "Description pending"
@@ -1599,7 +1599,7 @@ end
 def news_to_rss(news)
     domain = news_domain(news)
     news = {}.merge(news) # Copy the object so we can modify it as we wish.
-    news["ln_url"] = "#{request.env['rack.url_scheme']}://#{request.env['HTTP_HOST']}/news/#{news["id"]}"
+    news["ln_url"] = "#{SiteUrl}/news/#{news["id"]}"
     news["url"] = news["ln_url"] if !domain
 
     H.item {

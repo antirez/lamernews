@@ -602,6 +602,7 @@ end
 
 get '/admin' do
     redirect "/" if !$user || !user_is_admin?($user)
+    H.set_title "Admin Section - #{SiteName}"
     H.page {
         H.div(:id => "adminlinks") {
             H.h2 {"Admin"}+

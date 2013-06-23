@@ -25,18 +25,18 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Salvatore Sanfilippo.
 
-require 'app_config'
+require_relative 'app_config'
 require 'rubygems'
 require 'hiredis'
 require 'redis'
-require 'page'
+require_relative 'page'
 require 'sinatra'
 require 'json'
 require 'digest/sha1'
 require 'digest/md5'
-require 'comments'
-require 'pbkdf2'
-require 'mail'
+require_relative 'comments'
+require_relative 'pbkdf2'
+require_relative 'mail'
 require 'openssl' if UseOpenSSL
 
 Version = "0.11.0"

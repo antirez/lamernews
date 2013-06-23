@@ -37,6 +37,7 @@ require 'digest/md5'
 require_relative 'comments'
 require_relative 'pbkdf2'
 require_relative 'mail'
+require_relative 'about'
 require 'openssl' if UseOpenSSL
 
 Version = "0.11.0"
@@ -1095,6 +1096,7 @@ def application_footer
     end
     H.footer {
         links = [
+            ["about", "/about"],
             ["source code", "http://github.com/antirez/lamernews"],
             ["rss feed", "/rss"],
             ["twitter", FooterTwitterLink],

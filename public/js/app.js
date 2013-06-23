@@ -227,6 +227,10 @@ function handle_voting(item_type,vote_type,item_id,callback) {
             success: function(r) {
                 if (r.status == "ok") {
                     var article = $('article[data-'+item_type+'-id="'+item_id+'"]');
+                    if (item_type == "news") {
+                        var vote_count = $('article[data-'+item_type+'-id="'+item_id+'"] .'+vote_type+'votes');
+                        vote_count.text(parseInt(vote_count.text(), 10) + 1);
+                    }
                     article.find(".uparrow").addClass(uparrowClass);
                     article.find(".downarrow").addClass(downarrowClass);
                     if (typeof(callback) == 'function') {

@@ -627,7 +627,7 @@ end
 
 get '/random' do
     counter = $r.get("news.count")
-    random = 1 + rand(counter)
+    random = 1 + rand(counter.to_i)
 
     if $r.exists("news:#{random}")
         redirect "/news/#{random}"

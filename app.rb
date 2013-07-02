@@ -42,8 +42,12 @@ require 'openssl' if UseOpenSSL
 
 Version = "0.11.0"
 
-before do
+def setup_redis
     $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
+end
+
+before do
+    setup_redis
     H = HTMLGen.new if !defined?(H)
     if !defined?(Comments)
         Comments = RedisComments.new($r,"comment",proc{|c,level|

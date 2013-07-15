@@ -715,6 +715,12 @@ post '/api/create_account' do
             :error => "Username and password are two required fields."
         }.to_json
     end
+    if !params[:username].match(UsernameRegexp)
+        return {
+            :status => "err",
+            :error => "Username must match /#{UsernameRegexp.source}/"
+        }.to_json
+    end
     if params[:password].length < PasswordMinLength
         return {
             :status => "err",

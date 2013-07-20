@@ -1,0 +1,48 @@
+<div  class="userinfo">
+	<span class="avatar">
+		<img  src='<%= "http://gravatar.com/avatar/#{@digest}?s=48&d=mm" %>' />
+	</span>
+
+	<h2><%= @user['username'] %></h2>
+
+	<pre>
+		<%= @user['about'] %>
+	</pre>
+
+	<ul>
+		<li><b>created </b><%= str_elapsed(@user['ctime'].to_i) %> </li>
+		<li><b>karma </b><%= "#{@user['karma']} points" %> </li>
+		<li><b>posted news </b> <%= @posted_news.to_s %></li>
+		<li><b>posted comments </b> <%= @posted_comments.to_s %> </li>
+		<% if @owner %>
+		<li><a href="/saved/0">saved news</a></li>
+		<% else %>
+		<% end %>
+		<li><a href='/usercomments/<%= "#{urlencode(@user['username'])}/0" %>'>user comments</a></li>
+		<li><a href='/usernews/<%= "#{urlencode(@user['username'])}/0" %>'>user news</a></li>
+	</ul>
+
+	<% if @owner %>
+	<br> 
+	<form name="f">
+		<label for="email">email (not visible, used for gravatar)</label>
+		<br>
+		<input type='text' id="email" name="email" size=40 value='<%= @user['email'] %>'><br>
+		<label for="password"> change password (optional) </label>
+		<br>
+		<input type='password' name="password" size=40>
+		<br>
+		<label for="about">about</label><br>
+		<textarea id="about" name="about" cols=60 rows=10><%= @user['about'] %></textarea>
+		<br>
+		<input type='submit' name="update_profile" value="Update profile">
+	</form>
+	<div id="errormsg"></div>
+	<script>
+	$(function() {
+		$("input[name=update_profile]").click(update_profile);
+	});
+	</script>
+	<% else %>
+	<% end %>
+</div>

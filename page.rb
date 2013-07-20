@@ -26,6 +26,7 @@
 # policies, either expressed or implied, of Salvatore Sanfilippo.
 
 require 'cgi'
+require 'erb'
 
 class HTMLGen
     @@newlinetags = %w{html body div br ul hr title link head filedset label legend option table li select td tr meta}
@@ -109,14 +110,6 @@ class HTMLGen
         CGI::unescape(s)
     end
 
-    def _header()
-        application_header
-    end
-
-    def _footer()
-        application_footer
-    end
-
     def set_title(t)
         @title = t
     end
@@ -142,4 +135,97 @@ class HTMLGen
             }
         }
     end
+end
+
+module Lamernews
+  ###############################################################################
+  # Navigation, header and footer.
+  ###############################################################################
+  
+  # Return the HTML for the 'replies' link in the main navigation bar.
+  # The link is not shown at all if the user is not logged in, while
+  # it is shown with a badge showing the number of replies for logged in
+  # users.
+  def self.navbar_replies_link
+      return "" if !$user
+      count = $user['replies'] || 0
+      H.a(:href => "/replies", :class => "replies") {
+          "replies"+
+          if count.to_i > 0
+              H.sup {count}
+          else "" end
+      }
+  end
+  
+  def self.navbar_admin_link
+      return "" if !$user || !user_is_admin?($user)
+      H.b {
+          H.a(:href => "/admin") {"admin"}
+      }
+  end
+
+  def self.application_header
+    template = './views/header.erb'
+    @navitems = [    ["top","/"],
+                      ["latest","/latest/0"],
+                      ["random","/random"],                    
+                      ["submit","/submit"]]
+    ERB.new(File.read(template)).result(binding)
+  end
+
+  def self.application_footer
+    template = './views/footer.erb'
+    if $user
+        @apisecret = H.script() {
+            "var apisecret = '#{$user['apisecret']}';";
+        }
+    else
+        @apisecret = ""
+    end
+    @links = [
+        ["about", "/about"],
+        ["source code", "http://github.com/antirez/lamernews"],
+        ["rss feed", "/rss"],
+        ["twitter", FooterTwitterLink],
+        ["google group", FooterGoogleGroupLink]
+    ]
+    @keyboardnavigation = self.keyboard_nav
+    ERB.new(File.read(template)).result(binding)
+  end
+
+  def self.keyboard_nav
+      if KeyboardNavigation == 1
+          keyboardnavigation = H.script() {
+              "setKeyboardNavigation();"
+          } + " " +
+          H.div(:id => "keyboard-help", :style => "display: none;") {
+              H.div(:class => "keyboard-help-banner banner-background banner") {
+              } + " " +
+              H.div(:class => "keyboard-help-banner banner-foreground banner") {
+                  H.div(:class => "primary-message") {
+                      "Keyboard shortcuts"
+                  } + " " +
+                  H.div(:class => "secondary-message") {
+                      H.div(:class => "key") {
+                          "j/k:"
+                      } + H.div(:class => "desc") {
+                          "next/previous item"
+                      } + " " +
+                      H.div(:class => "key") {
+                          "enter:"
+                      } + H.div(:class => "desc") {
+                          "open link"
+                      } + " " +
+                      H.div(:class => "key") {
+                          "a/z:"
+                      } + H.div(:class => "desc") {
+                          "up/down vote item"
+                      }
+                  }
+              }
+          }
+      else
+          keyboardnavigation = ""
+      end
+  end
 end  

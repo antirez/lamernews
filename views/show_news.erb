@@ -1,0 +1,24 @@
+<section id="newslist">
+	<%= news_to_html(@news) %>
+</section>
+
+<%= @top_comment %>
+<% if $user and !@news["del"] %>
+<form name="f">
+	<input type='hidden' name="news_id" value='<%= @news["id"] %>' />
+	<input type='hidden' name="comment_id" value='-1' />
+	<input type='hidden' name="parent_id" value='-1' />
+	<textarea name="comment" cols=60 rows=10></textarea>
+	<br>
+	<input type='submit' name ="post_comment" value ="Send comment" />
+</form>
+<div id="errormsg"></div>
+<% else %>
+<br>
+<% end %>
+<%= render_comments_for_news(@news["id"]) %>
+<script>
+$(function() {
+	$("input[name=post_comment]").click(post_comment);
+});
+</script>

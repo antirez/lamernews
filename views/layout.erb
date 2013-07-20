@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset = "utf-8" />
+	<title><%= @title %></title>
+	<meta content='index' name='robots' />
+	<meta content="width=device-width, initial-scale=1, maximum-scale=1" name ='viewport' />
+	<link href="/css/style.css?v=10" rel="stylesheet" type="text/css" />
+	<link href="/favicon.ico", rel="shortcut icon" />
+	<script src="/js/jquery.1.6.4.min.js"></script>
+	<script src="/js/app.js?v=10"></script>
+</head>
+<body>
+	<div class='container'>
+		<%= Lamernews.application_header %>
+
+		<div id='content'>
+			<%= yield %>
+		</div>
+
+		<%= Lamernews.application_footer %>
+	</div>
+</body>

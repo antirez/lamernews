@@ -1,0 +1,27 @@
+<header>
+	<h1>
+		<a href='/'><%= SiteName %> <small><%= Version %></small></a>
+	</h1>
+
+	<nav>
+ 		<% @navitems.each do |ni| %>
+  			<%= "<a href='#{ni[1]}'> #{ni[0]} </a>\n" %>
+		<% end %>
+		<%= navbar_replies_link %>
+		<%= navbar_admin_link %>
+	</nav>
+
+	<nav id='account'>
+		<% if $user %>
+		<a href='<%= "/user/#{H.urlencode($user['username'])}" %>'>
+			<%= $user['username'] %><%= " (#{$user['karma']})" %>
+		</a>
+		| <a href='<%= "/logout?apisecret=#{$user['apisecret']}" %>'>
+			logout
+		</a>
+		<% else %>
+		<a href='/login'>login / register</a>
+		<% end %>
+	</nav>
+	<a href="#" id="link-menu-mobile"><~></a>
+</header>

@@ -1,0 +1,29 @@
+<h2>Submit a new story</h2>
+<div id="submitform">
+	<form name="f">
+		<input type='hidden' name="news_id" value='-1' />
+		<label for="title">title</label>
+		<input type='text' id="title" name="title" size=80 value='<%= (params[:t] ? params[:t] : "") %>' />
+		<br>
+		<label for="url">url<br>
+			<input type='text' id="url" name="url" size=60 value='<%= (params[:u] ? params[:u] : "") %>' />
+			<br>
+			or if you don't have an url type some text
+			<br>
+			<label for="text">text</label>
+			<textarea id="text" name="text" cols=60 rows=10></textarea>
+			<input type='submit' name="do_submit" value="Submit">
+		</form>
+		<div  id="errormsg"></div>
+	</div>
+	<p>
+		<a href='javascript:window.location=%22<%= "#{SiteUrl}" %>/submit?u=%22+encodeURIComponent(document.location)+%22&t=%22+encodeURIComponent(document.title)"'>
+			Submitting news is simpler using the bookmarklet
+		</a>
+		(drag the link to your browser toolbar)
+	</p>
+	<script>
+	$(function() {
+		$("input[name=do_submit]").click(submit);
+	});
+	</script>

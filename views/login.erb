@@ -1,0 +1,19 @@
+<div id="login">
+	<form name="f">
+		<label  for ="username">username</label>
+		<input type='text' id="username" name="username">
+		<label  for="password">password</label>
+		<input type='password' id="password" name="password" />
+		<br>
+		<input type='checkbox' name="register" value="1">create account</input>
+		<br>
+		<input type='submit' name="do_login" value="Login" />
+	</form>
+</div>
+<div id="errormsg"></div>
+<a href="/reset-password">reset password</a>
+<script>
+$(function() {
+	$("form[name=f]").submit(login);
+});
+</script>

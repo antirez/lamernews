@@ -1,0 +1,10 @@
+<footer>
+<% @links.each do |l| %>
+  <% if l[1] %>
+    <a href='<%= l[1] %>'><%= l[0] %></a> | 
+  <% else %>
+  <% end %>
+<% end %>
+<%= @apisecret %>
+<%= @keyboardnavigation %>
+</footer>

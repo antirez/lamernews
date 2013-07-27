@@ -72,11 +72,9 @@ before do
 end
 
 get '/' do
-    H.set_title "#{SiteName} - #{SiteDescription}"
-    news,numitems = get_top_news
-    H.page {
-        H.h2 {"Top news"}+news_list_to_html(news)
-    }
+  @title = "#{SiteName} - #{SiteDescription}"
+  @news, @numitems = get_top_news
+  erb :news
 end
 
 get '/rss' do
@@ -104,8 +102,8 @@ end
 
 get '/latest/:start' do
     start = params[:start].to_i
-    H.set_title "Latest news - #{SiteName}"
-    paginate = {
+    @title = "Latest news - #{SiteName}"
+    @paginate = {
         :get => Proc.new {|start,count|
             get_latest_news(start,count)
         },
@@ -114,19 +112,14 @@ get '/latest/:start' do
         :perpage => LatestNewsPerPage,
         :link => "/latest/$"
     }
-    H.page {
-        H.h2 {"Latest news"}+
-        H.section(:id => "newslist") {
-            list_items(paginate)
-        }
-    }
+    erb :latest
 end
 
 get '/saved/:start' do
     redirect "/login" if !$user
     start = params[:start].to_i
-    H.set_title "Saved news - #{SiteName}"
-    paginate = {
+    @title = "Saved news - #{SiteName}"
+    @paginate = {
         :get => Proc.new {|start,count|
             get_saved_news($user['id'],start,count)
         },
@@ -135,12 +128,7 @@ get '/saved/:start' do
         :perpage => SavedNewsPerPage,
         :link => "/saved/$"
     }
-    H.page {
-        H.h2 {"Your saved news"}+
-        H.section(:id => "newslist") {
-            list_items(paginate)
-        }
-    }
+    erb :saved
 end
 
 get '/usernews/:username/:start' do
@@ -148,10 +136,10 @@ get '/usernews/:username/:start' do
     user = get_user_by_username(params[:username])
     halt(404,"Non existing user") if !user
 
-    page_title = "News posted by #{user['username']}"
+    @page_title = "News posted by #{user['username']}"
 
-    H.set_title "#{page_title} - #{SiteName}"
-    paginate = {
+    @title = "#{page_title} - #{SiteName}"
+    @paginate = {
         :get => Proc.new {|start,count|
             get_posted_news(user['id'],start,count)
         },
@@ -160,12 +148,7 @@ get '/usernews/:username/:start' do
         :perpage => SavedNewsPerPage,
         :link => "/usernews/#{H.urlencode user['username']}/$"
     }
-    H.page {
-        H.h2 {page_title}+
-        H.section(:id => "newslist") {
-            list_items(paginate)
-        }
-    }
+    erb :usernews
 end
 
 get '/usercomments/:username/:start' do
@@ -173,8 +156,8 @@ get '/usercomments/:username/:start' do
     user = get_user_by_username(params[:username])
     halt(404,"Non existing user") if !user
 
-    H.set_title "#{user['username']} comments - #{SiteName}"
-    paginate = {
+    @title = "#{user['username']} comments - #{SiteName}"
+    @paginate = {
         :get => Proc.new {|start,count|
             get_user_comments(user['id'],start,count)
         },
@@ -186,157 +169,43 @@ get '/usercomments/:username/:start' do
         :perpage => UserCommentsPerPage,
         :link => "/usercomments/#{H.urlencode user['username']}/$"
     }
-    H.page {
-        H.h2 {"#{H.entities user['username']} comments"}+
-        H.div("id" => "comments") {
-            list_items(paginate)
-        }
-    }
+    erb :usercomments
 end
 
 get '/replies' do
     redirect "/login" if !$user
     comments,count = get_user_comments($user['id'],0,SubthreadsInRepliesPage)
-    H.set_title "Your threads - #{SiteName}"
-    H.page {
-        $r.hset("user:#{$user['id']}","replies",0)
-        H.h2 {"Your threads"}+
-        H.div("id" => "comments") {
-            aux = ""
-            comments.each{|c|
-                aux << render_comment_subthread(c)
-            }
-            aux
-        }
-    }
+    @title = "Your threads - #{SiteName}"
+    $r.hset("user:#{$user['id']}","replies",0)
+    @aux = comments.map{|c| render_comment_subthread(c)}
+    erb :replies
 end
 
 get '/login' do
-    H.set_title "Login - #{SiteName}"
-    H.page {
-        H.div(:id => "login") {
-            H.form(:name=>"f") {
-                H.label(:for => "username") {"username"}+
-                H.inputtext(:id => "username", :name => "username")+
-                H.label(:for => "password") {"password"}+
-                H.inputpass(:id => "password", :name => "password")+H.br+
-                H.checkbox(:name => "register", :value => "1")+
-                "create account"+H.br+
-                H.submit(:name => "do_login", :value => "Login")
-            }
-        }+
-        H.div(:id => "errormsg"){}+
-        H.a(:href=>"/reset-password") {"reset password"}+
-        H.script() {'
-            $(function() {
-                $("form[name=f]").submit(login);
-            });
-        '}
-    }
+    @title = "Login - #{SiteName}"
+    erb :login
 end
 
 get '/reset-password' do
-    H.set_title "Reset Password - #{SiteName}"
-    H.page {
-        H.p {
-            "Welcome to the password reset procedure. Please specify the username and the email address you used to register to the site. "+H.br+
-            H.b {"Note that if you did not specify an email it is impossible for you to recover your password."}
-        }+
-        H.div(:id => "login") {
-            H.form(:name=>"f") {
-                H.label(:for => "username") {"username"}+
-                H.inputtext(:id => "username", :name => "username")+
-                H.label(:for => "password") {"email"}+
-                H.inputtext(:id => "email", :name => "email")+H.br+
-                H.submit(:name => "do_reset", :value => "Reset password")
-            }
-        }+
-        H.div(:id => "errormsg"){}+
-        H.script() {'
-            $(function() {
-                $("form[name=f]").submit(reset_password);
-            });
-        '}
-    }
+    @title = "Reset Password - #{SiteName}"
+    erb :reset_password
 end
 
 get '/reset-password-ok' do
-    H.set_title "Reset link sent to your inbox"
-    H.page {
-        H.p {
-            "We sent an email to your inbox with a link that will let you reset your password."
-        }+
-        H.p {
-            "Please make sure to check the spam folder if the email does not appear in your inbox in a few minutes."
-        }+
-        H.p {
-            "The email contains a link that will automatically log into your account where you can set a new password in the account preferences."
-        }
-    }
+    @title = "Reset link sent to your inbox"
+    erb :reset_password_ok
 end
 
 get '/set-new-password' do
     redirect '/' if (!check_params "user","auth")
-    user = get_user_by_username(params[:user])
-    if !user || user['auth'] != params[:auth]
-        H.page {
-            H.p {
-                "Link invalid or expired."
-            }
-        }
-    else
-        # Login the user and bring him to preferences to set a new password.
-        # Note that we update the auth token so this reset link will not
-        # work again.
-        update_auth_token(user["id"])
-        user = get_user_by_id(user["id"])
-        H.page {
-            H.script() {"
-                $(function() {
-                    document.cookie =
-                        'auth=#{user['auth']}'+
-                        '; expires=Thu, 1 Aug 2030 20:00:00 UTC; path=/';
-                    window.location.href = '/user/#{user['username']}';
-                });
-            "}
-        }
-    end
+    @user = get_user_by_username(params[:user])
+    erb :set_new_password
 end
 
 get '/submit' do
     redirect "/login" if !$user
-    H.set_title "Submit a new story - #{SiteName}"
-    H.page {
-        H.h2 {"Submit a new story"}+
-        H.div(:id => "submitform") {
-            H.form(:name=>"f") {
-                H.inputhidden(:name => "news_id", :value => -1)+
-                H.label(:for => "title") {"title"}+
-                H.inputtext(:id => "title", :name => "title", :size => 80, :value => (params[:t] ? H.entities(params[:t]) : ""))+H.br+
-                H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:id => "url", :name => "url", :size => 60, :value => (params[:u] ? H.entities(params[:u]) : ""))+H.br+
-                "or if you don't have an url type some text"+
-                H.br+
-                H.label(:for => "text") {"text"}+
-                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {}+
-                H.button(:name => "do_submit", :value => "Submit")
-            }
-        }+
-        H.div(:id => "errormsg"){}+
-        H.p {
-            bl = "javascript:window.location=%22#{SiteUrl}/submit?u=%22+encodeURIComponent(document.location)+%22&t=%22+encodeURIComponent(document.title)"
-            "Submitting news is simpler using the "+
-            H.a(:href => bl) {
-                "bookmarklet"
-            }+
-            " (drag the link to your browser toolbar)"
-        }+
-        H.script() {'
-            $(function() {
-                $("input[name=do_submit]").click(submit);
-            });
-        '}
-    }
+    @title = "Submit a new story - #{SiteName}"
+    erb :submit
 end
 
 get '/logout' do
@@ -347,45 +216,24 @@ get '/logout' do
 end
 
 get "/news/:news_id" do
-    news = get_news_by_id(params["news_id"])
-    halt(404,"404 - This news does not exist.") if !news
+    @news = get_news_by_id(params["news_id"])
+    halt(404,"404 - This news does not exist.") if !@news
     # Show the news text if it is a news without URL.
-    if !news_domain(news) and !news["del"]
+    if !news_domain(@news) and !@news["del"]
         c = {
-            "body" => news_text(news),
-            "ctime" => news["ctime"],
-            "user_id" => news["user_id"],
-            "thread_id" => news["id"],
+            "body" => news_text(@news),
+            "ctime" => @news["ctime"],
+            "user_id" => @news["user_id"],
+            "thread_id" => @news["id"],
             "topcomment" => true
         }
-        user = get_user_by_id(news["user_id"]) || DeletedUser
-        top_comment = H.topcomment {comment_to_html(c,user)}
+        user = get_user_by_id(@news["user_id"]) || DeletedUser
+        @top_comment = H.topcomment {comment_to_html(c,user)}
     else
-        top_comment = ""
+        @top_comment = ""
     end
-    H.set_title "#{news["title"]} - #{SiteName}"
-    H.page {
-        H.section(:id => "newslist") {
-            news_to_html(news)
-        }+top_comment+
-        if $user and !news["del"]
-            H.form(:name=>"f") {
-                H.inputhidden(:name => "news_id", :value => news["id"])+
-                H.inputhidden(:name => "comment_id", :value => -1)+
-                H.inputhidden(:name => "parent_id", :value => -1)+
-                H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
-                H.button(:name => "post_comment", :value => "Send comment")
-            }+H.div(:id => "errormsg"){}
-        else
-            H.br
-        end +
-        render_comments_for_news(news["id"])+
-        H.script() {'
-            $(function() {
-                $("input[name=post_comment]").click(post_comment);
-            });
-        '}
-    }
+    @title = "#{@news["title"]} - #{SiteName}"
+    erb :show_news
 end
 
 get "/comment/:news_id/:comment_id" do
@@ -393,12 +241,7 @@ get "/comment/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    H.page {
-        H.section(:id => "newslist") {
-            news_to_html(news)
-        }+
-        render_comment_subthread(comment, H.h2 {"Replies"})
-    }
+    erb :comment
 end
 
 def render_comment_subthread(comment,sep="")
@@ -440,150 +283,45 @@ end
 
 get "/editcomment/:news_id/:comment_id" do
     redirect "/login" if !$user
-    news = get_news_by_id(params["news_id"])
-    halt(404,"404 - This news does not exist.") if !news
-    comment = Comments.fetch(params["news_id"],params["comment_id"])
-    halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) || DeletedUser
-    halt(500,"Permission denied.") if $user['id'].to_i != user['id'].to_i
+    @news = get_news_by_id(params["news_id"])
+    halt(404,"404 - This news does not exist.") if !@news
+    @comment = Comments.fetch(params["news_id"],params["comment_id"])
+    halt(404,"404 - This comment does not exist.") if !@comment
+    @user = get_user_by_id(@comment["user_id"]) || DeletedUser
+    halt(500,"Permission denied.") if $user['id'].to_i != @user['id'].to_i
 
-    H.set_title "Edit comment - #{SiteName}"
-    H.page {
-        news_to_html(news)+
-        comment_to_html(comment,user)+
-        H.form(:name=>"f") {
-            H.inputhidden(:name => "news_id", :value => news["id"])+
-            H.inputhidden(:name => "comment_id",:value => params["comment_id"])+
-            H.inputhidden(:name => "parent_id", :value => -1)+
-            H.textarea(:name => "comment", :cols => 60, :rows => 10) {
-                H.entities comment['body']
-            }+H.br+
-            H.button(:name => "post_comment", :value => "Edit")
-        }+H.div(:id => "errormsg"){}+
-        H.note {
-            "Note: to remove the comment, remove all the text and press Edit."
-        }+
-        H.script() {'
-            $(function() {
-                $("input[name=post_comment]").click(post_comment);
-            });
-        '}
-    }
+    @title = "Edit comment - #{SiteName}"
+    erb :editcomment
 end
 
 get "/editnews/:news_id" do
     redirect "/login" if !$user
-    news = get_news_by_id(params["news_id"])
-    halt(404,"404 - This news does not exist.") if !news
-    halt(500,"Permission denied.") if $user['id'].to_i != news['user_id'].to_i and !user_is_admin?($user)
+    @news = get_news_by_id(params["news_id"])
+    halt(404,"404 - This news does not exist.") if !@news
+    halt(500,"Permission denied.") if $user['id'].to_i != @news['user_id'].to_i and !user_is_admin?($user)
 
-    if news_domain(news)
-        text = ""
+    if news_domain(@news)
+        @text = ""
     else
-        text = news_text(news)
-        news['url'] = ""
+        @text = news_text(@news)
+        @news['url'] = ""
     end
-    H.set_title "Edit news - #{SiteName}"
-    H.page {
-        news_to_html(news)+
-        H.div(:id => "submitform") {
-            H.form(:name=>"f") {
-                H.inputhidden(:name => "news_id", :value => news['id'])+
-                H.label(:for => "title") {"title"}+
-                H.inputtext(:id => "title", :name => "title", :size => 80,
-                            :value => news['title'])+H.br+
-                H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:id => "url", :name => "url", :size => 60,
-                            :value => H.entities(news['url']))+H.br+
-                "or if you don't have an url type some text"+
-                H.br+
-                H.label(:for => "text") {"text"}+
-                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {
-                    H.entities(text)
-                }+H.br+
-                H.checkbox(:name => "del", :value => "1")+
-                "delete this news"+H.br+
-                H.button(:name => "edit_news", :value => "Edit")
-            }
-        }+
-        H.div(:id => "errormsg"){}+
-        H.script() {'
-            $(function() {
-                $("input[name=edit_news]").click(submit);
-            });
-        '}
-    }
+    @title = "Edit news - #{SiteName}"
+    erb :editnews
 end
 
 get "/user/:username" do
-    user = get_user_by_username(params[:username])
-    halt(404,"Non existing user") if !user
-    posted_news,posted_comments = $r.pipelined {
-        $r.zcard("user.posted:#{user['id']}")
-        $r.zcard("user.comments:#{user['id']}")
+    @user = get_user_by_username(params[:username])
+    halt(404,"Non existing user") if !@user
+    @posted_news, @posted_comments = $r.pipelined {
+        $r.zcard("user.posted:#{@user['id']}")
+        $r.zcard("user.comments:#{@user['id']}")
     }
-    H.set_title "#{user['username']} - #{SiteName}"
-    owner = $user && ($user['id'].to_i == user['id'].to_i)
-    H.page {
-        H.div(:class => "userinfo") {
-            H.span(:class => "avatar") {
-                email = user["email"] || ""
-                digest = Digest::MD5.hexdigest(email)
-                H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
-            }+" "+
-            H.h2 {H.entities user['username']}+
-            H.pre {
-                H.entities user['about']
-            }+
-            H.ul {
-                H.li {
-                    H.b {"created "}+
-                    str_elapsed(user['ctime'].to_i)
-                }+
-                H.li {H.b {"karma "}+ "#{user['karma']} points"}+
-                H.li {H.b {"posted news "}+posted_news.to_s}+
-                H.li {H.b {"posted comments "}+posted_comments.to_s}+
-                if owner
-                    H.li {H.a(:href=>"/saved/0") {"saved news"}}
-                else "" end+
-                H.li {
-                    H.a(:href=>"/usercomments/"+H.urlencode(user['username'])+
-                               "/0") {
-                        "user comments"
-                    }
-                }+
-                H.li {
-                    H.a(:href=>"/usernews/"+H.urlencode(user['username'])+
-                               "/0") {
-                        "user news"
-                    }
-                }
-            }
-        }+if owner
-            H.br+H.form(:name=>"f") {
-                H.label(:for => "email") {
-                    "email (not visible, used for gravatar)"
-                }+H.br+
-                H.inputtext(:id => "email", :name => "email", :size => 40,
-                            :value => H.entities(user['email']))+H.br+
-                H.label(:for => "password") {
-                    "change password (optional)"
-                }+H.br+
-                H.inputpass(:name => "password", :size => 40)+H.br+
-                H.label(:for => "about") {"about"}+H.br+
-                H.textarea(:id => "about", :name => "about", :cols => 60, :rows => 10){
-                    H.entities(user['about'])
-                }+H.br+
-                H.button(:name => "update_profile", :value => "Update profile")
-            }+
-            H.div(:id => "errormsg"){}+
-            H.script() {'
-                $(function() {
-                    $("input[name=update_profile]").click(update_profile);
-                });
-            '}
-        else "" end
-    }
+    @title = "#{@user['username']} - #{SiteName}"
+    @owner = $user && ($user['id'].to_i == @user['id'].to_i)
+    email = @user["email"] || ""
+    @digest = Digest::MD5.hexdigest(email)
+    erb :user
 end
 
 get '/recompute' do
@@ -608,26 +346,7 @@ end
 get '/admin' do
     redirect "/" if !$user || !user_is_admin?($user)
     H.set_title "Admin Section - #{SiteName}"
-    H.page {
-        H.div(:id => "adminlinks") {
-            H.h2 {"Admin"}+
-            H.h3 {"Site stats"}+
-            generate_site_stats+
-            H.h3 {"Developer tools"}+
-            H.ul {
-                H.li {
-                    H.a(:href=>"/recompute") {
-                        "Recompute news score and rank (may be slow!)"
-                    }
-                }+
-                H.li {
-                    H.a(:href=>"/?debug=1") {
-                        "Show annotated home page"
-                    }
-                }
-            }
-        }
-    }
+    erb :admin
 end
 
 get '/random' do
@@ -2081,3 +1800,6 @@ def list_items(o)
     aux
 end
 
+def urlencode(s)
+  CGI::escape(s)
+end

@@ -1,0 +1,21 @@
+<%= news_to_html(@news) %>
+<%= comment_to_html(@comment, @user) %>
+<form name="f">
+	<input type='hidden' name="news_id" value=<%= @news["id"] %> />
+	<input type='hidden' name="comment_id" value=<%= params["comment_id"] %> />
+	<input type='hidden' name="parent_id" value=-1 />
+	<textarea name ="comment" cols=60 rows=10>
+		<%= @comment['body'] %>
+	</textarea>
+	<br>
+	<input type='submit' name="post_comment" value="Edit" />
+	<div id ="errormsg"></div>
+	<p>
+		Note: to remove the comment, remove all the text and press Edit.
+	</p>
+	<script>
+	$(function() {
+		$("input[name=post_comment]").click(post_comment);
+	});
+	</script>
+</form>

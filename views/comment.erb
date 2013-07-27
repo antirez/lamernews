@@ -1,0 +1,4 @@
+<section id="newslist">
+  <%= news_to_html(@news) %>
+</section>
+<%= render_comment_subthread(@comment, H.h2 {"Replies"}) %>

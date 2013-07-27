@@ -1,25 +1,25 @@
 <%= news_to_html(@news) %>
-<div id ="submitform">
+<div id="submitform">
 	<form name="f">
 		<input type='hidden' name="news_id" value='<%= @news['id'] %>' />
-		<label for ="title")> {"title"}+ </label>
-		<input type='text' id ="title" name ="title" size =80 value=news['title'] />
+		<label for ="title")>title</label>
+        <input type='text' id ="title" name ="title" size=80 value='<%= news['title'] %>' />
 		<br/>
 		<label for="url">url</label><br>
 		<input type='text' id="url" name ="url" size =60 value='<%= @news['url'] %>' /><br>
 		or if you don't have an url type some text
-		<br+
+		<br />
 		<label for ="text")>text</label>
-		<textarea id ="text" name ="text" cols =60 rows =10>
+		<textarea id ="text" name ="text" cols=60 rows =10>
 			<%= @text %>
 		</textarea>
 		<br>
-		<input type='checkbox' name ="del" value ="1" %>
-		"delete this news<br>
-		<input type='submit' name ="edit_news" value ="Edit" />
+		<input type='checkbox' name ="del" value="1" %>
+		delete this news<br>
+		<input type='submit' name ="edit_news" value="Edit" />
 	</form>
 
-	<div id ="errormsg"></div>
+	<div id="errormsg"></div>
 	<script>
 	$(function() {
 		$("input[name=edit_news]").click(submit);

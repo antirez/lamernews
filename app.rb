@@ -43,8 +43,9 @@ require 'uri'
 
 Version = "0.11.0"
 
-def setup_redis
-    $r = Redis.new(:host => RedisHost, :port => RedisPort) if !$r
+def setup_redis(uri=RedisURL)
+    uri = URI.parse(uri)
+    $r = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password) unless $r
 end
 
 before do

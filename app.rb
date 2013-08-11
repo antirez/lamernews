@@ -39,6 +39,7 @@ require_relative 'pbkdf2'
 require_relative 'mail'
 require_relative 'about'
 require 'openssl' if UseOpenSSL
+require 'uri'
 
 Version = "0.11.0"
 
@@ -158,7 +159,7 @@ get '/usernews/:username/:start' do
         :render => Proc.new {|item| news_to_html(item)},
         :start => start,
         :perpage => SavedNewsPerPage,
-        :link => "/usernews/#{H.urlencode user['username']}/$"
+        :link => "/usernews/#{URI.encode(user['username'])}/$"
     }
     H.page {
         H.h2 {page_title}+
@@ -184,7 +185,7 @@ get '/usercomments/:username/:start' do
         },
         :start => start,
         :perpage => UserCommentsPerPage,
-        :link => "/usercomments/#{H.urlencode user['username']}/$"
+        :link => "/usercomments/#{URI.encode(user['username'])}/$"
     }
     H.page {
         H.h2 {"#{H.entities user['username']} comments"}+
@@ -547,13 +548,13 @@ get "/user/:username" do
                     H.li {H.a(:href=>"/saved/0") {"saved news"}}
                 else "" end+
                 H.li {
-                    H.a(:href=>"/usercomments/"+H.urlencode(user['username'])+
+                    H.a(:href=>"/usercomments/"+URI.encode(user['username'])+
                                "/0") {
                         "user comments"
                     }
                 }+
                 H.li {
-                    H.a(:href=>"/usernews/"+H.urlencode(user['username'])+
+                    H.a(:href=>"/usernews/"+URI.encode(user['username'])+
                                "/0") {
                         "user news"
                     }
@@ -729,6 +730,12 @@ post '/api/create_account' do
         return {
             :status => "err",
             :error => "Username and password are two required fields."
+        }.to_json
+    end
+    if !params[:username].match(UsernameRegexp)
+        return {
+            :status => "err",
+            :error => "Username must match /#{UsernameRegexp.source}/"
         }.to_json
     end
     if params[:password].length < PasswordMinLength
@@ -1037,7 +1044,7 @@ def application_header
     }
     rnavbar = H.nav(:id => "account") {
         if $user
-            H.a(:href => "/user/"+H.urlencode($user['username'])) { 
+            H.a(:href => "/user/"+URI.encode($user['username'])) {
                 H.entities $user['username']+" (#{$user['karma']})"
             }+" | "+
             H.a(:href =>
@@ -1679,7 +1686,7 @@ def news_to_html(news)
             H.span(:class => :upvotes) { news["up"] } + " up and " +
             H.span(:class => :downvotes) { news["down"] } + " down, posted by " +            
             H.username {
-                H.a(:href=>"/user/"+H.urlencode(news["username"])) {
+                H.a(:href=>"/user/"+URI.encode(news["username"])) {
                     H.entities news["username"]
                 }
             }+" "+str_elapsed(news["ctime"].to_i)+" "+
@@ -1921,7 +1928,7 @@ def comment_to_html(c,u,show_parent = false)
             H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
         }+H.span(:class => "info") {
             H.span(:class => "username") {
-                H.a(:href=>"/user/"+H.urlencode(u["username"])) {
+                H.a(:href=>"/user/"+URI.encode(u["username"])) {
                     H.entities u["username"]
                 }
             }+" "+str_elapsed(c["ctime"].to_i)+". "+

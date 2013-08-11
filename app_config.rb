@@ -36,6 +36,7 @@ KeyboardNavigation = 1
 # User
 DeletedUser = {"username" => "deleted_user", "email" => "", "id" => -1}
 PasswordResetDelay = 3600*24
+UsernameRegexp = /^[a-zA-Z][a-zA-Z0-9_\-]+$/
 
 # News and ranking
 NewsAgePadding = 3600*8

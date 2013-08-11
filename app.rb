@@ -395,6 +395,7 @@ get "/comment/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
+    H.set_title "#{news["title"]} - #{SiteName}"    
     H.page {
         H.section(:id => "newslist") {
             news_to_html(news)

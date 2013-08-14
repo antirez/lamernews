@@ -41,15 +41,16 @@ require_relative 'about'
 require 'openssl' if UseOpenSSL
 require 'uri'
 
+require_relative 'data'
+require_relative 'api'
+
 Version = "0.11.0"
 
-def setup_redis(uri=RedisURL)
-    uri = URI.parse(uri)
-    $r = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password) unless $r
-end
+use Lamernews::RedisSetup
+use Lamernews::API
 
 before do
-    setup_redis
+    $r = env['redis']
     H = HTMLGen.new if !defined?(H)
     if !defined?(Comments)
         Comments = RedisComments.new($r,"comment",proc{|c,level|
@@ -838,43 +839,6 @@ def get_rand
     rand = "";
     File.open("/dev/urandom").read(20).each_byte{|x| rand << sprintf("%02x",x)}
     rand
-end
-
-# Create a new user with the specified username/password
-#
-# Return value: the function returns two values, the first is the
-#               auth token if the registration succeeded, otherwise
-#               is nil. The second is the error message if the function
-#               failed (detected testing the first return value).
-def create_user(username,password)
-    if $r.exists("username.to.id:#{username.downcase}")
-        return nil, "Username is already taken, please try a different one."
-    end
-    if rate_limit_by_ip(3600*15,"create_user",request.ip)
-        return nil, "Please wait some time before creating a new user."
-    end
-    id = $r.incr("users.count")
-    auth_token = get_rand
-    salt = get_rand
-    $r.hmset("user:#{id}",
-        "id",id,
-        "username",username,
-        "salt",salt,
-        "password",hash_password(password,salt),
-        "ctime",Time.now.to_i,
-        "karma",UserInitialKarma,
-        "about","",
-        "email","",
-        "auth",auth_token,
-        "apisecret",get_rand,
-        "flags","",
-        "karma_incr_time",Time.new.to_i)
-    $r.set("username.to.id:#{username.downcase}",id)
-    $r.set("auth:#{auth_token}",id)
-
-    # First user ever created (id = 1) is an admin
-    $r.hmset("user:#{id}","flags","a") if id.to_i == 1
-    return auth_token,nil
 end
 
 # Update the specified user authentication token with a random generated

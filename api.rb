@@ -1,4 +1,5 @@
 require 'sinatra'
+require_relative 'data'
 
 ###############################################################################
 # API implementation
@@ -6,6 +7,10 @@ require 'sinatra'
 
 module Lamernews
   class API < Sinatra::Base
+    before do
+      $r = env['redis']
+      $users = env['users']
+    end
   
     post '/api/logout' do
         content_type 'application/json'
@@ -99,7 +104,7 @@ module Lamernews
                 :error => "Password is too short. Min length: #{PasswordMinLength}"
             }.to_json
         end
-        auth,errmsg = create_user(params[:username],params[:password])
+        auth,errmsg = $users.create(params[:username],params[:password])
         if auth 
             return {:status => "ok", :auth => auth}.to_json
         else

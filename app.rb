@@ -45,7 +45,7 @@ Version = "0.11.0"
 
 def setup_redis(uri=RedisURL)
     uri = URI.parse(uri)
-    $r = Redis.new(:host => uri.host, :port => uri.port, :password => uri.password) unless $r
+    $r = Redis.new(host: uri.host, port: uri.port, password: uri.password) unless $r
 end
 
 before do
@@ -82,9 +82,9 @@ get '/' do
 end
 
 get '/rss' do
-    content_type 'text/xml', :charset => 'utf-8'
+    content_type 'text/xml', charset: 'utf-8'
     news,count = get_latest_news
-    H.rss(:version => "2.0", "xmlns:atom" => "http://www.w3.org/2005/Atom") {
+    H.rss(version: "2.0", "xmlns:atom" => "http://www.w3.org/2005/Atom") {
         H.channel {
             H.title {
                 "#{SiteName}"
@@ -108,17 +108,17 @@ get '/latest/:start' do
     start = params[:start].to_i
     H.set_title "Latest news - #{SiteName}"
     paginate = {
-        :get => Proc.new {|start,count|
+        get: Proc.new {|start,count|
             get_latest_news(start,count)
         },
-        :render => Proc.new {|item| news_to_html(item)},
-        :start => start,
-        :perpage => LatestNewsPerPage,
-        :link => "/latest/$"
+        render: Proc.new {|item| news_to_html(item)},
+        start: start,
+        perpage: LatestNewsPerPage,
+        link: "/latest/$"
     }
     H.page {
         H.h2 {"Latest news"}+
-        H.section(:id => "newslist") {
+        H.section(id: "newslist") {
             list_items(paginate)
         }
     }
@@ -129,17 +129,17 @@ get '/saved/:start' do
     start = params[:start].to_i
     H.set_title "Saved news - #{SiteName}"
     paginate = {
-        :get => Proc.new {|start,count|
+        get: Proc.new {|start,count|
             get_saved_news($user['id'],start,count)
         },
-        :render => Proc.new {|item| news_to_html(item)},
-        :start => start,
-        :perpage => SavedNewsPerPage,
-        :link => "/saved/$"
+        render: Proc.new {|item| news_to_html(item)},
+        start: start,
+        perpage: SavedNewsPerPage,
+        link: "/saved/$"
     }
     H.page {
         H.h2 {"Your saved news"}+
-        H.section(:id => "newslist") {
+        H.section(id: "newslist") {
             list_items(paginate)
         }
     }
@@ -154,17 +154,17 @@ get '/usernews/:username/:start' do
 
     H.set_title "#{page_title} - #{SiteName}"
     paginate = {
-        :get => Proc.new {|start,count|
+        get: Proc.new {|start,count|
             get_posted_news(user['id'],start,count)
         },
-        :render => Proc.new {|item| news_to_html(item)},
-        :start => start,
-        :perpage => SavedNewsPerPage,
-        :link => "/usernews/#{URI.encode(user['username'])}/$"
+        render: Proc.new {|item| news_to_html(item)},
+        start: start,
+        perpage: SavedNewsPerPage,
+        link: "/usernews/#{URI.encode(user['username'])}/$"
     }
     H.page {
         H.h2 {page_title}+
-        H.section(:id => "newslist") {
+        H.section(id: "newslist") {
             list_items(paginate)
         }
     }
@@ -177,16 +177,16 @@ get '/usercomments/:username/:start' do
 
     H.set_title "#{user['username']} comments - #{SiteName}"
     paginate = {
-        :get => Proc.new {|start,count|
+        get: Proc.new {|start,count|
             get_user_comments(user['id'],start,count)
         },
-        :render => Proc.new {|comment|
+        render: Proc.new {|comment|
             u = get_user_by_id(comment["user_id"]) || DeletedUser
             comment_to_html(comment,u)
         },
-        :start => start,
-        :perpage => UserCommentsPerPage,
-        :link => "/usercomments/#{URI.encode(user['username'])}/$"
+        start: start,
+        perpage: UserCommentsPerPage,
+        link: "/usercomments/#{URI.encode(user['username'])}/$"
     }
     H.page {
         H.h2 {"#{H.entities user['username']} comments"}+
@@ -216,19 +216,19 @@ end
 get '/login' do
     H.set_title "Login - #{SiteName}"
     H.page {
-        H.div(:id => "login") {
-            H.form(:name=>"f") {
-                H.label(:for => "username") {"username"}+
-                H.inputtext(:id => "username", :name => "username")+
-                H.label(:for => "password") {"password"}+
-                H.inputpass(:id => "password", :name => "password")+H.br+
-                H.checkbox(:name => "register", :value => "1")+
+        H.div(id: "login") {
+            H.form(name: "f") {
+                H.label(for: "username") {"username"}+
+                H.inputtext(id: "username", name: "username")+
+                H.label(for: "password") {"password"}+
+                H.inputpass(id: "password", name: "password")+H.br+
+                H.checkbox(name: "register", value: "1")+
                 "create account"+H.br+
-                H.submit(:name => "do_login", :value => "Login")
+                H.submit(name: "do_login", value: "Login")
             }
         }+
-        H.div(:id => "errormsg"){}+
-        H.a(:href=>"/reset-password") {"reset password"}+
+        H.div(id: "errormsg"){}+
+        H.a(href: "/reset-password") {"reset password"}+
         H.script() {'
             $(function() {
                 $("form[name=f]").submit(login);
@@ -244,16 +244,16 @@ get '/reset-password' do
             "Welcome to the password reset procedure. Please specify the username and the email address you used to register to the site. "+H.br+
             H.b {"Note that if you did not specify an email it is impossible for you to recover your password."}
         }+
-        H.div(:id => "login") {
-            H.form(:name=>"f") {
-                H.label(:for => "username") {"username"}+
-                H.inputtext(:id => "username", :name => "username")+
-                H.label(:for => "password") {"email"}+
-                H.inputtext(:id => "email", :name => "email")+H.br+
-                H.submit(:name => "do_reset", :value => "Reset password")
+        H.div(id: "login") {
+            H.form(name: "f") {
+                H.label(for: "username") {"username"}+
+                H.inputtext(id: "username", name: "username")+
+                H.label(for: "password") {"email"}+
+                H.inputtext(id: "email", name: "email")+H.br+
+                H.submit(name: "do_reset", value: "Reset password")
             }
         }+
-        H.div(:id => "errormsg"){}+
+        H.div(id: "errormsg"){}+
         H.script() {'
             $(function() {
                 $("form[name=f]").submit(reset_password);
@@ -310,25 +310,25 @@ get '/submit' do
     H.set_title "Submit a new story - #{SiteName}"
     H.page {
         H.h2 {"Submit a new story"}+
-        H.div(:id => "submitform") {
-            H.form(:name=>"f") {
-                H.inputhidden(:name => "news_id", :value => -1)+
-                H.label(:for => "title") {"title"}+
-                H.inputtext(:id => "title", :name => "title", :size => 80, :value => (params[:t] ? H.entities(params[:t]) : ""))+H.br+
-                H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:id => "url", :name => "url", :size => 60, :value => (params[:u] ? H.entities(params[:u]) : ""))+H.br+
+        H.div(id: "submitform") {
+            H.form(name: "f") {
+                H.inputhidden(name: "news_id", value: -1)+
+                H.label(for: "title") {"title"}+
+                H.inputtext(id: "title", name: "title", size: 80, value: (params[:t] ? H.entities(params[:t]) : ""))+H.br+
+                H.label(for: "url") {"url"}+H.br+
+                H.inputtext(id: "url", name: "url", size: 60, value: (params[:u] ? H.entities(params[:u]) : ""))+H.br+
                 "or if you don't have an url type some text"+
                 H.br+
-                H.label(:for => "text") {"text"}+
-                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {}+
-                H.button(:name => "do_submit", :value => "Submit")
+                H.label(for: "text") {"text"}+
+                H.textarea(id: "text", name: "text", cols: 60, rows: 10) {}+
+                H.button(name: "do_submit", value: "Submit")
             }
         }+
-        H.div(:id => "errormsg"){}+
+        H.div(id: "errormsg"){}+
         H.p {
             bl = "javascript:window.location=%22#{SiteUrl}/submit?u=%22+encodeURIComponent(document.location)+%22&t=%22+encodeURIComponent(document.title)"
             "Submitting news is simpler using the "+
-            H.a(:href => bl) {
+            H.a(href: bl) {
                 "bookmarklet"
             }+
             " (drag the link to your browser toolbar)"
@@ -367,17 +367,17 @@ get "/news/:news_id" do
     end
     H.set_title "#{news["title"]} - #{SiteName}"
     H.page {
-        H.section(:id => "newslist") {
+        H.section(id: "newslist") {
             news_to_html(news)
         }+top_comment+
         if $user and !news["del"]
-            H.form(:name=>"f") {
-                H.inputhidden(:name => "news_id", :value => news["id"])+
-                H.inputhidden(:name => "comment_id", :value => -1)+
-                H.inputhidden(:name => "parent_id", :value => -1)+
-                H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
-                H.button(:name => "post_comment", :value => "Send comment")
-            }+H.div(:id => "errormsg"){}
+            H.form(name: "f") {
+                H.inputhidden(name: "news_id", value: news["id"])+
+                H.inputhidden(name: "comment_id", value: -1)+
+                H.inputhidden(name: "parent_id", value: -1)+
+                H.textarea(name: "comment", cols: 60, rows: 10) {}+H.br+
+                H.button(name: "post_comment", value: "Send comment")
+            }+H.div(id: "errormsg"){}
         else
             H.br
         end +
@@ -397,7 +397,7 @@ get "/comment/:news_id/:comment_id" do
     halt(404,"404 - This comment does not exist.") if !comment
     H.set_title "#{news["title"]} - #{SiteName}"    
     H.page {
-        H.section(:id => "newslist") {
+        H.section(id: "newslist") {
             news_to_html(news)
         }+
         render_comment_subthread(comment, H.h2 {"Replies"})
@@ -405,10 +405,10 @@ get "/comment/:news_id/:comment_id" do
 end
 
 def render_comment_subthread(comment,sep="")
-    H.div(:class => "singlecomment") {
+    H.div(class: "singlecomment") {
         u = get_user_by_id(comment["user_id"]) || DeletedUser
         comment_to_html(comment,u,true)
-    }+H.div(:class => "commentreplies") {
+    }+H.div(class: "commentreplies") {
         sep+
         render_comments_for_news(comment['thread_id'],comment["id"].to_i)
     }
@@ -426,13 +426,13 @@ get "/reply/:news_id/:comment_id" do
     H.page {
         news_to_html(news)+
         comment_to_html(comment,user)+
-        H.form(:name=>"f") {
-            H.inputhidden(:name => "news_id", :value => news["id"])+
-            H.inputhidden(:name => "comment_id", :value => -1)+
-            H.inputhidden(:name => "parent_id", :value => params["comment_id"])+
-            H.textarea(:name => "comment", :cols => 60, :rows => 10) {}+H.br+
-            H.button(:name => "post_comment", :value => "Reply")
-        }+H.div(:id => "errormsg"){}+
+        H.form(name: "f") {
+            H.inputhidden(name: "news_id", value: news["id"])+
+            H.inputhidden(name: "comment_id", value: -1)+
+            H.inputhidden(name: "parent_id", value: params["comment_id"])+
+            H.textarea(name: "comment", cols: 60, rows: 10) {}+H.br+
+            H.button(name: "post_comment", value: "Reply")
+        }+H.div(id: "errormsg"){}+
         H.script() {'
             $(function() {
                 $("input[name=post_comment]").click(post_comment);
@@ -454,15 +454,15 @@ get "/editcomment/:news_id/:comment_id" do
     H.page {
         news_to_html(news)+
         comment_to_html(comment,user)+
-        H.form(:name=>"f") {
-            H.inputhidden(:name => "news_id", :value => news["id"])+
-            H.inputhidden(:name => "comment_id",:value => params["comment_id"])+
-            H.inputhidden(:name => "parent_id", :value => -1)+
-            H.textarea(:name => "comment", :cols => 60, :rows => 10) {
+        H.form(name: "f") {
+            H.inputhidden(name: "news_id", value: news["id"])+
+            H.inputhidden(name: "comment_id",value: params["comment_id"])+
+            H.inputhidden(name: "parent_id", value: -1)+
+            H.textarea(name: "comment", cols: 60, rows: 10) {
                 H.entities comment['body']
             }+H.br+
-            H.button(:name => "post_comment", :value => "Edit")
-        }+H.div(:id => "errormsg"){}+
+            H.button(name: "post_comment", value: "Edit")
+        }+H.div(id: "errormsg"){}+
         H.note {
             "Note: to remove the comment, remove all the text and press Edit."
         }+
@@ -489,27 +489,27 @@ get "/editnews/:news_id" do
     H.set_title "Edit news - #{SiteName}"
     H.page {
         news_to_html(news)+
-        H.div(:id => "submitform") {
-            H.form(:name=>"f") {
-                H.inputhidden(:name => "news_id", :value => news['id'])+
-                H.label(:for => "title") {"title"}+
-                H.inputtext(:id => "title", :name => "title", :size => 80,
-                            :value => news['title'])+H.br+
-                H.label(:for => "url") {"url"}+H.br+
-                H.inputtext(:id => "url", :name => "url", :size => 60,
-                            :value => H.entities(news['url']))+H.br+
+        H.div(id: "submitform") {
+            H.form(name: "f") {
+                H.inputhidden(name: "news_id", value: news['id'])+
+                H.label(for: "title") {"title"}+
+                H.inputtext(id: "title", name: "title", size: 80,
+                            value: news['title'])+H.br+
+                H.label(for: "url") {"url"}+H.br+
+                H.inputtext(id: "url", name: "url", size: 60,
+                            value: H.entities(news['url']))+H.br+
                 "or if you don't have an url type some text"+
                 H.br+
-                H.label(:for => "text") {"text"}+
-                H.textarea(:id => "text", :name => "text", :cols => 60, :rows => 10) {
+                H.label(for: "text") {"text"}+
+                H.textarea(id: "text", name: "text", cols: 60, rows: 10) {
                     H.entities(text)
                 }+H.br+
-                H.checkbox(:name => "del", :value => "1")+
+                H.checkbox(name: "del", value: "1")+
                 "delete this news"+H.br+
-                H.button(:name => "edit_news", :value => "Edit")
+                H.button(name: "edit_news", value: "Edit")
             }
         }+
-        H.div(:id => "errormsg"){}+
+        H.div(id: "errormsg"){}+
         H.script() {'
             $(function() {
                 $("input[name=edit_news]").click(submit);
@@ -528,11 +528,11 @@ get "/user/:username" do
     H.set_title "#{user['username']} - #{SiteName}"
     owner = $user && ($user['id'].to_i == user['id'].to_i)
     H.page {
-        H.div(:class => "userinfo") {
-            H.span(:class => "avatar") {
+        H.div(class: "userinfo") {
+            H.span(class: "avatar") {
                 email = user["email"] || ""
                 digest = Digest::MD5.hexdigest(email)
-                H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
+                H.img(src: "http://gravatar.com/avatar/#{digest}?s=48&d=mm")
             }+" "+
             H.h2 {H.entities user['username']}+
             H.pre {
@@ -547,39 +547,39 @@ get "/user/:username" do
                 H.li {H.b {"posted news "}+posted_news.to_s}+
                 H.li {H.b {"posted comments "}+posted_comments.to_s}+
                 if owner
-                    H.li {H.a(:href=>"/saved/0") {"saved news"}}
+                    H.li {H.a(href: "/saved/0") {"saved news"}}
                 else "" end+
                 H.li {
-                    H.a(:href=>"/usercomments/"+URI.encode(user['username'])+
+                    H.a(href: "/usercomments/"+URI.encode(user['username'])+
                                "/0") {
                         "user comments"
                     }
                 }+
                 H.li {
-                    H.a(:href=>"/usernews/"+URI.encode(user['username'])+
+                    H.a(href: "/usernews/"+URI.encode(user['username'])+
                                "/0") {
                         "user news"
                     }
                 }
             }
         }+if owner
-            H.br+H.form(:name=>"f") {
-                H.label(:for => "email") {
+            H.br+H.form(name: "f") {
+                H.label(for: "email") {
                     "email (not visible, used for gravatar)"
                 }+H.br+
-                H.inputtext(:id => "email", :name => "email", :size => 40,
-                            :value => H.entities(user['email']))+H.br+
-                H.label(:for => "password") {
+                H.inputtext(id: "email", name: "email", size: 40,
+                            value: H.entities(user['email']))+H.br+
+                H.label(for: "password") {
                     "change password (optional)"
                 }+H.br+
-                H.inputpass(:name => "password", :size => 40)+H.br+
-                H.label(:for => "about") {"about"}+H.br+
-                H.textarea(:id => "about", :name => "about", :cols => 60, :rows => 10){
+                H.inputpass(name: "password", size: 40)+H.br+
+                H.label(for: "about") {"about"}+H.br+
+                H.textarea(id: "about", name: "about", cols: 60, rows: 10){
                     H.entities(user['about'])
                 }+H.br+
-                H.button(:name => "update_profile", :value => "Update profile")
+                H.button(name: "update_profile", value: "Update profile")
             }+
-            H.div(:id => "errormsg"){}+
+            H.div(id: "errormsg"){}+
             H.script() {'
                 $(function() {
                     $("input[name=update_profile]").click(update_profile);
@@ -612,19 +612,19 @@ get '/admin' do
     redirect "/" if !$user || !user_is_admin?($user)
     H.set_title "Admin Section - #{SiteName}"
     H.page {
-        H.div(:id => "adminlinks") {
+        H.div(id: "adminlinks") {
             H.h2 {"Admin"}+
             H.h3 {"Site stats"}+
             generate_site_stats+
             H.h3 {"Developer tools"}+
             H.ul {
                 H.li {
-                    H.a(:href=>"/recompute") {
+                    H.a(href: "/recompute") {
                         "Recompute news score and rank (may be slow!)"
                     }
                 }+
                 H.li {
-                    H.a(:href=>"/?debug=1") {
+                    H.a(href: "/?debug=1") {
                         "Show annotated home page"
                     }
                 }
@@ -652,11 +652,11 @@ post '/api/logout' do
     content_type 'application/json'
     if $user and check_api_secret
         update_auth_token($user)
-        return {:status => "ok"}.to_json
+        return {status: "ok"}.to_json
     else
         return {
-            :status => "err",
-            :error => "Wrong auth credentials or API secret."
+            status: "err",
+            error: "Wrong auth credentials or API secret."
         }.to_json
     end
 end
@@ -665,22 +665,22 @@ get '/api/login' do
     content_type 'application/json'
     if (!check_params "username","password")
         return {
-            :status => "err",
-            :error => "Username and password are two required fields."
+            status: "err",
+            error: "Username and password are two required fields."
         }.to_json
     end
     auth,apisecret = check_user_credentials(params[:username],
                                             params[:password])
     if auth 
         return {
-            :status => "ok",
-            :auth => auth,
-            :apisecret => apisecret
+            status: "ok",
+            auth: auth,
+            apisecret: apisecret
         }.to_json
     else
         return {
-            :status => "err",
-            :error => "No match for the specified username / password pair."
+            status: "err",
+            error: "No match for the specified username / password pair."
         }.to_json
     end
 end
@@ -689,8 +689,8 @@ get '/api/reset-password' do
     content_type 'application/json'
     if (!check_params "username","email")
         return {
-            :status => "err",
-            :error => "Username and email are two required fields."
+            status: "err",
+            error: "Username and email are two required fields."
         }.to_json
     end
 
@@ -701,8 +701,8 @@ get '/api/reset-password' do
         if (user['pwd_reset'] &&
             (Time.now.to_i - user['pwd_reset'].to_i) < PasswordResetDelay)
             return {
-                :status => "err",
-                :error => "Sorry, not enough time elapsed since last password reset request."
+                status: "err",
+                error: "Sorry, not enough time elapsed since last password reset request."
             }.to_json
         end
 
@@ -711,17 +711,17 @@ get '/api/reset-password' do
             # for rate limiting purposes, and send the email with the reset
             # link.
             $r.hset("user:#{id}","pwd_reset",Time.now.to_i)
-            return {:status => "ok"}.to_json
+            return {status: "ok"}.to_json
         else
             return {
-                :status => "err",
-                :error => "Problem sending the email, please contact the site admin."
+                status: "err",
+                error: "Problem sending the email, please contact the site admin."
             }.to_json
         end
     else
         return {
-            :status => "err",
-            :error => "No match for the specified username / email pair."
+            status: "err",
+            error: "No match for the specified username / email pair."
         }.to_json
     end
 end
@@ -730,38 +730,38 @@ post '/api/create_account' do
     content_type 'application/json'
     if (!check_params "username","password")
         return {
-            :status => "err",
-            :error => "Username and password are two required fields."
+            status: "err",
+            error: "Username and password are two required fields."
         }.to_json
     end
     if !params[:username].match(UsernameRegexp)
         return {
-            :status => "err",
-            :error => "Username must match /#{UsernameRegexp.source}/"
+            status: "err",
+            error: "Username must match /#{UsernameRegexp.source}/"
         }.to_json
     end
     if params[:password].length < PasswordMinLength
         return {
-            :status => "err",
-            :error => "Password is too short. Min length: #{PasswordMinLength}"
+            status: "err",
+            error: "Password is too short. Min length: #{PasswordMinLength}"
         }.to_json
     end
     auth,errmsg = create_user(params[:username],params[:password])
     if auth 
-        return {:status => "ok", :auth => auth}.to_json
+        return {status: "ok", auth: auth}.to_json
     else
         return {
-            :status => "err",
-            :error => errmsg
+            status: "err",
+            error: errmsg
         }.to_json
     end
 end
 
 post '/api/submit' do
     content_type 'application/json'
-    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    return {status: "err", error: "Not authenticated."}.to_json if !$user
     if not check_api_secret
-        return {:status => "err", :error => "Wrong form secret."}.to_json
+        return {status: "err", error: "Wrong form secret."}.to_json
     end
 
     # We can have an empty url or an empty first comment, but not both.
@@ -769,8 +769,8 @@ post '/api/submit' do
                                (params[:url].length == 0 and
                                 params[:text].length == 0)
         return {
-            :status => "err",
-            :error => "Please specify a news title and address or text."
+            status: "err",
+            error: "Please specify a news title and address or text."
         }.to_json
     end
     # Make sure the URL is about an acceptable protocol, that is
@@ -779,16 +779,16 @@ post '/api/submit' do
         if params[:url].index("http://") != 0 and
            params[:url].index("https://") != 0
             return {
-                :status => "err",
-                :error => "We only accept http:// and https:// news."
+                status: "err",
+                error: "We only accept http:// and https:// news."
             }.to_json
         end
     end
     if params[:news_id].to_i == -1
         if submitted_recently
             return {
-                :status => "err",
-                :error => "You have submitted a story too recently, "+
+                status: "err",
+                error: "You have submitted a story too recently, "+
                 "please wait #{allowed_to_post_in_seconds} seconds."
             }.to_json
         end
@@ -799,72 +799,72 @@ post '/api/submit' do
                             params[:text],$user["id"])
         if !news_id
             return {
-                :status => "err",
-                :error => "Invalid parameters, news too old to be modified "+
+                status: "err",
+                error: "Invalid parameters, news too old to be modified "+
                           "or url recently posted."
             }.to_json
         end
     end
     return  {
-        :status => "ok",
-        :news_id => news_id.to_i
+        status: "ok",
+        news_id: news_id.to_i
     }.to_json
 end
 
 post '/api/delnews' do
     content_type 'application/json'
-    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    return {status: "err", error: "Not authenticated."}.to_json if !$user
     if not check_api_secret
-        return {:status => "err", :error => "Wrong form secret."}.to_json
+        return {status: "err", error: "Wrong form secret."}.to_json
     end
     if (!check_params "news_id")
         return {
-            :status => "err",
-            :error => "Please specify a news title."
+            status: "err",
+            error: "Please specify a news title."
         }.to_json
     end
     if del_news(params[:news_id],$user["id"])
-        return {:status => "ok", :news_id => -1}.to_json
+        return {status: "ok", news_id: -1}.to_json
     end
-    return {:status => "err", :error => "News too old or wrong ID/owner."}.to_json
+    return {status: "err", error: "News too old or wrong ID/owner."}.to_json
 end
 
 post '/api/votenews' do
     content_type 'application/json'
-    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    return {status: "err", error: "Not authenticated."}.to_json if !$user
     if not check_api_secret
-        return {:status => "err", :error => "Wrong form secret."}.to_json
+        return {status: "err", error: "Wrong form secret."}.to_json
     end
     # Params sanity check
     if (!check_params "news_id","vote_type") or (params["vote_type"] != "up" and
                                                  params["vote_type"] != "down")
         return {
-            :status => "err",
-            :error => "Missing news ID or invalid vote type."
+            status: "err",
+            error: "Missing news ID or invalid vote type."
         }.to_json
     end
     # Vote the news
     vote_type = params["vote_type"].to_sym
     karma,error = vote_news(params["news_id"].to_i,$user["id"],vote_type)
     if karma
-        return { :status => "ok" }.to_json
+        return { status: "ok" }.to_json
     else
-        return { :status => "err", 
-                 :error => error }.to_json
+        return { status: "err", 
+                 error: error }.to_json
     end
 end
 
 post '/api/postcomment' do
     content_type 'application/json'
-    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    return {status: "err", error: "Not authenticated."}.to_json if !$user
     if not check_api_secret
-        return {:status => "err", :error => "Wrong form secret."}.to_json
+        return {status: "err", error: "Wrong form secret."}.to_json
     end
     # Params sanity check
     if (!check_params "news_id","comment_id","parent_id",:comment)
         return {
-            :status => "err",
-            :error => "Missing news_id, comment_id, parent_id, or comment
+            status: "err",
+            error: "Missing news_id, comment_id, parent_id, or comment
                        parameter."
         }.to_json
     end
@@ -872,32 +872,32 @@ post '/api/postcomment' do
                           params["comment_id"].to_i,
                           params["parent_id"].to_i,params["comment"])
     return {
-        :status => "err",
-        :error => "Invalid news, comment, or edit time expired."
+        status: "err",
+        error: "Invalid news, comment, or edit time expired."
     }.to_json if !info
     return {
-        :status => "ok",
-        :op => info['op'],
-        :comment_id => info['comment_id'],
-        :parent_id => params['parent_id'],
-        :news_id => params['news_id']
+        status: "ok",
+        op: info['op'],
+        comment_id: info['comment_id'],
+        parent_id: params['parent_id'],
+        news_id: params['news_id']
     }.to_json
 end
 
 post '/api/updateprofile' do
     content_type 'application/json'
-    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    return {status: "err", error: "Not authenticated."}.to_json if !$user
     if not check_api_secret
-        return {:status => "err", :error => "Wrong form secret."}.to_json
+        return {status: "err", error: "Wrong form secret."}.to_json
     end
     if !check_params(:about, :email, :password)
-        return {:status => "err", :error => "Missing parameters."}.to_json
+        return {status: "err", error: "Missing parameters."}.to_json
     end
     if params[:password].length > 0
         if params[:password].length < PasswordMinLength
             return {
-                :status => "err",
-                :error => "Password is too short. "+
+                status: "err",
+                error: "Password is too short. "+
                           "Min length: #{PasswordMinLength}"
             }.to_json
         end
@@ -907,32 +907,32 @@ post '/api/updateprofile' do
     $r.hmset("user:#{$user['id']}",
         "about", params[:about][0..4095],
         "email", params[:email][0..255])
-    return {:status => "ok"}.to_json
+    return {status: "ok"}.to_json
 end
 
 post '/api/votecomment' do
     content_type 'application/json'
-    return {:status => "err", :error => "Not authenticated."}.to_json if !$user
+    return {status: "err", error: "Not authenticated."}.to_json if !$user
     if not check_api_secret
-        return {:status => "err", :error => "Wrong form secret."}.to_json
+        return {status: "err", error: "Wrong form secret."}.to_json
     end
     # Params sanity check
     if (!check_params "comment_id","vote_type") or
                                             (params["vote_type"] != "up" and
                                              params["vote_type"] != "down")
         return {
-            :status => "err",
-            :error => "Missing comment ID or invalid vote type."
+            status: "err",
+            error: "Missing comment ID or invalid vote type."
         }.to_json
     end
     # Vote the news
     vote_type = params["vote_type"].to_sym
     news_id,comment_id = params["comment_id"].split("-")
     if vote_comment(news_id.to_i,comment_id.to_i,$user["id"],vote_type)
-        return { :status => "ok", :comment_id => params["comment_id"] }.to_json
+        return { status: "ok", comment_id: params["comment_id"] }.to_json
     else
-        return { :status => "err", 
-                 :error => "Invalid parameters or duplicated vote." }.to_json
+        return { status: "err", 
+                 error: "Invalid parameters or duplicated vote." }.to_json
     end
 end
 
@@ -942,9 +942,9 @@ get  '/api/getnews/:sort/:start/:count' do
     start = params[:start].to_i
     count = params[:count].to_i
     if not [:latest,:top].index(sort)
-        return {:status => "err", :error => "Invalid sort parameter"}.to_json
+        return {status: "err", error: "Invalid sort parameter"}.to_json
     end
-    return {:status => "err", :error => "Count is too big"}.to_json if count > APIMaxNewsCount
+    return {status: "err", error: "Count is too big"}.to_json if count > APIMaxNewsCount
 
     start = 0 if start < 0
     getfunc = method((sort == :latest) ? :get_latest_news : :get_top_news)
@@ -952,14 +952,14 @@ get  '/api/getnews/:sort/:start/:count' do
     news.each{|n|
         ['rank','score','user_id'].each{|field| n.delete(field)}
     }
-    return { :status => "ok", :news => news, :count => numitems }.to_json
+    return { status: "ok", news: news, count: numitems }.to_json
 end
 
 get  '/api/getcomments/:news_id' do
     content_type 'application/json'
     return {
-        :status => "err",
-        :error => "Wrong news ID."
+        status: "err",
+        error: "Wrong news ID."
     }.to_json if not get_news_by_id(params[:news_id])
     thread = Comments.fetch_thread(params[:news_id])
     top_comments = []
@@ -984,7 +984,7 @@ get  '/api/getcomments/:news_id' do
             }
         }
     }
-    return { :status => "ok", :comments => top_comments }.to_json
+    return { status: "ok", comments: top_comments }.to_json
 end
 
 # Check that the list of parameters specified exist.
@@ -1019,7 +1019,7 @@ end
 def navbar_replies_link
     return "" if !$user
     count = $user['replies'] || 0
-    H.a(:href => "/replies", :class => "replies") {
+    H.a(href: "/replies", class: "replies") {
         "replies"+
         if count.to_i > 0
             H.sup {count}
@@ -1030,7 +1030,7 @@ end
 def navbar_admin_link
     return "" if !$user || !user_is_admin?($user)
     H.b {
-        H.a(:href => "/admin") {"admin"}
+        H.a(href: "/admin") {"admin"}
     }
 end
 
@@ -1041,26 +1041,26 @@ def application_header
                     ["submit","/submit"]]
     navbar = H.nav {
         navitems.map{|ni|
-            H.a(:href=>ni[1]) {H.entities ni[0]}
+            H.a(href: ni[1]) {H.entities ni[0]}
         }.inject{|a,b| a+"\n"+b}+navbar_replies_link+navbar_admin_link
     }
-    rnavbar = H.nav(:id => "account") {
+    rnavbar = H.nav(id: "account") {
         if $user
-            H.a(:href => "/user/"+URI.encode($user['username'])) {
+            H.a(href: "/user/"+URI.encode($user['username'])) {
                 H.entities $user['username']+" (#{$user['karma']})"
             }+" | "+
-            H.a(:href =>
+            H.a(href: 
                 "/logout?apisecret=#{$user['apisecret']}") {
                 "logout"
             }
         else
-            H.a(:href => "/login") {"login / register"}
+            H.a(href: "/login") {"login / register"}
         end
     }
-    menu_mobile = H.a(:href => "#", :id => "link-menu-mobile"){"<~>"}
+    menu_mobile = H.a(href: "#", id: "link-menu-mobile"){"<~>"}
     H.header {
         H.h1 {
-            H.a(:href => "/") {H.entities SiteName}+" "+
+            H.a(href: "/") {H.entities SiteName}+" "+
             H.small {Version}
         }+navbar+" "+rnavbar+" "+menu_mobile
     }
@@ -1078,27 +1078,27 @@ def application_footer
         keyboardnavigation = H.script() {
             "setKeyboardNavigation();"
         } + " " +
-        H.div(:id => "keyboard-help", :style => "display: none;") {
-            H.div(:class => "keyboard-help-banner banner-background banner") {
+        H.div(id: "keyboard-help", style: "display: none;") {
+            H.div(class: "keyboard-help-banner banner-background banner") {
             } + " " +
-            H.div(:class => "keyboard-help-banner banner-foreground banner") {
-                H.div(:class => "primary-message") {
+            H.div(class: "keyboard-help-banner banner-foreground banner") {
+                H.div(class: "primary-message") {
                     "Keyboard shortcuts"
                 } + " " +
-                H.div(:class => "secondary-message") {
-                    H.div(:class => "key") {
+                H.div(class: "secondary-message") {
+                    H.div(class: "key") {
                         "j/k:"
-                    } + H.div(:class => "desc") {
+                    } + H.div(class: "desc") {
                         "next/previous item"
                     } + " " +
-                    H.div(:class => "key") {
+                    H.div(class: "key") {
                         "enter:"
-                    } + H.div(:class => "desc") {
+                    } + H.div(class: "desc") {
                         "open link"
                     } + " " +
-                    H.div(:class => "key") {
+                    H.div(class: "key") {
                         "a/z:"
-                    } + H.div(:class => "desc") {
+                    } + H.div(class: "desc") {
                         "up/down vote item"
                     }
                 }
@@ -1116,7 +1116,7 @@ def application_footer
             ["google group", FooterGoogleGroupLink]
         ]
         links.map{|l| l[1] ?
-            H.a(:href => l[1]) {H.entities l[0]} :
+            H.a(href: l[1]) {H.entities l[0]} :
             nil
         }.select{|l| l}.join(" | ")
     }+apisecret+keyboardnavigation
@@ -1472,8 +1472,8 @@ end
 # Given the news compute its score.
 # No side effects.
 def compute_news_score(news)
-    upvotes = $r.zrange("news.up:#{news["id"]}",0,-1,:withscores => true)
-    downvotes = $r.zrange("news.down:#{news["id"]}",0,-1,:withscores => true)
+    upvotes = $r.zrange("news.up:#{news["id"]}",0,-1,withscores: true)
+    downvotes = $r.zrange("news.down:#{news["id"]}",0,-1,withscores: true)
     # FIXME: For now we are doing a naive sum of votes, without time-based
     # filtering, nor IP filtering.
     # We could use just ZCARD here of course, but I'm using ZRANGE already
@@ -1630,7 +1630,7 @@ def news_to_rss(news)
         } + " " +
         H.description {
             "<![CDATA[" +
-            H.a(:href=>news["ln_url"]) {
+            H.a(href: news["ln_url"]) {
                 "Comments"
             } + "]]>"
         } + " " +
@@ -1646,7 +1646,7 @@ end
 # This function expects as input a news entry as obtained from
 # the get_news_by_id function.
 def news_to_html(news)
-    return H.article(:class => "deleted") {
+    return H.article(class: "deleted") {
         "[deleted news]"
     } if news["del"]
     domain = news_domain(news)
@@ -1662,11 +1662,11 @@ def news_to_html(news)
         upclass << " disabled"
     end
     H.article("data-news-id" => news["id"]) {
-        H.a(:href => "#up", :class => upclass) {
+        H.a(href: "#up", class: upclass) {
             "&#9650;"
         }+" "+
         H.h2 {
-            H.a(:href=>news["url"], :rel => "nofollow") {
+            H.a(href: news["url"], rel: "nofollow") {
                 H.entities news["title"]
             }
         }+" "+
@@ -1676,23 +1676,23 @@ def news_to_html(news)
             else "" end +
             if ($user and $user['id'].to_i == news['user_id'].to_i and
                 news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
-                " " + H.a(:href => "/editnews/#{news["id"]}") {
+                " " + H.a(href: "/editnews/#{news["id"]}") {
                     "[edit]"
                 }
             else "" end
         }+
-        H.a(:href => "#down", :class =>  downclass) {
+        H.a(href: "#down", class: downclass) {
             "&#9660;"
         }+
         H.p {
-            H.span(:class => :upvotes) { news["up"] } + " up and " +
-            H.span(:class => :downvotes) { news["down"] } + " down, posted by " +            
+            H.span(class: :upvotes) { news["up"] } + " up and " +
+            H.span(class: :downvotes) { news["down"] } + " down, posted by " +            
             H.username {
-                H.a(:href=>"/user/"+URI.encode(news["username"])) {
+                H.a(href: "/user/"+URI.encode(news["username"])) {
                     H.entities news["username"]
                 }
             }+" "+str_elapsed(news["ctime"].to_i)+" "+
-            H.a(:href => "/news/#{news["id"]}") {
+            H.a(href: "/news/#{news["id"]}") {
                 comments_number = news["comments"].to_i
                 if comments_number != 0
                     "#{news["comments"] + ' comment'}" + "#{'s' if comments_number>1}"
@@ -1701,7 +1701,7 @@ def news_to_html(news)
                 end
             }+
             if $user and user_is_admin?($user)
-                " - "+H.a(:href => "/editnews/#{news["id"]}") { "edit" }+" - "+H.a(:href => "http://twitter.com/intent/tweet?url=#{SiteUrl}/news/#{news["id"]}&text="+H.urlencode(news["title"])+" - ") { "tweet" }
+                " - "+H.a(href: "/editnews/#{news["id"]}") { "edit" }+" - "+H.a(href: "http://twitter.com/intent/tweet?url=#{SiteUrl}/news/#{news["id"]}&text="+H.urlencode(news["title"])+" - ") { "tweet" }
             else "" end
         }+
         if params and params[:debug] and $user and user_is_admin?($user)
@@ -1728,7 +1728,7 @@ end
 # the Redis hash representing the news in the DB) this function will render
 # the HTML needed to show this news.
 def news_list_to_html(news)
-    H.section(:id => "newslist") {
+    H.section(id: "newslist") {
         aux = ""
         news.each{|n|
             aux << news_to_html(n)
@@ -1768,7 +1768,7 @@ end
 def get_top_news(start=0,count=TopNewsPerPage)
     numitems = $r.zcard("news.top")
     news_ids = $r.zrevrange("news.top",start,start+(count-1))
-    result = get_news_by_id(news_ids,:update_rank => true)
+    result = get_news_by_id(news_ids,update_rank: true)
     # Sort by rank before returning, since we adjusted ranks during iteration.
     return result.sort{|a,b| b["rank"].to_f <=> a["rank"].to_f},numitems
 end
@@ -1777,7 +1777,7 @@ end
 def get_latest_news(start=0,count=LatestNewsPerPage)
     numitems = $r.zcard("news.cron")
     news_ids = $r.zrevrange("news.cron",start,start+(count-1))
-    return get_news_by_id(news_ids,:update_rank => true),numitems
+    return get_news_by_id(news_ids,update_rank: true),numitems
 end
 
 # Get saved news of current user
@@ -1913,7 +1913,7 @@ def comment_to_html(c,u,show_parent = false)
     news_id = c['thread_id']
 
     if c['del'] and c['del'].to_i == 1
-        return H.article(:style => indent,:class=>"commented deleted") {
+        return H.article(style: indent,class: "commented deleted") {
             "[comment deleted]"
         }
     end
@@ -1922,30 +1922,30 @@ def comment_to_html(c,u,show_parent = false)
                 (c['ctime'].to_i > (Time.now.to_i - CommentEditTime))
 
     comment_id = "#{news_id}-#{c['id']}"
-    H.article(:class => "comment", :style => indent,
-              "data-comment-id" => comment_id, :id => comment_id) {
-        H.span(:class => "avatar") {
+    H.article(class: "comment", style: indent,
+              "data-comment-id" => comment_id, id: comment_id) {
+        H.span(class: "avatar") {
             email = u["email"] || ""
             digest = Digest::MD5.hexdigest(email)
-            H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
-        }+H.span(:class => "info") {
-            H.span(:class => "username") {
-                H.a(:href=>"/user/"+URI.encode(u["username"])) {
+            H.img(src: "http://gravatar.com/avatar/#{digest}?s=48&d=mm")
+        }+H.span(class: "info") {
+            H.span(class: "username") {
+                H.a(href: "/user/"+URI.encode(u["username"])) {
                     H.entities u["username"]
                 }
             }+" "+str_elapsed(c["ctime"].to_i)+". "+
             if !c['topcomment']
-                H.a(:href=>"/comment/#{news_id}/#{c["id"]}", :class=>"reply") {
+                H.a(href: "/comment/#{news_id}/#{c["id"]}", class: "reply") {
                     "link"
                 }+" "
             else "" end +
             if show_parent && c["parent_id"] > -1
-                H.a(:href=>"/comment/#{news_id}/#{c["parent_id"]}", :class=>"reply") {
+                H.a(href: "/comment/#{news_id}/#{c["parent_id"]}", class: "reply") {
                     "parent"
                 }+" "
             else "" end +
             if $user and !c['topcomment']
-                H.a(:href=>"/reply/#{news_id}/#{c["id"]}", :class=>"reply") {
+                H.a(href: "/reply/#{news_id}/#{c["id"]}", class: "reply") {
                     "reply"
                 }+" "
             else " " end +
@@ -1960,16 +1960,16 @@ def comment_to_html(c,u,show_parent = false)
                     upclass << " disabled"
                 end
                 "#{score} point"+"#{'s' if score.to_i.abs>1}"+" "+
-                H.a(:href => "#up", :class => upclass) {
+                H.a(href: "#up", class: upclass) {
                     "&#9650;"
                 }+" "+
-                H.a(:href => "#down", :class => downclass) {
+                H.a(href: "#down", class: downclass) {
                     "&#9660;"
                 }
             else " " end +
             if show_edit_link
-                H.a(:href=> "/editcomment/#{news_id}/#{c["id"]}",
-                    :class =>"reply") {"edit"}+
+                H.a(href: "/editcomment/#{news_id}/#{c["id"]}",
+                    class: "reply") {"edit"}+
                     " (#{
                         (CommentEditTime - (Time.now.to_i-c['ctime'].to_i))/60
                     } minutes left)"
@@ -2085,7 +2085,7 @@ def list_items(o)
     if last_displayed < count
         nextpage = o[:link].sub("$",
                    (o[:start]+o[:perpage]).to_s)
-        aux << H.a(:href => nextpage,:class=> "more") {"[more]"}
+        aux << H.a(href: nextpage,class: "more") {"[more]"}
     end
     aux
 end

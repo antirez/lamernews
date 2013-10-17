@@ -1193,7 +1193,7 @@ def create_user(username,password)
     if $r.exists("username.to.id:#{username.downcase}")
         return nil, "Username is already taken, please try a different one."
     end
-    if rate_limit_by_ip(3600*15,"create_user",request.ip)
+    if rate_limit_by_ip(UserCreationDelay,"create_user",request.ip)
         return nil, "Please wait some time before creating a new user."
     end
     id = $r.incr("users.count")

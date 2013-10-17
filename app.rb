@@ -1318,7 +1318,7 @@ def send_reset_password_email(user)
     return false if aux.length < 3
     current_domain = aux[0]+"//"+aux[2]
 
-    reset_link = "#{current_domain}/set-new-password?user=#{H.urlencode(user['username'])}&auth=#{H.urlencode(user['auth'])}"
+    reset_link = "#{current_domain}/set-new-password?user=#{URI.encode(user['username'])}&auth=#{URI.encode(user['auth'])}"
 
     subject = "#{aux[2]} password reset"
     message = "You can reset your password here: #{reset_link}"
@@ -1701,7 +1701,7 @@ def news_to_html(news)
                 end
             }+
             if $user and user_is_admin?($user)
-                " - "+H.a(:href => "/editnews/#{news["id"]}") { "edit" }+" - "+H.a(:href => "http://twitter.com/intent/tweet?url=#{SiteUrl}/news/#{news["id"]}&text="+H.urlencode(news["title"])+" - ") { "tweet" }
+                " - "+H.a(:href => "/editnews/#{news["id"]}") { "edit" }+" - "+H.a(:href => "http://twitter.com/intent/tweet?url=#{SiteUrl}/news/#{news["id"]}&text="+URI.encode(news["title"])+" - ") { "tweet" }
             else "" end
         }+
         if params and params[:debug] and $user and user_is_admin?($user)

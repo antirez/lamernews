@@ -28,6 +28,10 @@ You need to install Redis and Ruby 1.9.2+ with the following gems:
 * net/smtp
 * openssl (not needed but will speedup the authentication if available).
 
+Please note that Redis uses port 6379 by default, so you should either change
+the port number in the configuration file (which is set to use port 10000), or
+configure Redis to use a matching port.
+
 How to contribute
 ===
 

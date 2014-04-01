@@ -26,7 +26,7 @@
 # policies, either expressed or implied, of Salvatore Sanfilippo.
 
 require 'rubygems'
-require 'json'
+require 'yajl/json_gem'
 
 class RedisComments
     def initialize(redis,namespace,sort_proc=nil)

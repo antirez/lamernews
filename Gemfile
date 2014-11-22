@@ -1,6 +1,7 @@
 source 'https://rubygems.org'
 
 gem 'sinatra','~> 1.4.2'
+gem 'sinatra-reloader'
 gem 'redis','~> 3.0.4'
 gem 'hiredis', '~> 0.4.5'
 gem 'json', '~> 1.7.7'

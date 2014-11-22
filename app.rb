@@ -2,14 +2,14 @@
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
-# 
+#
 #    1. Redistributions of source code must retain the above copyright
 #    notice, this list of conditions and the following disclaimer.
-# 
+#
 #    2. Redistributions in binary form must reproduce the above copyright
 #    notice, this list of conditions and the following disclaimer in the
 #    documentation and/or other materials provided with the distribution.
-# 
+#
 # THIS SOFTWARE IS PROVIDED BY SALVATORE SANFILIPPO ''AS IS'' AND ANY EXPRESS
 # OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
 # OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
@@ -20,7 +20,7 @@
 # ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 # THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-# 
+#
 # The views and conclusions contained in the software and documentation are
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Salvatore Sanfilippo.
@@ -31,6 +31,7 @@ require 'hiredis'
 require 'redis'
 require_relative 'page'
 require 'sinatra'
+require "sinatra/reloader" if development?
 require 'json'
 require 'digest/sha1'
 require 'digest/md5'
@@ -395,7 +396,7 @@ get "/comment/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    H.set_title "#{news["title"]} - #{SiteName}"    
+    H.set_title "#{news["title"]} - #{SiteName}"
     H.page {
         H.section(:id => "newslist") {
             news_to_html(news)
@@ -671,7 +672,7 @@ get '/api/login' do
     end
     auth,apisecret = check_user_credentials(params[:username],
                                             params[:password])
-    if auth 
+    if auth
         return {
             :status => "ok",
             :auth => auth,
@@ -747,7 +748,7 @@ post '/api/create_account' do
         }.to_json
     end
     auth,apisecret,errmsg = create_user(params[:username],params[:password])
-    if auth 
+    if auth
         return {:status => "ok", :auth => auth, :apisecret => apisecret}.to_json
     else
         return {
@@ -849,7 +850,7 @@ post '/api/votenews' do
     if karma
         return { :status => "ok" }.to_json
     else
-        return { :status => "err", 
+        return { :status => "err",
                  :error => error }.to_json
     end
 end
@@ -931,7 +932,7 @@ post '/api/votecomment' do
     if vote_comment(news_id.to_i,comment_id.to_i,$user["id"],vote_type)
         return { :status => "ok", :comment_id => params["comment_id"] }.to_json
     else
-        return { :status => "err", 
+        return { :status => "err",
                  :error => "Invalid parameters or duplicated vote." }.to_json
     end
 end
@@ -1037,7 +1038,7 @@ end
 def application_header
     navitems = [    ["top","/"],
                     ["latest","/latest/0"],
-                    ["random","/random"],                    
+                    ["random","/random"],
                     ["submit","/submit"]]
     navbar = H.nav {
         navitems.map{|ni|
@@ -1400,7 +1401,7 @@ end
 
 # Vote the specified news in the context of a given user.
 # type is either :up or :down
-# 
+#
 # The function takes care of the following:
 # 1) The vote is not duplicated.
 # 2) That the karma is decreased from voting user, accordingly to vote type.
@@ -1687,7 +1688,7 @@ def news_to_html(news)
         }+
         H.p {
             H.span(:class => :upvotes) { news["up"] } + " up and " +
-            H.span(:class => :downvotes) { news["down"] } + " down, posted by " +            
+            H.span(:class => :downvotes) { news["down"] } + " down, posted by " +
             H.username {
                 H.a(:href=>"/user/"+URI.encode(news["username"])) {
                     H.entities news["username"]
@@ -1758,7 +1759,7 @@ end
 
 # Generate the main page of the web site, the one where news are ordered by
 # rank.
-# 
+#
 # As a side effect thsi function take care of checking if the rank stored
 # in the DB is no longer correct (as time is passing) and updates it if
 # needed.

@@ -63,3 +63,5 @@ WORKDIR /app
 RUN bundle install --without test development
 
 EXPOSE 9292
+
+RUN git checkout intinig/docker-fantasies

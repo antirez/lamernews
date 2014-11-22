@@ -1439,12 +1439,12 @@ def media_type url
   :url
 end
 
-def news_type(news)
-    return news.map do |news|
-        news['type'] = url_type(news['url'])
-    end if news.is_a? Array
-    news['type'] = url_type(news['url'])
-    return news
+def news_type news
+  result = [*news].map do |item|
+    item['type'] = url_type(item['url'])
+    item
+  end
+  return (news.is_a? Array) ? result : result.first
 end
 
 # Vote the specified news in the context of a given user.

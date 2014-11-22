@@ -277,7 +277,7 @@ var preview = function () {
 }
 
 $(function() {
-  $('article').each(function() {
+  $('#newslist article').each(function() {
     var articleHref = $(this).find('h2 a').attr('href');
     var articleType = $(this).attr('data-type');
 

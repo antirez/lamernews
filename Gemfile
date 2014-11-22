@@ -14,4 +14,5 @@ group :development, :test do
   gem 'rack-test'
 
   gem 'pry'
+  gem 'sinatra-reloader'
 end

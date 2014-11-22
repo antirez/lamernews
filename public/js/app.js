@@ -266,12 +266,12 @@ var preview = function () {
       // NOTHING!
     },
     "video": function(article, articleHref) {
-      $(article).append('<a class="see-more"><img src="/images/plus-icon.svg" /></a>')
       $(article).append('<div class="preview"><iframe width="560" height="315" src="//www.youtube.com/embed/' + getYoutubeHash(articleHref) + '" frameborder="0" allowfullscreen></iframe></div>');
+      $(article).append('<a class="see-more"></a>')
     },
     "image": function(article, articleHref) {
-      $(article).append('<a class="see-more"><img src="/images/plus-icon.svg" /></a>')
       $(article).append('<div class="preview"><img src="' + articleHref + '" /></div>');
+      $(article).append('<a class="see-more"></a>')
     }
   }
 }

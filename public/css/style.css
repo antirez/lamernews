@@ -171,13 +171,23 @@ article.deleted {
 }
 
 .see-more {
+    display: block;
     margin-left: 20px;
     cursor: pointer;
+    opacity: 0.5;
+    width: 20px;
+    height: 20px;
+    background: url('../images/plus-icon.svg') no-repeat center;
+    background-size: 100%;
 }
 
-.see-more img {
-    width: 20px;
-    opacity: 0.5;
+.preview.open + .see-more {
+    background: url('../images/minus-icon.svg') no-repeat center;
+    background-size: 100%;
+}
+
+.see-more:hover {
+    opacity: 1;
 }
 
 .preview {
@@ -193,10 +203,6 @@ article.deleted {
 
 .preview img {
     width: 100%;
-}
-
-.see-more img:hover {
-    opacity: 1;
 }
 
 form textarea {

@@ -2,8 +2,16 @@ redis:
   image: redis
   ports:
     - "6379"
+  command: redis-server --appendonly yes
 
 web:
+  image: quay.io/mikamai/ln-nginx
+  links:
+    - app
+  ports:
+    - "80:80"
+
+app:
   image: quay.io/mikamai/lamernews
   command: bundle exec rackup
   volumes:

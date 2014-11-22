@@ -13,6 +13,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.network "forwarded_port", guest: 9292, host: 9292, auto_correct: true
+  config.vm.network "forwarded_port", guest: 80, host: 80, auto_correct: true
 
   config.vm.synced_folder ".", "/app", type: "nfs"
 end

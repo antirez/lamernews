@@ -1,8 +1,4 @@
-require_relative '../app'
-require 'rspec'
-require 'rack/test'
-
-set :environment, :test
+require 'spec_helper'
 
 describe 'urls_to_links' do
   [
@@ -24,6 +20,32 @@ describe 'Lamer News' do
 
   def app
     Sinatra::Application
+  end
+
+  describe '/' do
+    context 'when I am not logged' do
+      it 'contains a link with a login statement' do
+        get '/'
+        expect(last_response.body).to match /\<a.+\>login with google\<\/a\>/
+      end
+
+      it 'contains a link pointing to google oauth2 login' do
+        get '/'
+        expect(last_response.body).to match /\<a href\=\"\/auth\/google_oauth2\".+\>.*\<\/a\>/
+      end
+    end
+  end
+
+  describe '/auth/:provider/callback' do
+    it 'returns a 404 if provider is not valid' do
+      get '/auth/asd/callback'
+      expect(last_response.status).to eq 404
+    end
+
+    it 'returns a 302 if request does not contain auth data' do
+      get '/auth/google_oauth2/callback'
+      expect(last_response.status).to eq 302
+    end
   end
 
   describe '/api/create_account' do

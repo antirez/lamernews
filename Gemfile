@@ -19,4 +19,7 @@ group :development, :test do
 
   gem 'pry'
   gem 'sinatra-reloader'
+
+  gem 'capybara'
+  gem 'selenium-webdriver'
 end

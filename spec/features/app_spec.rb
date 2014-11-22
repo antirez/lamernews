@@ -1,8 +1,4 @@
-require_relative '../app'
-require 'rspec'
-require 'rack/test'
-
-set :environment, :test
+require 'spec_helper'
 
 describe 'urls_to_links' do
   [

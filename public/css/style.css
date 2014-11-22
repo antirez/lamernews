@@ -170,6 +170,41 @@ article.deleted {
     color:#999;
 }
 
+.see-more {
+    display: block;
+    margin-left: 20px;
+    cursor: pointer;
+    opacity: 0.5;
+    width: 20px;
+    height: 20px;
+    background: url('../images/plus-icon.svg') no-repeat center;
+    background-size: 100%;
+}
+
+.preview.open + .see-more {
+    background: url('../images/minus-icon.svg') no-repeat center;
+    background-size: 100%;
+}
+
+.see-more:hover {
+    opacity: 1;
+}
+
+.preview {
+    display: none;
+    width: 500px;
+    height: auto;
+    margin-left: 20px;
+}
+
+.preview.open {
+    display: block;
+}
+
+.preview img {
+    width: 100%;
+}
+
 form textarea {
     font-family: Courier;
     font-size:14px;
@@ -403,3 +438,4 @@ topcomment {
     }
 
 }
+

@@ -1405,7 +1405,36 @@ def get_news_by_id(news_ids,opt={})
 
     # Return an array if we got an array as input, otherwise
     # the single element the caller requested.
+
+    news_type(result)
     opt[:single] ? result[0] : result
+end
+
+def url_type(url)
+    types.each do |type, check|
+        return type if check.call(url)
+    end
+end
+
+def types
+    {
+        'image' => lambda { |url|
+            url.end_with? 'jpg', 'jpeg', 'png'
+        },
+        'video' => lambda { |url|
+            ['youtube', 'vimeo'].each { |video|
+                return true if url.include? video
+            }
+            return false
+        },
+        'none' => lambda { |url| true }
+    }
+end
+
+def news_type(news)
+    news.map do |news_item|
+        news_item['type'] = url_type(news_item['url'])
+    end
 end
 
 # Vote the specified news in the context of a given user.

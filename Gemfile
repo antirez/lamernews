@@ -3,6 +3,7 @@ source 'https://rubygems.org'
 ruby '2.1.5'
 
 gem 'sinatra'
+gem 'sinatra-contrib'
 gem 'rails_config', github: 'railsconfig/rails_config'
 gem 'redis'
 gem 'hiredis'
@@ -22,4 +23,5 @@ group :development, :test do
 
   gem 'capybara'
   gem 'selenium-webdriver'
+  gem 'timecop'
 end

@@ -25,12 +25,15 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of Salvatore Sanfilippo.
 
+require 'rails_config'
 require_relative 'app_config'
+require_relative 'models/user'
 require 'rubygems'
 require 'hiredis'
 require 'redis'
 require_relative 'page'
 require 'sinatra'
+require 'sinatra/contrib'
 require "sinatra/reloader" if development?
 require 'json'
 require 'digest/sha1'
@@ -42,7 +45,15 @@ require_relative 'about'
 require 'openssl' if UseOpenSSL
 require 'uri'
 
+require 'omniauth'
+require 'omniauth-google-oauth2'
+
 Version = "0.11.0"
+
+set :root, File.dirname(__FILE__)
+# register RailsConfig to be set when we switch to app structure
+RailsConfig.load_and_set_settings('config/settings.yml', 'config/settings.local.yml')
+use Rack::Session::Cookie, :secret => Settings.session.secret
 
 def setup_redis(uri=RedisURL)
     uri = URI.parse(uri)
@@ -131,7 +142,7 @@ get '/saved/:start' do
     H.set_title "Saved news - #{SiteName}"
     paginate = {
         :get => Proc.new {|start,count|
-            get_saved_news($user['id'],start,count)
+            get_saved_news($user.id,start,count)
         },
         :render => Proc.new {|item| news_to_html(item)},
         :start => start,
@@ -148,20 +159,20 @@ end
 
 get '/usernews/:username/:start' do
     start = params[:start].to_i
-    user = get_user_by_username(params[:username])
+    user = User.find_by_email(params[:username])
     halt(404,"Non existing user") if !user
 
-    page_title = "News posted by #{user['username']}"
+    page_title = "News posted by #{user.email}"
 
     H.set_title "#{page_title} - #{SiteName}"
     paginate = {
         :get => Proc.new {|start,count|
-            get_posted_news(user['id'],start,count)
+            get_posted_news(user.id,start,count)
         },
         :render => Proc.new {|item| news_to_html(item)},
         :start => start,
         :perpage => SavedNewsPerPage,
-        :link => "/usernews/#{URI.encode(user['username'])}/$"
+        :link => "/usernews/#{URI.encode(user.email)}/$"
     }
     H.page {
         H.h2 {page_title}+
@@ -173,13 +184,13 @@ end
 
 get '/usercomments/:username/:start' do
     start = params[:start].to_i
-    user = get_user_by_username(params[:username])
+    user = User.find_by_email(params[:username])
     halt(404,"Non existing user") if !user
 
-    H.set_title "#{user['username']} comments - #{SiteName}"
+    H.set_title "#{user.email} comments - #{SiteName}"
     paginate = {
         :get => Proc.new {|start,count|
-            get_user_comments(user['id'],start,count)
+            get_user_comments(user.id,start,count)
         },
         :render => Proc.new {|comment|
             u = get_user_by_id(comment["user_id"]) || DeletedUser
@@ -187,10 +198,10 @@ get '/usercomments/:username/:start' do
         },
         :start => start,
         :perpage => UserCommentsPerPage,
-        :link => "/usercomments/#{URI.encode(user['username'])}/$"
+        :link => "/usercomments/#{URI.encode(user.email)}/$"
     }
     H.page {
-        H.h2 {"#{H.entities user['username']} comments"}+
+        H.h2 {"#{H.entities user.email} comments"}+
         H.div("id" => "comments") {
             list_items(paginate)
         }
@@ -199,10 +210,10 @@ end
 
 get '/replies' do
     redirect "/login" if !$user
-    comments,count = get_user_comments($user['id'],0,SubthreadsInRepliesPage)
+    comments,count = get_user_comments($user.id,0,SubthreadsInRepliesPage)
     H.set_title "Your threads - #{SiteName}"
     H.page {
-        $r.hset("user:#{$user['id']}","replies",0)
+        $r.hset("user:#{$user.id}","replies",0)
         H.h2 {"Your threads"}+
         H.div("id" => "comments") {
             aux = ""
@@ -212,6 +223,21 @@ get '/replies' do
             aux
         }
     }
+end
+
+get '/auth/:provider/callback' do
+  if %w(google_oauth2).include? params[:provider]
+    auth_data = request.env['omniauth.auth']
+    if auth_data && auth_data.to_hash
+      user = User.find_or_create_using_google_oauth2 auth_data
+      response.set_cookie 'auth', value: user.auth, path: '/'
+      redirect '/'
+    else
+      halt(400, "400 - Request does not contain valid data.")
+    end
+  else
+    halt(404, "404 - Provider is not valid.")
+  end
 end
 
 get '/login' do
@@ -299,7 +325,7 @@ get '/set-new-password' do
                     document.cookie =
                         'auth=#{user['auth']}'+
                         '; expires=Thu, 1 Aug 2030 20:00:00 UTC; path=/';
-                    window.location.href = '/user/#{user['username']}';
+                    window.location.href = '/user/#{user.email}';
                 });
             "}
         }
@@ -361,7 +387,7 @@ get "/news/:news_id" do
             "thread_id" => news["id"],
             "topcomment" => true
         }
-        user = get_user_by_id(news["user_id"]) || DeletedUser
+        user = User.find(news["user_id"]) || User.deleted_one
         top_comment = H.topcomment {comment_to_html(c,user)}
     else
         top_comment = ""
@@ -407,7 +433,7 @@ end
 
 def render_comment_subthread(comment,sep="")
     H.div(:class => "singlecomment") {
-        u = get_user_by_id(comment["user_id"]) || DeletedUser
+        u = User.find(comment["user_id"]) || User.deleted_one
         comment_to_html(comment,u,true)
     }+H.div(:class => "commentreplies") {
         sep+
@@ -421,7 +447,7 @@ get "/reply/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) || DeletedUser
+    user = User.find(comment["user_id"]) || User.deleted_one
 
     H.set_title "Reply to comment - #{SiteName}"
     H.page {
@@ -448,8 +474,8 @@ get "/editcomment/:news_id/:comment_id" do
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
     halt(404,"404 - This comment does not exist.") if !comment
-    user = get_user_by_id(comment["user_id"]) || DeletedUser
-    halt(500,"Permission denied.") if $user['id'].to_i != user['id'].to_i
+    user = User.find(comment["user_id"]) || User.deleted_one
+    halt(500,"Permission denied.") if $user.id.to_i != user.id.to_i
 
     H.set_title "Edit comment - #{SiteName}"
     H.page {
@@ -479,7 +505,7 @@ get "/editnews/:news_id" do
     redirect "/login" if !$user
     news = get_news_by_id(params["news_id"])
     halt(404,"404 - This news does not exist.") if !news
-    halt(500,"Permission denied.") if $user['id'].to_i != news['user_id'].to_i and !user_is_admin?($user)
+    halt(500,"Permission denied.") if $user.id.to_i != news['user_id'].to_i and !user_is_admin?($user)
 
     if news_domain(news)
         text = ""
@@ -520,44 +546,44 @@ get "/editnews/:news_id" do
 end
 
 get "/user/:username" do
-    user = get_user_by_username(params[:username])
+    user = User.find_by_email(params[:username])
     halt(404,"Non existing user") if !user
     posted_news,posted_comments = $r.pipelined {
-        $r.zcard("user.posted:#{user['id']}")
-        $r.zcard("user.comments:#{user['id']}")
+        $r.zcard("user.posted:#{user.id}")
+        $r.zcard("user.comments:#{user.id}")
     }
-    H.set_title "#{user['username']} - #{SiteName}"
-    owner = $user && ($user['id'].to_i == user['id'].to_i)
+    H.set_title "#{user.name} - #{SiteName}"
+    owner = $user && ($user.id.to_i == user.id.to_i)
     H.page {
         H.div(:class => "userinfo") {
             H.span(:class => "avatar") {
-                email = user["email"] || ""
+                email = user.email || ""
                 digest = Digest::MD5.hexdigest(email)
                 H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
             }+" "+
-            H.h2 {H.entities user['username']}+
+            H.h2 {H.entities user.name}+
             H.pre {
-                H.entities user['about']
+                H.entities user.about
             }+
             H.ul {
                 H.li {
                     H.b {"created "}+
-                    str_elapsed(user['ctime'].to_i)
+                    str_elapsed(user.ctime.to_i)
                 }+
-                H.li {H.b {"karma "}+ "#{user['karma']} points"}+
+                H.li {H.b {"karma "}+ "#{user.karma} points"}+
                 H.li {H.b {"posted news "}+posted_news.to_s}+
                 H.li {H.b {"posted comments "}+posted_comments.to_s}+
                 if owner
                     H.li {H.a(:href=>"/saved/0") {"saved news"}}
                 else "" end+
                 H.li {
-                    H.a(:href=>"/usercomments/"+URI.encode(user['username'])+
+                    H.a(:href=>"/usercomments/"+URI.encode(user.email)+
                                "/0") {
                         "user comments"
                     }
                 }+
                 H.li {
-                    H.a(:href=>"/usernews/"+URI.encode(user['username'])+
+                    H.a(:href=>"/usernews/"+URI.encode(user.email)+
                                "/0") {
                         "user news"
                     }
@@ -569,14 +595,14 @@ get "/user/:username" do
                     "email (not visible, used for gravatar)"
                 }+H.br+
                 H.inputtext(:id => "email", :name => "email", :size => 40,
-                            :value => H.entities(user['email']))+H.br+
+                            :value => H.entities(user.email))+H.br+
                 H.label(:for => "password") {
                     "change password (optional)"
                 }+H.br+
                 H.inputpass(:name => "password", :size => 40)+H.br+
                 H.label(:for => "about") {"about"}+H.br+
                 H.textarea(:id => "about", :name => "about", :cols => 60, :rows => 10){
-                    H.entities(user['about'])
+                    H.entities(user.about)
                 }+H.br+
                 H.button(:name => "update_profile", :value => "Update profile")
             }+
@@ -697,7 +723,7 @@ get '/api/reset-password' do
 
     user = get_user_by_username(params[:username])
     if user && user['email'] && user['email'] == params[:email]
-        id = user['id']
+        id = user.id
         # Rate limit password reset attempts.
         if (user['pwd_reset'] &&
             (Time.now.to_i - user['pwd_reset'].to_i) < PasswordResetDelay)
@@ -794,10 +820,10 @@ post '/api/submit' do
             }.to_json
         end
         news_id = insert_news(params[:title],params[:url],params[:text],
-                              $user["id"])
+                              $user.id)
     else
         news_id = edit_news(params[:news_id],params[:title],params[:url],
-                            params[:text],$user["id"])
+                            params[:text],$user.id)
         if !news_id
             return {
                 :status => "err",
@@ -824,7 +850,7 @@ post '/api/delnews' do
             :error => "Please specify a news title."
         }.to_json
     end
-    if del_news(params[:news_id],$user["id"])
+    if del_news(params[:news_id],$user.id)
         return {:status => "ok", :news_id => -1}.to_json
     end
     return {:status => "err", :error => "News too old or wrong ID/owner."}.to_json
@@ -846,7 +872,7 @@ post '/api/votenews' do
     end
     # Vote the news
     vote_type = params["vote_type"].to_sym
-    karma,error = vote_news(params["news_id"].to_i,$user["id"],vote_type)
+    karma,error = vote_news(params["news_id"].to_i,$user.id,vote_type)
     if karma
         return { :status => "ok" }.to_json
     else
@@ -869,7 +895,7 @@ post '/api/postcomment' do
                        parameter."
         }.to_json
     end
-    info = insert_comment(params["news_id"].to_i,$user['id'],
+    info = insert_comment(params["news_id"].to_i,$user.id,
                           params["comment_id"].to_i,
                           params["parent_id"].to_i,params["comment"])
     return {
@@ -902,10 +928,10 @@ post '/api/updateprofile' do
                           "Min length: #{PasswordMinLength}"
             }.to_json
         end
-        $r.hmset("user:#{$user['id']}","password",
+        $r.hmset("user:#{$user.id}","password",
             hash_password(params[:password],$user['salt']))
     end
-    $r.hmset("user:#{$user['id']}",
+    $r.hmset("user:#{$user.id}",
         "about", params[:about][0..4095],
         "email", params[:email][0..255])
     return {:status => "ok"}.to_json
@@ -929,7 +955,7 @@ post '/api/votecomment' do
     # Vote the news
     vote_type = params["vote_type"].to_sym
     news_id,comment_id = params["comment_id"].split("-")
-    if vote_comment(news_id.to_i,comment_id.to_i,$user["id"],vote_type)
+    if vote_comment(news_id.to_i,comment_id.to_i,$user.id,vote_type)
         return { :status => "ok", :comment_id => params["comment_id"] }.to_json
     else
         return { :status => "err",
@@ -970,14 +996,14 @@ get  '/api/getcomments/:news_id' do
         end
         replies.each{|r|
             user = get_user_by_id(r['user_id']) || DeletedUser
-            r['username'] = user['username']
-            r['replies'] = thread[r['id']] || []
+            r['username'] = user.email
+            r.replies = thread[r['id']] || []
             if r['up']
-                r['voted'] = :up if $user && r['up'].index($user['id'].to_i)
+                r['voted'] = :up if $user && r['up'].index($user.id.to_i)
                 r['up'] = r['up'].length
             end
             if r['down']
-                r['voted'] = :down if $user && r['down'].index($user['id'].to_i)
+                r['voted'] = :down if $user && r['down'].index($user.id.to_i)
                 r['down'] = r['down'].length
             end
             ['id','thread_id','score','parent_id','user_id'].each{|f|
@@ -1006,7 +1032,7 @@ end
 
 def check_api_secret
     return false if !$user
-    params["apisecret"] and (params["apisecret"] == $user["apisecret"])
+    params["apisecret"] and (params["apisecret"] == $user.apisecret)
 end
 
 ###############################################################################
@@ -1019,7 +1045,7 @@ end
 # users.
 def navbar_replies_link
     return "" if !$user
-    count = $user['replies'] || 0
+    count = $user.replies || 0
     H.a(:href => "/replies", :class => "replies") {
         "replies"+
         if count.to_i > 0
@@ -1047,15 +1073,15 @@ def application_header
     }
     rnavbar = H.nav(:id => "account") {
         if $user
-            H.a(:href => "/user/"+URI.encode($user['username'])) {
-                H.entities $user['username']+" (#{$user['karma']})"
+            H.a(:href => "/user/"+URI.encode($user.email)) {
+                H.entities $user.name+" (#{$user.karma})"
             }+" | "+
             H.a(:href =>
-                "/logout?apisecret=#{$user['apisecret']}") {
+                "/logout?apisecret=#{$user.apisecret}") {
                 "logout"
             }
         else
-            H.a(:href => "/login") {"login / register"}
+            H.a(:href => "/auth/google_oauth2") {"login with google"}
         end
     }
     menu_mobile = H.a(:href => "#", :id => "link-menu-mobile"){"<~>"}
@@ -1070,7 +1096,7 @@ end
 def application_footer
     if $user
         apisecret = H.script() {
-            "var apisecret = '#{$user['apisecret']}';";
+            "var apisecret = '#{$user.apisecret}';";
         }
     else
         apisecret = ""
@@ -1134,11 +1160,8 @@ end
 #
 # Return value: none, the function works by side effect.
 def auth_user(auth)
-    return if !auth
-    id = $r.get("auth:#{auth}")
-    return if !id
-    user = $r.hgetall("user:#{id}")
-    $user = user if user.length > 0
+  return if !auth
+  $user = User.find_by_auth_token auth
 end
 
 # In Lamer News users get karma visiting the site.
@@ -1152,10 +1175,10 @@ end
 #
 # Side effects: the user karma is incremented and the $user hash updated.
 def increment_karma_if_needed
-    if $user['karma_incr_time'].to_i < (Time.now.to_i-KarmaIncrementInterval)
-        userkey = "user:#{$user['id']}"
+    if $user.karma_incr_time.to_i < (Time.now.to_i-KarmaIncrementInterval)
+        userkey = "user:#{$user.id}"
         $r.hset(userkey,"karma_incr_time",Time.now.to_i)
-        increment_user_karma_by($user['id'],KarmaIncrementAmount)
+        increment_user_karma_by($user.id,KarmaIncrementAmount)
     end
 end
 
@@ -1164,14 +1187,14 @@ end
 def increment_user_karma_by(user_id,increment)
     userkey = "user:#{user_id}"
     $r.hincrby(userkey,"karma",increment)
-    if $user and ($user['id'].to_i == user_id.to_i)
-        $user['karma'] = $user['karma'].to_i + increment
+    if $user and ($user.id.to_i == user_id.to_i)
+        $user.karma = $user.karma.to_i + increment
     end
 end
 
 # Return the specified user karma.
 def get_user_karma(user_id)
-    return $user['karma'].to_i if $user and (user_id.to_i == $user['id'].to_i)
+    return $user.karma.to_i if $user and (user_id.to_i == $user.id.to_i)
     userkey = "user:#{user_id}"
     karma = $r.hget(userkey,"karma")
     karma ? karma.to_i : 0
@@ -1231,8 +1254,8 @@ end
 def update_auth_token(user)
     $r.del("auth:#{user['auth']}")
     new_auth_token = get_rand
-    $r.hmset("user:#{user['id']}","auth",new_auth_token)
-    $r.set("auth:#{new_auth_token}",user['id'])
+    $r.hmset("user:#{user.id}","auth",new_auth_token)
+    $r.set("auth:#{new_auth_token}",user.id)
     return new_auth_token
 end
 
@@ -1277,7 +1300,7 @@ end
 # Indicates when the user is allowed to submit another story after the last.
 def allowed_to_post_in_seconds
     return 0 if user_is_admin?($user)
-    $r.ttl("user:#{$user['id']}:submitted_recently")
+    $r.ttl("user:#{$user.id}:submitted_recently")
 end
 
 # Add the specified set of flags to the user.
@@ -1291,13 +1314,13 @@ end
 def user_add_flags(user_id,flags)
     user = get_user_by_id(user_id)
     return false if !user
-    newflags = user['flags']
+    newflags = user.flags
     flags.each_char{|flag|
         newflags << flag if not user_has_flags?(user,flag)
     }
     # Note: race condition here if somebody touched the same field
     # at the same time: very unlkely and not critical so not using WATCH.
-    $r.hset("user:#{user['id']}","flags",newflags)
+    $r.hset("user:#{user.id}","flags",newflags)
     true
 end
 
@@ -1305,7 +1328,7 @@ end
 # Returns true or false.
 def user_has_flags?(user,flags)
     flags.each_char {|flag|
-        return false if not user['flags'].index(flag)
+        return false if not user.flags.index(flag)
     }
     true
 end
@@ -1320,7 +1343,7 @@ def send_reset_password_email(user)
     return false if aux.length < 3
     current_domain = aux[0]+"//"+aux[2]
 
-    reset_link = "#{current_domain}/set-new-password?user=#{URI.encode(user['username'])}&auth=#{URI.encode(user['auth'])}"
+    reset_link = "#{current_domain}/set-new-password?user=#{URI.encode(user.email)}&auth=#{URI.encode(user['auth'])}"
 
     subject = "#{aux[2]} password reset"
     message = "You can reset your password here: #{reset_link}"
@@ -1369,7 +1392,7 @@ def get_news_by_id(news_ids,opt={})
     # Get the associated users information
     usernames = $r.pipelined {
         result.each{|n|
-            $r.hget("user:#{n["user_id"]}","username")
+            $r.hget("user:#{n["user_id"]}","email")
         }
     }
     result.each_with_index{|n,i|
@@ -1381,8 +1404,8 @@ def get_news_by_id(news_ids,opt={})
     if $user
         votes = $r.pipelined {
             result.each{|n|
-                $r.zscore("news.up:#{n["id"]}",$user["id"])
-                $r.zscore("news.down:#{n["id"]}",$user["id"])
+                $r.zscore("news.up:#{n["id"]}",$user.id)
+                $r.zscore("news.down:#{n["id"]}",$user.id)
             }
         }
         result.each_with_index{|n,i|
@@ -1417,7 +1440,7 @@ end
 # error that prevented the vote.
 def vote_news(news_id,user_id,vote_type)
     # Fetch news and user
-    user = ($user and $user["id"] == user_id) ? $user : get_user_by_id(user_id)
+    user = ($user and $user.id == user_id) ? $user : get_user_by_id(user_id)
     news = get_news_by_id(news_id)
     return false,"No such news or user." if !news or !user
 
@@ -1429,7 +1452,7 @@ def vote_news(news_id,user_id,vote_type)
     end
 
     # Check if the user has enough karma to perform this operation
-    if $user['id'] != news['user_id']
+    if $user.id != news['user_id']
         if (vote_type == :up and
              (get_user_karma(user_id) < NewsUpvoteMinKarma)) or
            (vote_type == :down and
@@ -1459,7 +1482,7 @@ def vote_news(news_id,user_id,vote_type)
 
     # Remove some karma to the user if needed, and transfer karma to the
     # news owner in the case of an upvote.
-    if $user['id'] != news['user_id']
+    if $user.id != news['user_id']
         if vote_type == :up
             increment_user_karma_by(user_id,-NewsUpvoteKarmaCost)
             increment_user_karma_by(news['user_id'],NewsUpvoteKarmaTransfered)
@@ -1546,7 +1569,7 @@ def insert_news(title,url,text,user_id)
     # Add the news url for some time to avoid reposts in short time
     $r.setex("url:"+url,PreventRepostTime,news_id) if !textpost
     # Set a timeout indicating when the user may post again
-    $r.setex("user:#{$user['id']}:submitted_recently",NewsSubmissionBreak,'1')
+    $r.setex("user:#{$user.id}:submitted_recently",NewsSubmissionBreak,'1')
     return news_id
 end
 
@@ -1676,7 +1699,7 @@ def news_to_html(news)
             if domain
                 "at "+H.entities(domain)
             else "" end +
-            if ($user and $user['id'].to_i == news['user_id'].to_i and
+            if ($user and $user.id.to_i == news['user_id'].to_i and
                 news['ctime'].to_i > (Time.now.to_i - NewsEditTime))
                 " " + H.a(:href => "/editnews/#{news["id"]}") {
                     "[edit]"
@@ -1920,20 +1943,20 @@ def comment_to_html(c,u,show_parent = false)
         }
     end
     show_edit_link = !c['topcomment'] &&
-                ($user && ($user['id'].to_i == c['user_id'].to_i)) &&
+                ($user && ($user.id.to_i == c['user_id'].to_i)) &&
                 (c['ctime'].to_i > (Time.now.to_i - CommentEditTime))
 
     comment_id = "#{news_id}-#{c['id']}"
     H.article(:class => "comment", :style => indent,
               "data-comment-id" => comment_id, :id => comment_id) {
         H.span(:class => "avatar") {
-            email = u["email"] || ""
+            email = u.email || ""
             digest = Digest::MD5.hexdigest(email)
             H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
         }+H.span(:class => "info") {
             H.span(:class => "username") {
-                H.a(:href=>"/user/"+URI.encode(u["username"])) {
-                    H.entities u["username"]
+                H.a(:href=>"/user/"+URI.encode(u.email)) {
+                    H.entities u.name
                 }
             }+" "+str_elapsed(c["ctime"].to_i)+". "+
             if !c['topcomment']
@@ -1954,10 +1977,10 @@ def comment_to_html(c,u,show_parent = false)
             if !c['topcomment']
                 upclass = "uparrow"
                 downclass = "downarrow"
-                if $user and c['up'] and c['up'].index($user['id'].to_i)
+                if $user and c['up'] and c['up'].index($user.id.to_i)
                     upclass << " voted"
                     downclass << " disabled"
-                elsif $user and c['down'] and c['down'].index($user['id'].to_i)
+                elsif $user and c['down'] and c['down'].index($user.id.to_i)
                     downclass << " voted"
                     upclass << " disabled"
                 end
@@ -1986,8 +2009,8 @@ def render_comments_for_news(news_id,root=-1)
     html = ""
     user = {}
     Comments.render_comments(news_id,root) {|c|
-        user[c["id"]] = get_user_by_id(c["user_id"]) if !user[c["id"]]
-        user[c["id"]] = DeletedUser if !user[c["id"]]
+        user[c["id"]] = User.find(c["user_id"]) if !user[c["id"]]
+        user[c["id"]] = User.deleted_one if !user[c["id"]]
         u = user[c["id"]]
         html << comment_to_html(c,u)
     }
@@ -2092,3 +2115,6 @@ def list_items(o)
     aux
 end
 
+use OmniAuth::Builder do
+  provider :google_oauth2, Settings.oauth2.google.key, Settings.oauth2.google.secret, {}
+end

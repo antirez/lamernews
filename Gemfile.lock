@@ -105,6 +105,7 @@ GEM
     slop (3.6.0)
     thread_safe (0.3.4)
     tilt (1.4.1)
+    timecop (0.7.1)
     tzinfo (1.2.2)
       thread_safe (~> 0.1)
     websocket (1.2.1)
@@ -129,4 +130,6 @@ DEPENDENCIES
   ruby-hmac
   selenium-webdriver
   sinatra
+  sinatra-contrib
   sinatra-reloader
+  timecop

@@ -100,7 +100,7 @@ class PBKDF2
   # the pseudo-random function defined in the spec
   def prf(data)
     if defined?(OpenSSL)
-      OpenSSL::HMAC.digest(OpenSSL::Digest::Digest.new("sha1"),@password,data)
+      OpenSSL::HMAC.digest(OpenSSL::Digest.new("sha1"),@password,data)
     else
       HMAC::SHA1.digest(@password,data)
     end

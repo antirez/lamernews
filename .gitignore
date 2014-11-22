@@ -1,1 +1,3 @@
 .*.swp
+dump.rdb
+redis-2.8.17/

@@ -33,8 +33,8 @@ RUN apt-get -yqq update && apt-get install -yqq autoconf \
 		# node \
   && rm -rf /var/lib/apt/lists/*
 
-ENV RUBY_MAJOR 1.9
-ENV RUBY_VERSION 1.9.3-p551
+ENV RUBY_MAJOR 2.1
+ENV RUBY_VERSION 2.1.5
 
 # some of ruby's build scripts are written in ruby
 # we purge this later to make sure our final image uses what we just built
@@ -60,6 +60,6 @@ RUN git clone https://github.com/mikamai/lamernews.git /app
 
 WORKDIR /app
 
-RUN bundle install
+RUN bundle install --without test development
 
-EXPOSE 3000
+#EXPOSE 3000

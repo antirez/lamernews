@@ -39,7 +39,6 @@ require 'json'
 require 'digest/sha1'
 require 'digest/md5'
 require_relative 'comments'
-require_relative 'pbkdf2'
 require_relative 'mail'
 require_relative 'about'
 require 'openssl' if UseOpenSSL
@@ -80,8 +79,7 @@ before do
             }
         })
     end
-    $user = nil
-    auth_user(request.cookies['auth'])
+    $user = User.find_by_auth_token request.cookies['auth']
     increment_karma_if_needed if $user
 end
 
@@ -137,7 +135,7 @@ get '/latest/:start' do
 end
 
 get '/saved/:start' do
-    redirect "/login" if !$user
+    redirect "/" if !$user
     start = params[:start].to_i
     H.set_title "Saved news - #{SiteName}"
     paginate = {
@@ -193,7 +191,7 @@ get '/usercomments/:username/:start' do
             get_user_comments(user.id,start,count)
         },
         :render => Proc.new {|comment|
-            u = get_user_by_id(comment["user_id"]) || DeletedUser
+            u = User.find(comment["user_id"]) || User.deleted_one
             comment_to_html(comment,u)
         },
         :start => start,
@@ -209,7 +207,7 @@ get '/usercomments/:username/:start' do
 end
 
 get '/replies' do
-    redirect "/login" if !$user
+    redirect "/" if !$user
     comments,count = get_user_comments($user.id,0,SubthreadsInRepliesPage)
     H.set_title "Your threads - #{SiteName}"
     H.page {
@@ -240,100 +238,8 @@ get '/auth/:provider/callback' do
   end
 end
 
-get '/login' do
-    H.set_title "Login - #{SiteName}"
-    H.page {
-        H.div(:id => "login") {
-            H.form(:name=>"f") {
-                H.label(:for => "username") {"username"}+
-                H.inputtext(:id => "username", :name => "username")+
-                H.label(:for => "password") {"password"}+
-                H.inputpass(:id => "password", :name => "password")+H.br+
-                H.checkbox(:name => "register", :value => "1")+
-                "create account"+H.br+
-                H.submit(:name => "do_login", :value => "Login")
-            }
-        }+
-        H.div(:id => "errormsg"){}+
-        H.a(:href=>"/reset-password") {"reset password"}+
-        H.script() {'
-            $(function() {
-                $("form[name=f]").submit(login);
-            });
-        '}
-    }
-end
-
-get '/reset-password' do
-    H.set_title "Reset Password - #{SiteName}"
-    H.page {
-        H.p {
-            "Welcome to the password reset procedure. Please specify the username and the email address you used to register to the site. "+H.br+
-            H.b {"Note that if you did not specify an email it is impossible for you to recover your password."}
-        }+
-        H.div(:id => "login") {
-            H.form(:name=>"f") {
-                H.label(:for => "username") {"username"}+
-                H.inputtext(:id => "username", :name => "username")+
-                H.label(:for => "password") {"email"}+
-                H.inputtext(:id => "email", :name => "email")+H.br+
-                H.submit(:name => "do_reset", :value => "Reset password")
-            }
-        }+
-        H.div(:id => "errormsg"){}+
-        H.script() {'
-            $(function() {
-                $("form[name=f]").submit(reset_password);
-            });
-        '}
-    }
-end
-
-get '/reset-password-ok' do
-    H.set_title "Reset link sent to your inbox"
-    H.page {
-        H.p {
-            "We sent an email to your inbox with a link that will let you reset your password."
-        }+
-        H.p {
-            "Please make sure to check the spam folder if the email does not appear in your inbox in a few minutes."
-        }+
-        H.p {
-            "The email contains a link that will automatically log into your account where you can set a new password in the account preferences."
-        }
-    }
-end
-
-get '/set-new-password' do
-    redirect '/' if (!check_params "user","auth")
-    user = get_user_by_username(params[:user])
-    if !user || user['auth'] != params[:auth]
-        H.page {
-            H.p {
-                "Link invalid or expired."
-            }
-        }
-    else
-        # Login the user and bring him to preferences to set a new password.
-        # Note that we update the auth token so this reset link will not
-        # work again.
-        update_auth_token(user["id"])
-        user = get_user_by_id(user["id"])
-        H.page {
-            H.script() {"
-                $(function() {
-                    document.cookie =
-                        'auth=#{user['auth']}'+
-                        '; expires=Thu, 1 Aug 2030 20:00:00 UTC; path=/';
-                    window.location.href = '/user/#{user.email}';
-                });
-            "}
-        }
-    end
-end
-
 get '/submit' do
-    redirect "/login" if !$user
+    redirect "/" if !$user
     H.set_title "Submit a new story - #{SiteName}"
     H.page {
         H.h2 {"Submit a new story"}+
@@ -370,7 +276,7 @@ end
 
 get '/logout' do
     if $user and check_api_secret
-        update_auth_token($user)
+      $user.update_auth_token
     end
     redirect "/"
 end
@@ -442,7 +348,7 @@ def render_comment_subthread(comment,sep="")
 end
 
 get "/reply/:news_id/:comment_id" do
-    redirect "/login" if !$user
+    redirect "/" if !$user
     news = get_news_by_id(params["news_id"])
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
@@ -469,7 +375,7 @@ get "/reply/:news_id/:comment_id" do
 end
 
 get "/editcomment/:news_id/:comment_id" do
-    redirect "/login" if !$user
+    redirect "/" if !$user
     news = get_news_by_id(params["news_id"])
     halt(404,"404 - This news does not exist.") if !news
     comment = Comments.fetch(params["news_id"],params["comment_id"])
@@ -502,7 +408,7 @@ get "/editcomment/:news_id/:comment_id" do
 end
 
 get "/editnews/:news_id" do
-    redirect "/login" if !$user
+    redirect "/" if !$user
     news = get_news_by_id(params["news_id"])
     halt(404,"404 - This news does not exist.") if !news
     halt(500,"Permission denied.") if $user.id.to_i != news['user_id'].to_i and !user_is_admin?($user)
@@ -591,15 +497,6 @@ get "/user/:username" do
             }
         }+if owner
             H.br+H.form(:name=>"f") {
-                H.label(:for => "email") {
-                    "email (not visible, used for gravatar)"
-                }+H.br+
-                H.inputtext(:id => "email", :name => "email", :size => 40,
-                            :value => H.entities(user.email))+H.br+
-                H.label(:for => "password") {
-                    "change password (optional)"
-                }+H.br+
-                H.inputpass(:name => "password", :size => 40)+H.br+
                 H.label(:for => "about") {"about"}+H.br+
                 H.textarea(:id => "about", :name => "about", :cols => 60, :rows => 10){
                     H.entities(user.about)
@@ -676,112 +573,16 @@ end
 ###############################################################################
 
 post '/api/logout' do
-    content_type 'application/json'
-    if $user and check_api_secret
-        update_auth_token($user)
-        return {:status => "ok"}.to_json
-    else
-        return {
-            :status => "err",
-            :error => "Wrong auth credentials or API secret."
-        }.to_json
-    end
-end
-
-get '/api/login' do
-    content_type 'application/json'
-    if (!check_params "username","password")
-        return {
-            :status => "err",
-            :error => "Username and password are two required fields."
-        }.to_json
-    end
-    auth,apisecret = check_user_credentials(params[:username],
-                                            params[:password])
-    if auth
-        return {
-            :status => "ok",
-            :auth => auth,
-            :apisecret => apisecret
-        }.to_json
-    else
-        return {
-            :status => "err",
-            :error => "No match for the specified username / password pair."
-        }.to_json
-    end
-end
-
-get '/api/reset-password' do
-    content_type 'application/json'
-    if (!check_params "username","email")
-        return {
-            :status => "err",
-            :error => "Username and email are two required fields."
-        }.to_json
-    end
-
-    user = get_user_by_username(params[:username])
-    if user && user['email'] && user['email'] == params[:email]
-        id = user.id
-        # Rate limit password reset attempts.
-        if (user['pwd_reset'] &&
-            (Time.now.to_i - user['pwd_reset'].to_i) < PasswordResetDelay)
-            return {
-                :status => "err",
-                :error => "Sorry, not enough time elapsed since last password reset request."
-            }.to_json
-        end
-
-        if send_reset_password_email(user)
-            # All fine, set the last password reset time to the current time
-            # for rate limiting purposes, and send the email with the reset
-            # link.
-            $r.hset("user:#{id}","pwd_reset",Time.now.to_i)
-            return {:status => "ok"}.to_json
-        else
-            return {
-                :status => "err",
-                :error => "Problem sending the email, please contact the site admin."
-            }.to_json
-        end
-    else
-        return {
-            :status => "err",
-            :error => "No match for the specified username / email pair."
-        }.to_json
-    end
-end
-
-post '/api/create_account' do
-    content_type 'application/json'
-    if (!check_params "username","password")
-        return {
-            :status => "err",
-            :error => "Username and password are two required fields."
-        }.to_json
-    end
-    if !params[:username].match(UsernameRegexp)
-        return {
-            :status => "err",
-            :error => "Username must match /#{UsernameRegexp.source}/"
-        }.to_json
-    end
-    if params[:password].length < PasswordMinLength
-        return {
-            :status => "err",
-            :error => "Password is too short. Min length: #{PasswordMinLength}"
-        }.to_json
-    end
-    auth,apisecret,errmsg = create_user(params[:username],params[:password])
-    if auth
-        return {:status => "ok", :auth => auth, :apisecret => apisecret}.to_json
-    else
-        return {
-            :status => "err",
-            :error => errmsg
-        }.to_json
-    end
+  content_type 'application/json'
+  if $user and check_api_secret
+    $user.update_auth_token
+    return {:status => "ok"}.to_json
+  else
+    return {
+        :status => "err",
+        :error => "Wrong auth credentials or API secret."
+    }.to_json
+  end
 end
 
 post '/api/submit' do
@@ -917,23 +718,10 @@ post '/api/updateprofile' do
     if not check_api_secret
         return {:status => "err", :error => "Wrong form secret."}.to_json
     end
-    if !check_params(:about, :email, :password)
+    if !check_params(:about)
         return {:status => "err", :error => "Missing parameters."}.to_json
     end
-    if params[:password].length > 0
-        if params[:password].length < PasswordMinLength
-            return {
-                :status => "err",
-                :error => "Password is too short. "+
-                          "Min length: #{PasswordMinLength}"
-            }.to_json
-        end
-        $r.hmset("user:#{$user.id}","password",
-            hash_password(params[:password],$user['salt']))
-    end
-    $r.hmset("user:#{$user.id}",
-        "about", params[:about][0..4095],
-        "email", params[:email][0..255])
+    $user.update_about params[:about]
     return {:status => "ok"}.to_json
 end
 
@@ -995,7 +783,7 @@ get  '/api/getcomments/:news_id' do
             top_comments = replies
         end
         replies.each{|r|
-            user = get_user_by_id(r['user_id']) || DeletedUser
+            user = User.find(r['user_id']) || User.deleted_one
             r['username'] = user.email
             r.replies = thread[r['id']] || []
             if r['up']
@@ -1153,16 +941,6 @@ end
 # User and authentication
 ################################################################################
 
-# Try to authenticate the user, if the credentials are ok we populate the
-# $user global with the user information.
-# Otherwise $user is set to nil, so you can test for authenticated user
-# just with: if $user ...
-#
-# Return value: none, the function works by side effect.
-def auth_user(auth)
-  return if !auth
-  $user = User.find_by_auth_token auth
-end
 
 # In Lamer News users get karma visiting the site.
 # Increment the user karma by KarmaIncrementAmount if the latest increment
@@ -1178,26 +956,8 @@ def increment_karma_if_needed
     if $user.karma_incr_time.to_i < (Time.now.to_i-KarmaIncrementInterval)
         userkey = "user:#{$user.id}"
         $r.hset(userkey,"karma_incr_time",Time.now.to_i)
-        increment_user_karma_by($user.id,KarmaIncrementAmount)
+        $user.change_karma_by KarmaIncrementAmount
     end
-end
-
-# Increment the user karma by the specified amount and make sure to
-# update $user to reflect the change if it is the same user id.
-def increment_user_karma_by(user_id,increment)
-    userkey = "user:#{user_id}"
-    $r.hincrby(userkey,"karma",increment)
-    if $user and ($user.id.to_i == user_id.to_i)
-        $user.karma = $user.karma.to_i + increment
-    end
-end
-
-# Return the specified user karma.
-def get_user_karma(user_id)
-    return $user.karma.to_i if $user and (user_id.to_i == $user.id.to_i)
-    userkey = "user:#{user_id}"
-    karma = $r.hget(userkey,"karma")
-    karma ? karma.to_i : 0
 end
 
 # Return the hex representation of an unguessable 160 bit random number.
@@ -1205,91 +965,6 @@ def get_rand
     rand = "";
     File.open("/dev/urandom").read(20).each_byte{|x| rand << sprintf("%02x",x)}
     rand
-end
-
-# Create a new user with the specified username/password
-#
-# Return value: the function returns two values, the first is the
-#               auth token if the registration succeeded, otherwise
-#               is nil. The second is the error message if the function
-#               failed (detected testing the first return value).
-def create_user(username,password)
-    if $r.exists("username.to.id:#{username.downcase}")
-        return nil, nil, "Username is already taken, please try a different one."
-    end
-    if rate_limit_by_ip(UserCreationDelay,"create_user",request.ip)
-        return nil, nil, "Please wait some time before creating a new user."
-    end
-    id = $r.incr("users.count")
-    auth_token = get_rand
-    apisecret = get_rand
-    salt = get_rand
-    $r.hmset("user:#{id}",
-        "id",id,
-        "username",username,
-        "salt",salt,
-        "password",hash_password(password,salt),
-        "ctime",Time.now.to_i,
-        "karma",UserInitialKarma,
-        "about","",
-        "email","",
-        "auth",auth_token,
-        "apisecret",apisecret,
-        "flags","",
-        "karma_incr_time",Time.new.to_i)
-    $r.set("username.to.id:#{username.downcase}",id)
-    $r.set("auth:#{auth_token}",id)
-
-    # First user ever created (id = 1) is an admin
-    $r.hmset("user:#{id}","flags","a") if id.to_i == 1
-    return auth_token,apisecret,nil
-end
-
-# Update the specified user authentication token with a random generated
-# one. This in other words means to logout all the sessions open for that
-# user.
-#
-# Return value: on success the new token is returned. Otherwise nil.
-# Side effect: the auth token is modified.
-def update_auth_token(user)
-    $r.del("auth:#{user['auth']}")
-    new_auth_token = get_rand
-    $r.hmset("user:#{user.id}","auth",new_auth_token)
-    $r.set("auth:#{new_auth_token}",user.id)
-    return new_auth_token
-end
-
-# Turn the password into an hashed one, using PBKDF2 with HMAC-SHA1
-# and 160 bit output.
-def hash_password(password,salt)
-    p = PBKDF2.new do |p|
-        p.iterations = PBKDF2Iterations
-        p.password = password
-        p.salt = salt
-        p.key_length = 160/8
-    end
-    p.hex_string
-end
-
-# Return the user from the ID.
-def get_user_by_id(id)
-    $r.hgetall("user:#{id}")
-end
-
-# Return the user from the username.
-def get_user_by_username(username)
-    id = $r.get("username.to.id:#{username.downcase}")
-    return nil if !id
-    get_user_by_id(id)
-end
-
-# Check if the username/password pair identifies an user.
-# If so the auth token and form secret are returned, otherwise nil is returned.
-def check_user_credentials(username,password)
-    user = get_user_by_username(username)
-    return nil if !user
-    hp = hash_password(password,user['salt'])
-    (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
 end
 
 # Has the user submitted a news story in the last `NewsSubmissionBreak` seconds?
@@ -1312,7 +987,7 @@ end
 # 'n'   Open links to new windows.
 #
 def user_add_flags(user_id,flags)
-    user = get_user_by_id(user_id)
+    user = User.find(user_id)
     return false if !user
     newflags = user.flags
     flags.each_char{|flag|
@@ -1335,19 +1010,6 @@ end
 
 def user_is_admin?(user)
     user_has_flags?(user,"a")
-end
-
-def send_reset_password_email(user)
-    return false if !MailRelay || !MailFrom
-    aux = request.url.split("/")
-    return false if aux.length < 3
-    current_domain = aux[0]+"//"+aux[2]
-
-    reset_link = "#{current_domain}/set-new-password?user=#{URI.encode(user.email)}&auth=#{URI.encode(user['auth'])}"
-
-    subject = "#{aux[2]} password reset"
-    message = "You can reset your password here: #{reset_link}"
-    return mail(MailRelay,MailFrom,user['email'],subject,message)
 end
 
 ################################################################################
@@ -1440,7 +1102,7 @@ end
 # error that prevented the vote.
 def vote_news(news_id,user_id,vote_type)
     # Fetch news and user
-    user = ($user and $user.id == user_id) ? $user : get_user_by_id(user_id)
+    user = ($user and $user.id == user_id) ? $user : User.find(user_id)
     news = get_news_by_id(news_id)
     return false,"No such news or user." if !news or !user
 
@@ -1454,9 +1116,9 @@ def vote_news(news_id,user_id,vote_type)
     # Check if the user has enough karma to perform this operation
     if $user.id != news['user_id']
         if (vote_type == :up and
-             (get_user_karma(user_id) < NewsUpvoteMinKarma)) or
+             ($user.karma < NewsUpvoteMinKarma)) or
            (vote_type == :down and
-             (get_user_karma(user_id) < NewsDownvoteMinKarma))
+             ($user.karma < NewsDownvoteMinKarma))
             return false,"You don't have enough karma to vote #{vote_type}"
         end
     end
@@ -1483,12 +1145,12 @@ def vote_news(news_id,user_id,vote_type)
     # Remove some karma to the user if needed, and transfer karma to the
     # news owner in the case of an upvote.
     if $user.id != news['user_id']
-        if vote_type == :up
-            increment_user_karma_by(user_id,-NewsUpvoteKarmaCost)
-            increment_user_karma_by(news['user_id'],NewsUpvoteKarmaTransfered)
-        else
-            increment_user_karma_by(user_id,-NewsDownvoteKarmaCost)
-        end
+      if vote_type == :up
+        user.change_karma_by -NewsUpvoteKarmaCost
+        User.change_karma_by news['user_id'], NewsUpvoteKarmaTransfered
+      else
+        user.change_karma_by -NewsDownvoteKarmaCost
+      end
     end
 
     return rank,nil
@@ -1864,7 +1526,6 @@ def insert_comment(news_id,user_id,comment_id,parent_id,body)
         $r.zadd("user.comments:#{user_id}",
             Time.now.to_i,
             news_id.to_s+"-"+comment_id.to_s);
-        # increment_user_karma_by(user_id,KarmaIncrementComment)
         if p and $r.exists("user:#{p['user_id']}")
             $r.hincrby("user:#{p['user_id']}","replies",1)
         end

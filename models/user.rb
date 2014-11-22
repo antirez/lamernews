@@ -8,6 +8,28 @@ class User
     end
   end
 
+  def change_karma_by amount
+    self.karma += amount
+    $r.hincrby "user:#{id}", "karma", amount
+  end
+
+  def update_auth_token
+    $r.del "auth:#{auth}"
+    self.auth = get_rand
+    $r.hmset "user:#{id}", "auth", auth
+    $r.set "auth:#{auth}", id
+    auth
+  end
+
+  def update_about about
+    self.about = about
+    $r.hmset "user:#{id}", "about", about[0..4095]
+  end
+
+  def self.change_karma_by id, amount
+    $r.hincrby "user:#{id}", "karma", amount
+  end
+
   def self.find_or_create_using_google_oauth2 auth_data
     find_or_create auth_data['info']['name'], auth_data['info']['email']
   end

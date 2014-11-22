@@ -1,0 +1,18 @@
+redis:
+  image: redis
+  ports:
+    - "6379"
+
+web:
+  image: quay.io/mikamai/lamernews
+  command: rackup
+  volumes:
+    - /app:/app
+  working_dir: /app
+  ports:
+    - "9292:9292"
+  links:
+    - redis
+  environment:
+    LN_REDIS_URL: redis://redis:6379
+    RACK_ENV: development

@@ -62,4 +62,4 @@ WORKDIR /app
 
 RUN bundle install --without test development
 
-#EXPOSE 3000
+EXPOSE 9292

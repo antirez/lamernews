@@ -988,6 +988,15 @@ get  '/api/getcomments/:news_id' do
     return { :status => "ok", :comments => top_comments }.to_json
 end
 
+get  '/api/news/:news_id' do
+    content_type 'application/json'
+    return {
+        :status => "err",
+        :error => "Wrong news ID."
+    }.to_json unless news = get_news_by_id(params[:news_id])
+    return { :status => "ok", :comments => news }.to_json
+end
+
 # Check that the list of parameters specified exist.
 # If at least one is missing false is returned, otherwise true is returned.
 #

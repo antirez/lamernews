@@ -1410,6 +1410,10 @@ def get_news_by_id(news_ids,opt={})
     opt[:single] ? result[0] : result
 end
 
+def get_news_by_id_with_type(news_ids,opt={})
+    news_type(get_news_by_id(news_ids,opt={}))
+end
+
 def url_type(url)
     types.each do |type, check|
         return type if check.call(url)
@@ -1432,9 +1436,11 @@ def types
 end
 
 def news_type(news)
-    news.map do |news_item|
-        news_item['type'] = url_type(news_item['url'])
-    end
+    return news.map do |news|
+        news['type'] = url_type(news['url'])
+    end if news.is_a? Array
+    news['type'] = url_type(news['url'])
+    return news
 end
 
 # Vote the specified news in the context of a given user.

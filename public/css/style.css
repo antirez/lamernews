@@ -170,6 +170,35 @@ article.deleted {
     color:#999;
 }
 
+.see-more {
+    margin-left: 20px;
+    cursor: pointer;
+}
+
+.see-more img {
+    width: 20px;
+    opacity: 0.5;
+}
+
+.preview {
+    display: none;
+    width: 500px;
+    height: auto;
+    margin-left: 20px;
+}
+
+.preview.open {
+    display: block;
+}
+
+.preview img {
+    width: 100%;
+}
+
+.see-more img:hover {
+    opacity: 1;
+}
+
 form textarea {
     font-family: Courier;
     font-size:14px;
@@ -403,3 +432,4 @@ topcomment {
     }
 
 }
+

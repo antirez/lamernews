@@ -6,7 +6,7 @@ describe User do
 
     describe '#change_karma_by' do
       it 'changes the instance karma' do
-        expect { subject.change_karma_by 5 }.to change(subject, :karma).by 6
+        expect { subject.change_karma_by 5 }.to change(subject, :karma).by 5
       end
 
       it 'changes karma on db' do
@@ -16,6 +16,36 @@ describe User do
 
       it "returns the new karma" do
         expect(subject.change_karma_by 5).to eq 6
+      end
+    end
+
+    describe '#update_auth_token' do
+      it 'generates a new auth token on the current instance' do
+        subject # trigger memoization
+        allow(User).to receive(:generate_auth_token).and_return 'asd'
+        expect { subject.update_auth_token }.to change(subject, :auth).to 'asd'
+      end
+
+      it 'stores the new auth token on redis' do
+        subject # trigger memoization
+        allow(User).to receive(:generate_auth_token).and_return 'asd'
+        subject.update_auth_token
+        expect($r.hget "user:#{subject.id}", "auth").to eq "asd"
+      end
+
+      it 'stores a new pairing between auth token and id' do
+        subject # trigger memoization
+        allow(User).to receive(:generate_auth_token).and_return 'asd'
+        subject.update_auth_token
+        expect($r.get "auth:#{subject.auth}").to eq "1"
+      end
+
+      it 'removes the old auth token' do
+        allow(User).to receive(:generate_auth_token).and_return 'foo'
+        subject # trigger memoization
+        allow(User).to receive(:generate_auth_token).and_return 'asd'
+        subject.update_auth_token
+        expect($r.exists "auth:foo").to be_falsey
       end
     end
   end

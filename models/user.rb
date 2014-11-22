@@ -17,7 +17,7 @@ class User
 
   def update_auth_token
     $r.del "auth:#{auth}"
-    self.auth = get_rand
+    self.auth = self.class.generate_auth_token
     $r.hmset "user:#{id}", "auth", auth
     $r.set "auth:#{auth}", id
     auth

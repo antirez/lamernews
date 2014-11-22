@@ -1099,12 +1099,6 @@ def get_news_by_id_with_type(news_ids,opt={})
     news_type(get_news_by_id(news_ids,opt={}))
 end
 
-def url_type(url)
-  types.each do |type, check|
-    return type if check.call(url)
-  end
-end
-
 def media_types
   [:image, :video]
 end
@@ -1126,7 +1120,7 @@ end
 
 def news_type news
   result = [*news].map do |item|
-    item['type'] = url_type(item['url'])
+    item['type'] = media_type(item['url'])
     item
   end
   return (news.is_a? Array) ? result : result.first

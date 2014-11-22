@@ -1707,7 +1707,7 @@ def news_to_html(news)
         downclass << " voted"
         upclass << " disabled"
     end
-    H.article("data-news-id" => news["id"]) {
+    H.article("data-news-id" => news["id"], "data-type" => news['type']) {
         H.a(:href => "#up", :class => upclass) {
             "&#9650;"
         }+" "+

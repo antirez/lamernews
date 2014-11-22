@@ -1,6 +1,25 @@
 require 'spec_helper'
 
 describe User do
+  describe 'on a persisted instance' do
+    subject { User.create 'a', 'a@a.it' }
+
+    describe '#change_karma_by' do
+      it 'changes the instance karma' do
+        expect { subject.change_karma_by 5 }.to change(subject, :karma).by 6
+      end
+
+      it 'changes karma on db' do
+        subject.change_karma_by 5
+        expect($r.hget "user:#{subject.id}", "karma").to eq "6"
+      end
+
+      it "returns the new karma" do
+        expect(subject.change_karma_by 5).to eq 6
+      end
+    end
+  end
+
   describe '::find_or_create_using_google_oauth2' do
     it 'calls #find_or_create with name and email' do
       expect(User).to receive(:find_or_create).with 'a', 'a@a.it'

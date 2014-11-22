@@ -4,6 +4,7 @@ class User
 
   def initialize args={}
     args.each do |key, val|
+      val = val.to_i if %w(karma).include?(key)
       send "#{key}=", val
     end
   end
@@ -11,6 +12,7 @@ class User
   def change_karma_by amount
     self.karma += amount
     $r.hincrby "user:#{id}", "karma", amount
+    karma
   end
 
   def update_auth_token

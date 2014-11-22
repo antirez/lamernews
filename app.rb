@@ -988,6 +988,15 @@ get  '/api/getcomments/:news_id' do
     return { :status => "ok", :comments => top_comments }.to_json
 end
 
+get  '/api/news/:news_id' do
+    content_type 'application/json'
+    return {
+        :status => "err",
+        :error => "Wrong news ID."
+    }.to_json unless news = get_news_by_id(params[:news_id])
+    return { :status => "ok", :comments => news }.to_json
+end
+
 # Check that the list of parameters specified exist.
 # If at least one is missing false is returned, otherwise true is returned.
 #
@@ -1396,7 +1405,46 @@ def get_news_by_id(news_ids,opt={})
 
     # Return an array if we got an array as input, otherwise
     # the single element the caller requested.
+
+    news_type(result)
     opt[:single] ? result[0] : result
+end
+
+def get_news_by_id_with_type(news_ids,opt={})
+    news_type(get_news_by_id(news_ids,opt={}))
+end
+
+def url_type(url)
+  types.each do |type, check|
+    return type if check.call(url)
+  end
+end
+
+def media_types
+  [:image, :video]
+end
+
+def validate_image url
+  url.end_with? '.jpg', '.jpeg', '.png'
+end
+
+def validate_video url
+  url =~ /(youtube|vimeo)/
+end
+
+def media_type url
+  media_types.each do |mt|
+    return mt if send("validate_#{mt}", url)
+  end
+  :url
+end
+
+def news_type news
+  result = [*news].map do |item|
+    item['type'] = url_type(item['url'])
+    item
+  end
+  return (news.is_a? Array) ? result : result.first
 end
 
 # Vote the specified news in the context of a given user.
@@ -1663,7 +1711,7 @@ def news_to_html(news)
         downclass << " voted"
         upclass << " disabled"
     end
-    H.article("data-news-id" => news["id"]) {
+    H.article("data-news-id" => news["id"], "data-type" => news['type']) {
         H.a(:href => "#up", :class => upclass) {
             "&#9650;"
         }+" "+

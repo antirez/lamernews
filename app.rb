@@ -1415,24 +1415,28 @@ def get_news_by_id_with_type(news_ids,opt={})
 end
 
 def url_type(url)
-    types.each do |type, check|
-        return type if check.call(url)
-    end
+  types.each do |type, check|
+    return type if check.call(url)
+  end
 end
 
-def types
-    {
-        'image' => lambda { |url|
-            url.end_with? 'jpg', 'jpeg', 'png'
-        },
-        'video' => lambda { |url|
-            ['youtube', 'vimeo'].each { |video|
-                return true if url.include? video
-            }
-            return false
-        },
-        'none' => lambda { |url| true }
-    }
+def media_types
+  [:image, :video]
+end
+
+def validate_image url
+  url.end_with? '.jpg', '.jpeg', '.png'
+end
+
+def validate_video url
+  url =~ /(youtube|vimeo)/
+end
+
+def media_type url
+  media_types.each do |mt|
+    return mt if send("validate_#{mt}", url)
+  end
+  :url
 end
 
 def news_type(news)

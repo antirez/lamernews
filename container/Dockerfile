@@ -64,4 +64,5 @@ RUN bundle install --without test development
 
 EXPOSE 9292
 
+RUN git fetch
 RUN git checkout intinig/docker-fantasies

@@ -5,7 +5,7 @@ redis:
 
 web:
   image: quay.io/mikamai/lamernews
-  command: rackup
+  command: bundle exec rackup
   volumes:
     - /app:/app
   working_dir: /app

@@ -2,3 +2,5 @@
 dump.rdb
 redis-*/
 .vagrant
+.bundle/config
+vendor/remote_gems

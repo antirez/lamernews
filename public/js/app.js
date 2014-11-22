@@ -257,3 +257,51 @@ $(function(){
       }
     })
 })
+
+
+// Show preview button when article contains an image or video
+var preview = function () {
+  return {
+    "none": function(article, articleHref) {
+      // NOTHING!
+    },
+    "video": function(article, articleHref) {
+      $(article).append('<div class="preview"><iframe width="560" height="315" src="//www.youtube.com/embed/' + getYoutubeHash(articleHref) + '" frameborder="0" allowfullscreen></iframe></div>');
+      $(article).append('<a class="see-more"></a>')
+    },
+    "image": function(article, articleHref) {
+      $(article).append('<div class="preview"><img src="' + articleHref + '" /></div>');
+      $(article).append('<a class="see-more"></a>')
+    }
+  }
+}
+
+$(function() {
+  $('#newslist article').each(function() {
+    var articleHref = $(this).find('h2 a').attr('href');
+    var articleType = $(this).attr('data-type');
+
+    preview()[articleType](this, articleHref);
+
+    bindPreviewEvents(this);
+  })
+});
+
+var getYoutubeHash = function(href) {
+  var videoId = href.split('v=')[1];
+  var ampersandPosition = href.indexOf('&');
+  if(ampersandPosition != -1) {
+    videoId = videoId.substring(0, ampersandPosition);
+  }
+
+  return videoId;
+}
+
+var bindPreviewEvents = function(article) {
+  $(article).find('a.see-more').on('click', function(event) {
+    event.preventDefault();
+
+    var $articlePreview = $(this).siblings('.preview');
+    $articlePreview.toggleClass('open');
+  });
+}

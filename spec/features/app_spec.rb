@@ -1,8 +1,4 @@
-require_relative '../app'
-require 'rspec'
-require 'rack/test'
-
-set :environment, :test
+require 'spec_helper'
 
 describe 'urls_to_links' do
   [
@@ -14,7 +10,7 @@ describe 'urls_to_links' do
   ].each do |test_case|
     it "converts '#{test_case[:input]}' to HTML link to #{test_case[:href]}" do
       expected_link = "<a rel=\"nofollow\" href=\"#{test_case[:href]}\">#{test_case[:text]}</a>"
-      urls_to_links(test_case[:input]).should match(expected_link)
+      expect(urls_to_links(test_case[:input])).to match(expected_link)
     end
   end
 end
@@ -26,6 +22,32 @@ describe 'Lamer News' do
     Sinatra::Application
   end
 
+  describe '/' do
+    context 'when I am not logged' do
+      it 'contains a link with a login statement' do
+        get '/'
+        expect(last_response.body).to match /\<a.+\>login with google\<\/a\>/
+      end
+
+      it 'contains a link pointing to google oauth2 login' do
+        get '/'
+        expect(last_response.body).to match /\<a href\=\"\/auth\/google_oauth2\".+\>.*\<\/a\>/
+      end
+    end
+  end
+
+  describe '/auth/:provider/callback' do
+    it 'returns a 404 if provider is not valid' do
+      get '/auth/asd/callback'
+      expect(last_response.status).to eq 404
+    end
+
+    it 'returns a 302 if request does not contain auth data' do
+      get '/auth/google_oauth2/callback'
+      expect(last_response.status).to eq 302
+    end
+  end
+
   describe '/api/create_account' do
     ['anti rez', '0antirez', '_antirez'].each do |invalid_username|
       context "with #{invalid_username} as username" do
@@ -34,9 +56,9 @@ describe 'Lamer News' do
         end
 
         it 'returns "Username must match" error' do
-          last_response.should be_ok
-          JSON.parse(last_response.body)['status'].should eq('err')
-          JSON.parse(last_response.body)['error'].should match(/Username must match/)
+          expect(last_response).to be_ok
+          expect(JSON.parse(last_response.body)['status']).to eq('err')
+          expect(JSON.parse(last_response.body)['error']).to match(/Username must match/)
         end
       end
     end
@@ -48,8 +70,8 @@ describe 'Lamer News' do
         end
 
         it 'doesn\'t return "Username must match" error' do
-          last_response.should be_ok
-          JSON.parse(last_response.body)['error'].should_not match(/Username must match/)
+          expect(last_response).to be_ok
+          expect(JSON.parse(last_response.body)['error']).to_not match(/Username must match/)
         end
       end
     end

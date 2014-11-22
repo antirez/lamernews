@@ -3,17 +3,17 @@
 #
 # Copyright (c) 2008 Sam Quigley <quigley@emerose.com>
 # Copyright (c) 2011 Salvatore Sanfilippo <antirez@gmail.com>
-#  
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
 # furnished to do so, subject to the following conditions:
-#  
+#
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
-#  
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -21,7 +21,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
-# 
+#
 # This license is sometimes referred to as "The MIT License"
 
 require 'rubygems'
@@ -37,53 +37,53 @@ class PBKDF2
         raise ArgumentError, "Argument '#{k}' is not allowed"
       end
     end
-    
+
     yield self if block_given?
 
     # set this to the default if nothing was given
     @key_length ||= 20
-    
+
     # make sure the relevant things got set
     raise ArgumentError, "password not set" if @password.nil?
     raise ArgumentError, "salt not set" if @salt.nil?
     raise ArgumentError, "iterations not set" if @iterations.nil?
   end
   attr_reader :key_length, :iterations, :salt, :password
-  
+
   def key_length=(l)
     raise ArgumentError, "key too short" if l < 1
     raise ArgumentError, "key too long" if l > ((2**32 - 1) * 20)
     @value = nil
     @key_length = l
   end
-  
+
   def iterations=(i)
     raise ArgumentError, "iterations can't be less than 1" if i < 1
     @value = nil
     @iterations = i
   end
-  
+
   def salt=(s)
     @value = nil
     @salt = s
   end
-  
+
   def password=(p)
     @value = nil
     @password = p
   end
-  
+
   def value
     calculate! if @value.nil?
     @value
-  end    
-  
+  end
+
   alias bin_string value
-    
+
   def hex_string
     bin_string.unpack("H*").first
   end
-  
+
   # return number of milliseconds it takes to complete one iteration
   def benchmark(iters = 400000)
     iter_orig = @iterations
@@ -94,18 +94,18 @@ class PBKDF2
     @iterations = iter_orig
     return (time/iters)
   end
-  
+
   protected
-  
+
   # the pseudo-random function defined in the spec
   def prf(data)
     if defined?(OpenSSL)
-      OpenSSL::HMAC.digest(OpenSSL::Digest::Digest.new("sha1"),@password,data)
+      OpenSSL::HMAC.digest(OpenSSL::Digest.new("sha1"),@password,data)
     else
       HMAC::SHA1.digest(@password,data)
     end
   end
-  
+
   # this is a translation of the helper function "F" defined in the spec
   def calculate_block(block_num)
     # u_1:
@@ -138,7 +138,16 @@ class PBKDF2
 end
 
 class String
-  if RUBY_VERSION >= "1.9"
+  if RUBY_VERSION >= "2.1"
+    def xor_impl(other)
+      result = "".encode("ASCII-8BIT")
+      o_bytes = other.bytes.to_a
+      bytes.each_with_index do |c, i|
+        result << (c ^ o_bytes[i])
+      end
+      result
+    end
+  elsif RUBY_VERSION >= "1.9"
     def xor_impl(other)
       result = "".encode("ASCII-8BIT")
       o_bytes = other.bytes.to_a

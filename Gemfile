@@ -1,14 +1,18 @@
 source 'https://rubygems.org'
 
-gem 'sinatra','~> 1.4.2'
-gem 'sinatra-reloader'
-gem 'redis','~> 3.0.4'
-gem 'hiredis', '~> 0.4.5'
-gem 'json', '~> 1.7.7'
-gem 'ruby-hmac', '~> 0.4.0'
+ruby '2.1.5'
+
+gem 'sinatra'
+gem 'redis'
+gem 'hiredis'
+gem 'json'
+gem 'ruby-hmac'
 
 group :development, :test do
   gem 'rake'
   gem 'rspec'
   gem 'rack-test'
+
+  gem 'pry'
+  gem 'sinatra-reloader'
 end

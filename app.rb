@@ -532,7 +532,7 @@ get "/user/:username" do
             H.span(:class => "avatar") {
                 email = user["email"] || ""
                 digest = Digest::MD5.hexdigest(email)
-                H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
+                H.img(:src=>"//gravatar.com/avatar/#{digest}?s=48&d=mm")
             }+" "+
             H.h2 {H.entities user['username']}+
             H.pre {
@@ -1928,7 +1928,7 @@ def comment_to_html(c,u,show_parent = false)
         H.span(:class => "avatar") {
             email = u["email"] || ""
             digest = Digest::MD5.hexdigest(email)
-            H.img(:src=>"http://gravatar.com/avatar/#{digest}?s=48&d=mm")
+            H.img(:src=>"//gravatar.com/avatar/#{digest}?s=48&d=mm")
         }+H.span(:class => "info") {
             H.span(:class => "username") {
                 H.a(:href=>"/user/"+URI.encode(u["username"])) {

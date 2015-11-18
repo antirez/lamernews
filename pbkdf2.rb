@@ -140,7 +140,7 @@ end
 class String
   if RUBY_VERSION >= "1.9"
     def xor_impl(other)
-      result = ""
+      result = "".encode("ASCII-8BIT")
       o_bytes = other.bytes.to_a
       bytes.each_with_index do |c, i|
         result << (c ^ o_bytes[i])
@@ -149,33 +149,8 @@ class String
     end
   else
     def xor_impl(other)
-      if self.length == 20
-        res = " "*20
-        res[0] = (self[0] ^ other[0])
-        res[1] = (self[1] ^ other[1])
-        res[2] = (self[2] ^ other[2])
-        res[3] = (self[3] ^ other[3])
-        res[4] = (self[4] ^ other[4])
-        res[5] = (self[5] ^ other[5])
-        res[6] = (self[6] ^ other[6])
-        res[7] = (self[7] ^ other[7])
-        res[8] = (self[8] ^ other[8])
-        res[9] = (self[9] ^ other[9])
-        res[10] = (self[10] ^ other[10])
-        res[11] = (self[11] ^ other[11])
-        res[12] = (self[12] ^ other[12])
-        res[13] = (self[13] ^ other[13])
-        res[14] = (self[14] ^ other[14])
-        res[15] = (self[15] ^ other[15])
-        res[16] = (self[16] ^ other[16])
-        res[17] = (self[17] ^ other[17])
-        res[18] = (self[18] ^ other[18])
-        res[19] = (self[19] ^ other[19])
-        res
-      else
-        result = (0..self.length-1).collect { |i| self[i] ^ other[i] }
-        result.pack("C*")
-      end
+      result = (0..self.length-1).collect { |i| self[i] ^ other[i] }
+      result.pack("C*")
     end
   end
 

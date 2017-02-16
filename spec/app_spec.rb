@@ -14,7 +14,7 @@ describe 'urls_to_links' do
   ].each do |test_case|
     it "converts '#{test_case[:input]}' to HTML link to #{test_case[:href]}" do
       expected_link = "<a rel=\"nofollow\" href=\"#{test_case[:href]}\">#{test_case[:text]}</a>"
-      urls_to_links(test_case[:input]).should match(expected_link)
+      expect(urls_to_links(test_case[:input])).to match(expected_link)
     end
   end
 end
@@ -34,9 +34,9 @@ describe 'Lamer News' do
         end
 
         it 'returns "Username must match" error' do
-          last_response.should be_ok
-          JSON.parse(last_response.body)['status'].should eq('err')
-          JSON.parse(last_response.body)['error'].should match(/Username must match/)
+          expect(last_response).to be_ok
+          expect(JSON.parse(last_response.body)['status']).to eq('err')
+          expect(JSON.parse(last_response.body)['error']).to match(/Username must match/)
         end
       end
     end
@@ -48,8 +48,8 @@ describe 'Lamer News' do
         end
 
         it 'doesn\'t return "Username must match" error' do
-          last_response.should be_ok
-          JSON.parse(last_response.body)['error'].should_not match(/Username must match/)
+          expect(last_response).to be_ok
+          expect(JSON.parse(last_response.body)['error']).to_not match(/Username must match/)
         end
       end
     end

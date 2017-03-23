@@ -154,7 +154,16 @@ article p a {
 }
 
 article.comment .uparrow.voted, article .uparrow.voted {
+    /*
     color:#99dd99;
+    
+    Some kind of visual feedback needs to be passed to the user after they have voted successfully.
+    At the moment the up arrow remains the same even after I have voted successfully.
+    
+    Hackernews hides the up arrow after a user has upvoted successfully. The css below adds that functionality.
+    */
+    
+    visibility: hidden;
 }
 
 article.comment .downarrow.voted, article .downarrow.voted {

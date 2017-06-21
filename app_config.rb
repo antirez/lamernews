@@ -4,9 +4,10 @@ SiteUrl = "http://lamernews.com"
 SiteDescription = "Programming News"
 
 # Redis config
-RedisURL = "redis://127.0.0.1:10000"
+RedisURL = "redis://127.0.0.1:6379"
 
 # Security
+HttpAuthenticationHeader = "HTTP_REMOTE_USER" # Header with username to login/register coming from a remote Authentication system ie. LDAP
 PBKDF2Iterations = 1000 # Set this to 5000 to improve security. But it is slow.
 UseOpenSSL = false
 PasswordMinLength = 8

@@ -1133,6 +1133,16 @@ end
 #
 # Return value: none, the function works by side effect.
 def auth_user(auth)
+    remote_user = request.env[HttpAuthenticationHeader]
+    puts "remote  #{remote_user} -- #{auth}"
+    if remote_user
+        user = get_user_by_username(remote_user)
+        if user
+            auth = user['auth']
+        else
+            auth,apisecret,errmsg = create_user(remote_user,get_rand)
+        end
+    end
     return if !auth
     id = $r.get("auth:#{auth}")
     return if !id

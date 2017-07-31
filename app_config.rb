@@ -2,6 +2,7 @@
 SiteName = "Lamer News"
 SiteUrl = "http://lamernews.com"
 SiteDescription = "Programming News"
+GoogleAnalytics = "XXX"
 
 # Redis config
 RedisURL = "redis://127.0.0.1:6379"

@@ -40,6 +40,7 @@ require_relative 'mail'
 require_relative 'about'
 require 'openssl' if UseOpenSSL
 require 'uri'
+require 'net/ldap'
 
 Version = "0.11.0"
 
@@ -222,13 +223,14 @@ get '/login' do
                 H.inputtext(:id => "username", :name => "username")+
                 H.label(:for => "password") {"password"}+
                 H.inputpass(:id => "password", :name => "password")+H.br+
-                H.checkbox(:name => "register", :value => "1")+
-                "create account"+H.br+
+                ((!UseLDAP)? H.checkbox(:name => "register", :value => "1") + "create account": "")+
+                H.br+
                 H.submit(:name => "do_login", :value => "Login")
             }
         }+
         H.div(:id => "errormsg"){}+
-        H.a(:href=>"/reset-password") {"reset password"}+
+        ((!UseLDAP)? H.a(:href=>"/reset-password") {"reset password"} : "")+
+        
         H.script() {'
             $(function() {
                 $("form[name=f]").submit(login);
@@ -1054,7 +1056,7 @@ def application_header
                 "logout"
             }
         else
-            H.a(:href => "/login") {"login / register"}
+            H.a(:href => "/login") {(UseLDAP)? "login": "login / register"}
         end
     }
     menu_mobile = H.a(:href => "#", :id => "link-menu-mobile"){"<~>"}
@@ -1134,7 +1136,6 @@ end
 # Return value: none, the function works by side effect.
 def auth_user(auth)
     remote_user = request.env[HttpAuthenticationHeader]
-    puts "remote  #{remote_user} -- #{auth}"
     if remote_user
         user = get_user_by_username(remote_user)
         if user
@@ -1272,10 +1273,36 @@ end
 # Check if the username/password pair identifies an user.
 # If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
-    user = get_user_by_username(username)
-    return nil if !user
-    hp = hash_password(password,user['salt'])
-    (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
+
+    if UseLDAP
+        ldap = Net::LDAP.new
+        ldap.host = LDAPHost
+        ldap.auth LDAPAdminUserDn, LDAPAdminUserPassword
+        result = ldap.bind_as(:base => LDAPAdminUserBase, 
+                            :filter =>"(uid=#{username})", 
+                            :password => password)
+        
+        return nil if !result
+
+        username = result.first.uid.first
+        user = get_user_by_username(username)
+        
+        if !user
+            auth,apisecret,errmsg = create_user(username,password)
+            if errmsg
+                puts errmsg
+                return nil
+            end
+            return auth,apisecret
+        end
+
+        [user['auth'], user['apisecret']] 
+    else 
+        user = get_user_by_username(username)
+        return nil if !user
+        hp = hash_password(password,user['salt'])
+        (user['password'] == hp) ? [user['auth'],user['apisecret']] : nil
+    end
 end
 
 # Has the user submitted a news story in the last `NewsSubmissionBreak` seconds?

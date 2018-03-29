@@ -7,6 +7,7 @@ gem 'redis'
 gem 'hiredis'
 gem 'json', '~> 1.8.1'
 gem 'ruby-hmac'
+gem 'net-ldap'
 
 group :development, :test do
   gem 'rake'

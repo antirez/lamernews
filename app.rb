@@ -663,7 +663,7 @@ post '/api/logout' do
     end
 end
 
-get '/api/login' do
+post '/api/login' do
     content_type 'application/json'
     if (!check_params "username","password")
         return {
@@ -689,6 +689,12 @@ end
 
 get '/api/reset-password' do
     content_type 'application/json'
+    if(UseLDAP)
+        return {
+            :status => "err",
+            :error => "Cannot reset password when using LDAP as auth"
+        }.to_json
+    end
     if (!check_params "username","email")
         return {
             :status => "err",
@@ -730,6 +736,12 @@ end
 
 post '/api/create_account' do
     content_type 'application/json'
+    if(UseLDAP)
+        return {
+            :status => "err",
+            :error => "Cannot create an account when using LDAP as auth"
+        }.to_json
+    end
     if (!check_params "username","password")
         return {
             :status => "err",
@@ -1270,33 +1282,43 @@ def get_user_by_username(username)
     get_user_by_id(id)
 end
 
+# check given credentials aaginst the configured ldap server
+# if the user isn't already in redis it's created with given password
+def check_ldap_credentials(username, password)
+    ldap = Net::LDAP.new
+    ldap.host = LDAPHost
+    ldap.auth LDAPAdminUserDn, LDAPAdminUserPassword
+    begin
+        result = ldap.bind_as(:base => LDAPAdminUserBase, 
+                        :filter =>"(uid=#{username})", 
+                        :password => password)
+    rescue Net::LDAP::Error
+        # catch any connection error on ldap
+        return nil
+    end
+    
+    return nil if !result
+
+    username = result.first.uid.first
+    user = get_user_by_username(username)
+    
+    if !user
+        auth,apisecret,errmsg = create_user(username,password)
+        if errmsg
+            puts errmsg
+            return nil
+        end
+        return auth,apisecret
+    end
+
+    [user['auth'], user['apisecret']] 
+end
+
 # Check if the username/password pair identifies an user.
 # If so the auth token and form secret are returned, otherwise nil is returned.
 def check_user_credentials(username,password)
-
     if UseLDAP
-        ldap = Net::LDAP.new
-        ldap.host = LDAPHost
-        ldap.auth LDAPAdminUserDn, LDAPAdminUserPassword
-        result = ldap.bind_as(:base => LDAPAdminUserBase, 
-                            :filter =>"(uid=#{username})", 
-                            :password => password)
-        
-        return nil if !result
-
-        username = result.first.uid.first
-        user = get_user_by_username(username)
-        
-        if !user
-            auth,apisecret,errmsg = create_user(username,password)
-            if errmsg
-                puts errmsg
-                return nil
-            end
-            return auth,apisecret
-        end
-
-        [user['auth'], user['apisecret']] 
+        check_ldap_credentials(username, password)
     else 
         user = get_user_by_username(username)
         return nil if !user

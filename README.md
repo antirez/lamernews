@@ -101,6 +101,15 @@ The representation is a simple Redis key in the form:
 
     `auth:<lowercase_token>` -> User ID
 
+LDAP Authentication
+---
+
+By configuring in `app_config.rb` how to connect with an ldap server, 
+username/password are checked against that directory.   
+registration is blocked as well the forget password link.   
+Users are still stored the same way and are created the first time a user logged succesful through ldap.
+
+
 News
 ---
 

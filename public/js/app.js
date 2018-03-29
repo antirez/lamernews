@@ -5,7 +5,7 @@ function login() {
     };
     var register = $("input[name=register]").attr("checked");
     $.ajax({
-        type: register ? "POST" : "GET",
+        type: "POST" ,
         url: register ? "/api/create_account" : "/api/login",
         data: data,
         success: function(r) {

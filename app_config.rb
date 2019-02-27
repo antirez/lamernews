@@ -2,9 +2,23 @@
 SiteName = "Lamer News"
 SiteUrl = "http://lamernews.com"
 SiteDescription = "Programming News"
+GoogleAnalytics = "XXX"
 
 # Redis config
-RedisURL = "redis://127.0.0.1:10000"
+RedisURL = "redis://127.0.0.1:6379"
+
+# LDAP Config
+#   Authentication with LDAP backend
+#   registration is blocked
+UseLDAP = false
+LDAPHost = "ldap.domain.com"
+LDAPAdminUserDn = "cn=JonDoeAdmin,ou=people,dc=domain,dc=com"
+LDAPAdminUserBase = "ou=people,dc=domain,dc=com"
+LDAPAdminUserPassword = "XXX"
+
+# Remote authentication
+#   Header with username to login/register coming from a remote Proxyed auth system, like mod_ldap on apache
+HttpAuthenticationHeader = "HTTP_REMOTE_USER" 
 
 # Security
 PBKDF2Iterations = 1000 # Set this to 5000 to improve security. But it is slow.

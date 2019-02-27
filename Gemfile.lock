@@ -3,7 +3,8 @@ GEM
   specs:
     diff-lcs (1.2.5)
     hiredis (0.4.5)
-    json (1.7.7)
+    json (1.8.6)
+    net-ldap (0.16.1)
     rack (1.5.2)
     rack-protection (1.5.1)
       rack
@@ -30,11 +31,18 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  hiredis (~> 0.4.5)
-  json (~> 1.7.7)
+  hiredis
+  json (~> 1.8.1)
+  net-ldap
   rack-test
   rake
-  redis (~> 3.0.4)
+  redis
   rspec
-  ruby-hmac (~> 0.4.0)
-  sinatra (~> 1.4.2)
+  ruby-hmac
+  sinatra
+
+RUBY VERSION
+   ruby 2.4.0p0
+
+BUNDLED WITH
+   1.14.6

@@ -1883,7 +1883,12 @@ end
 def compute_comment_score(c)
     upcount = (c['up'] ? c['up'].length : 0)
     downcount = (c['down'] ? c['down'].length : 0)
-    upcount-downcount
+    n = upcount + downcount
+    return 0 if n==0
+    #1.0 = 85%, 1.6 = 95%
+    z = 1.0
+    phat = Float(ups) / n
+    Math.sqrt(phat+z*z/(2*n)-z*((phat*(1-phat)+z*z/(4*n))/n))/(1+z*z/n)
 end
 
 # Given a string returns the same string with all the urls converted into

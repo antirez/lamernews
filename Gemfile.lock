@@ -3,7 +3,7 @@ GEM
   specs:
     diff-lcs (1.2.5)
     hiredis (0.4.5)
-    json (1.7.7)
+    json (2.3.0)
     rack (1.5.2)
     rack-protection (1.5.1)
       rack
@@ -31,7 +31,7 @@ PLATFORMS
 
 DEPENDENCIES
   hiredis (~> 0.4.5)
-  json (~> 1.7.7)
+  json (~> 2.3.0)
   rack-test
   rake
   redis (~> 3.0.4)

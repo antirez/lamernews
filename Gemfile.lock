@@ -4,7 +4,7 @@ GEM
     diff-lcs (1.2.5)
     hiredis (0.4.5)
     json (1.7.7)
-    rack (1.5.2)
+    rack (1.6.13)
     rack-protection (1.5.1)
       rack
     rack-test (0.6.2)
